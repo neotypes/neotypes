@@ -1,0 +1,27 @@
+plugins {
+    id 'scala'
+}
+
+group 'com.dimafeng'
+version '1.0-SNAPSHOT'
+
+ext.scalaBaseVersion = scalaVersion.substring(0, scalaVersion.lastIndexOf("."))
+
+sourceCompatibility = 1.8
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile("org.scala-lang:scala-library:$scalaVersion",
+            "ch.qos.logback:logback-classic:$logbackVersion",
+            "com.typesafe.scala-logging:scala-logging_$scalaBaseVersion:$scalaLoggingVersion",
+            "org.neo4j.driver:neo4j-java-driver:1.6.3",
+            "com.chuusai:shapeless_$scalaBaseVersion:2.3.3"
+    )
+    testCompile("org.scalatest:scalatest_$scalaBaseVersion:$scalatestVersion",
+            "org.mockito:mockito-all:$mockitoVersion",
+            "junit:junit:$junitVersion",
+            "com.dimafeng:testcontainers-scala_$scalaBaseVersion:0.20.0")
+}
