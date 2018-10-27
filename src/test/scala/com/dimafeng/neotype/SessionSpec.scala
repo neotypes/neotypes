@@ -8,7 +8,7 @@ import org.neo4j.driver.v1.{Driver, GraphDatabase, Record}
 import org.scalatest.FlatSpec
 import org.testcontainers.containers.wait.strategy.{HostPortWaitStrategy, Wait}
 
-import scala.concurrent.{Await, Promise, duration}
+import scala.concurrent.{Await, Future, Promise, duration}
 import scala.util.Success
 import scala.collection.JavaConverters._
 
@@ -27,16 +27,12 @@ class SessionSpec extends FlatSpec with ForAllTestContainer {
         tx.run(INIT_QUERY)
       )
 
-      session.readTransaction { tx =>
-        val p = Promise[Seq[Record]]
-        tx.runAsync("MATCH (tom {name: \"Tom Hanks\"}) RETURN tom").thenAccept(x =>
-          x.listAsync().thenAccept(list => p.complete(Success(list.asScala)))
-        )
+      val tx = new Session[Future](session).beginTransaction()
 
-        val value = Await.result(p.future, duration.Duration.Inf)
-        value.head.values().asScala.fold(value.head.get("id").asLong())
-        println(value)
-      }
+      val res = Await.result(tx.list[String]("MATCH (tom {name: \"Tom Hanks\"}) RETURN tom.name"), duration.Duration.Inf)
+      tx.close()
+
+      println(res.getClass)
     } finally {
       session.close()
     }
