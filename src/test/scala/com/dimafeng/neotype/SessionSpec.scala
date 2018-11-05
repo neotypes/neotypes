@@ -1,43 +1,42 @@
 package com.dimafeng.neotype
 
-import java.time.Duration
-
-import com.dimafeng.neotype.SessionSpec.INIT_QUERY
-import com.dimafeng.testcontainers.{Container, ForAllTestContainer, GenericContainer}
-import org.neo4j.driver.v1.{Driver, GraphDatabase, Record}
+import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
 import org.scalatest.FlatSpec
-import org.testcontainers.containers.wait.strategy.{HostPortWaitStrategy, Wait}
+import shapeless.{::, HNil}
+import com.dimafeng.neotype.implicits._
 
-import scala.concurrent.{Await, Future, Promise, duration}
-import scala.util.Success
-import scala.collection.JavaConverters._
+import scala.concurrent.{Await, Future, duration}
 
-class SessionSpec extends FlatSpec with ForAllTestContainer {
-  override val container = GenericContainer("neo4j:3.3.5",
-    env = Map("NEO4J_AUTH" -> "none"),
-    exposedPorts = Seq(7687, 7474),
-    waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(15))
-  )
+case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
+
+class SessionSpec extends FlatSpec { //with ForAllTestContainer {
+//  override val container = GenericContainer("neo4j:3.3.5",
+//    env = Map("NEO4J_AUTH" -> "none"),
+//    exposedPorts = Seq(7687, 7474),
+//    waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(15))
+//  )
 
   it should "test" in {
-    val driver = GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
+    //val driver = GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
+    val driver = GraphDatabase.driver(s"bolt://localhost:7687", AuthTokens.basic("neo4j", "pass"))
     val session = driver.session()
     try {
-      session.writeTransaction(tx =>
-        tx.run(INIT_QUERY)
-      )
+//      session.writeTransaction(tx =>
+//        tx.run(INIT_QUERY)
+//      )
 
       val tx = new Session[Future](session).beginTransaction()
 
-      val res = Await.result(tx.list[String]("MATCH (tom {name: \"Tom Hanks\"}) RETURN tom.name"), duration.Duration.Inf)
+      val res = Await.result(tx.list[Person :: String :: HNil]("MATCH (tom {name: \"Tom Hanks\"}) RETURN tom as t1, tom.name"), duration.Duration.Inf)
       tx.close()
 
-      println(res.getClass)
+      println(res.head)
     } finally {
       session.close()
     }
   }
 }
+
 
 object SessionSpec {
   val INIT_QUERY =
