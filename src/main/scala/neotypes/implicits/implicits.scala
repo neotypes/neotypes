@@ -1,11 +1,10 @@
-package com.dimafeng.neotype
+package neotypes
 
-import com.dimafeng.neotype.excpetions.{NoFieldsDefinedException, PropertyNotFoundException}
-import com.dimafeng.neotype.{RecordMarshallable, ValueMarshallable}
+import neotypes.excpetions.PropertyNotFoundException
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
 import shapeless.labelled.FieldType
-import shapeless.{::, _}
+import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -41,6 +40,10 @@ package object implicits {
   implicit def ccValueMarshallable[T: RecordMarshallable]: ValueMarshallable[T] =
     (fieldName, value) => implicitly[RecordMarshallable[T]].to(Seq((fieldName, value.get)))
 
+  /**
+    * RecordMarshallables
+    */
+
   implicit def genericMarshallable[T](implicit marshallable: ValueMarshallable[T]): RecordMarshallable[T] =
     records => {
       records.headOption.map { case (name, value) =>
@@ -60,8 +63,7 @@ package object implicits {
 
   implicit def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
                                                                   head: ValueMarshallable[H],
-                                                                  tail: RecordMarshallable[T]
-                                                                 ): RecordMarshallable[FieldType[K, H] :: T] =
+                                                                  tail: RecordMarshallable[T]): RecordMarshallable[FieldType[K, H] :: T] =
     (value: Seq[(String, Value)]) => {
       val fieldName = key.value.name
 

@@ -1,39 +1,45 @@
-package com.dimafeng.neotype
+package neotypes
 
-import org.neo4j.driver.v1.{AuthTokens, GraphDatabase}
-import org.scalatest.FlatSpec
+import java.time.Duration
+
+import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import neotypes.Async.futureAsync
+import neotypes.Session._
+import neotypes.implicits._
+import org.neo4j.driver.v1.GraphDatabase
+import org.scalatest.{AsyncFlatSpec}
+import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 import shapeless.{::, HNil}
-import com.dimafeng.neotype.implicits._
 
-import scala.concurrent.{Await, Future, duration}
+import scala.concurrent.Future
 
 case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
 
-class SessionSpec extends FlatSpec { //with ForAllTestContainer {
-//  override val container = GenericContainer("neo4j:3.3.5",
-//    env = Map("NEO4J_AUTH" -> "none"),
-//    exposedPorts = Seq(7687, 7474),
-//    waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(15))
-//  )
+class SessionSpec extends AsyncFlatSpec with ForAllTestContainer {
+  override val container = GenericContainer("neo4j:3.3.5",
+    env = Map("NEO4J_AUTH" -> "none"),
+    exposedPorts = Seq(7687),
+    waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(15))
+  )
 
-  it should "test" in {
-    //val driver = GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
-    val driver = GraphDatabase.driver(s"bolt://localhost:7687", AuthTokens.basic("neo4j", "pass"))
-    val session = driver.session()
-    try {
-//      session.writeTransaction(tx =>
-//        tx.run(INIT_QUERY)
-//      )
+  lazy val driver = GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
 
-      val tx = new Session[Future](session).beginTransaction()
-
-      val res = Await.result(tx.list[Person :: String :: HNil]("MATCH (tom {name: \"Tom Hanks\"}) RETURN tom as t1, tom.name"), duration.Duration.Inf)
-      tx.close()
-
-      println(res.head)
-    } finally {
-      session.close()
+  it should "map result to hlist and case classes" in {
+    val s = new Session[Future](driver.session())
+    s.transact[Seq[Person :: String :: HNil]](tx =>
+      "MATCH (tom {name: \"Tom Hanks\"}) RETURN tom as t1, tom.name".query[Person :: String :: HNil]().list(tx)
+    ).flatMap(v => s.close().map(_ => v)).flatMap { value =>
+      println(value)
+      assert(value.head.head == Person(71, 1956, Some("Tom Hanks"), None))
     }
+  }
+
+  override def afterStart(): Unit = {
+    val session = driver.session()
+    session.writeTransaction(tx =>
+      tx.run(SessionSpec.INIT_QUERY)
+    )
+    session.close()
   }
 }
 
