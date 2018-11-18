@@ -34,7 +34,6 @@ class Session[F[+ _]](session: NSession)(implicit F: Async[F]) {
         res <- F.failed[T](ex)
       } yield res
     }
-
   }
 }
 
@@ -52,12 +51,6 @@ object Session {
 
     def single[F[+ _]](tx: Transaction[F]): F[T] =
       tx.single(query, params)
-  }
-
-  implicit class StringExt(query: String) {
-    def query[T: RecordMarshallable](params: Map[String, AnyRef] = Map()): LazySession[T] = {
-      new LazySession(query, params)
-    }
   }
 
 }

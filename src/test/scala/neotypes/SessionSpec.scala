@@ -3,9 +3,9 @@ package neotypes
 import java.time.Duration
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import neotypes.Async.futureAsync
-import neotypes.Session._
+import neotypes.Async._
 import neotypes.implicits._
+import neotypes.implicits.StringExt
 import org.neo4j.driver.v1.GraphDatabase
 import org.scalatest.{AsyncFlatSpec}
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
@@ -14,6 +14,7 @@ import shapeless.{::, HNil}
 import scala.concurrent.Future
 
 case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
+case class Movie(id: Long, released: Int, title: String)
 
 class SessionSpec extends AsyncFlatSpec with ForAllTestContainer {
   override val container = GenericContainer("neo4j:3.3.5",
@@ -26,11 +27,28 @@ class SessionSpec extends AsyncFlatSpec with ForAllTestContainer {
 
   it should "map result to hlist and case classes" in {
     val s = new Session[Future](driver.session())
-    s.transact[Seq[Person :: String :: HNil]](tx =>
-      "MATCH (tom {name: \"Tom Hanks\"}) RETURN tom as t1, tom.name".query[Person :: String :: HNil]().list(tx)
-    ).flatMap(v => s.close().map(_ => v)).flatMap { value =>
-      println(value)
-      assert(value.head.head == Person(71, 1956, Some("Tom Hanks"), None))
+
+    for {
+      string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String]().single(s)
+      int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int]().single(s)
+      long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long]().single(s)
+      double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double]().single(s)
+      float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float]().single(s)
+      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person]().single(s)
+      //hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)]().list(s)
+    } yield {
+      assert(string == "Charlize Theron")
+      assert(int == 1975)
+      assert(long == 1975)
+      assert(Math.abs(double - 1975) < 0.0001)
+      assert(Math.abs(float - 1975) < 0.0001)
+      assert(cc.id > 0)
+      assert(cc.name.contains("Charlize Theron"))
+      assert(cc.born == 1975)
+      assert(cc.f.isEmpty)
+      //assert(hlist.size == 2)
+      //assert(hlist.head.head.name.contains("Charlize Theron"))
+      //assert(hlist.head.last.title == "The Devil's Advocate")
     }
   }
 
