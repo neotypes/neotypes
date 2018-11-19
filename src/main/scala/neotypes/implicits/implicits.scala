@@ -4,7 +4,7 @@ import java.time.{LocalDate, LocalDateTime, LocalTime}
 import java.util.Date
 
 import neotypes.Session.LazySession
-import neotypes.excpetions.PropertyNotFoundException
+import neotypes.excpetions.{NoFieldsDefinedException, PropertyNotFoundException}
 import neotypes.implicits.extract
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
@@ -52,21 +52,38 @@ package object implicits {
         .map(v => implicitly[ValueMarshallable[T]].to(fieldName, Some(v)).map(Some(_)))
         .getOrElse(Right(None))
 
-  //implicit def ccValueMarshallable[T: RecordMarshallable]: ValueMarshallable[T] =
-  //  (fieldName, value) => implicitly[RecordMarshallable[T]].to(Seq((fieldName, value.get)))
+  implicit def ccValueMarshallable[T: RecordMarshallable]: ValueMarshallable[T] =
+    (fieldName, value) => implicitly[RecordMarshallable[T]].to(Seq((fieldName, value.get)))
 
   /**
     * RecordMarshallables
     */
 
-  implicit def unitMarshallable: RecordMarshallable[Unit] = _ => Right[Throwable, Unit](())
+  implicit object StringRecordMarshallable extends AbstractRecordMarshallable[String]
 
-  implicit def genericMarshallable[T](implicit marshallable: ValueMarshallable[T]): RecordMarshallable[T] =
-    records => {
-      records.headOption.map { case (name, value) =>
-        marshallable.to(name, Some(value))
-      }.getOrElse(marshallable.to("", None))
-    }
+  implicit object IntRecordMarshallable extends AbstractRecordMarshallable[Int]
+
+  implicit object LongRecordMarshallable extends AbstractRecordMarshallable[Long]
+
+  implicit object DoubleRecordMarshallable extends AbstractRecordMarshallable[Double]
+
+  implicit object FloatRecordMarshallable extends AbstractRecordMarshallable[Float]
+
+  implicit object BooleanRecordMarshallable extends AbstractRecordMarshallable[Boolean]
+
+  implicit object ByteArrayRecordMarshallable extends AbstractRecordMarshallable[Array[Byte]]
+
+  implicit object LocalDateRecordMarshallable extends AbstractRecordMarshallable[LocalDate]
+
+  implicit object LocalTimeRecordMarshallable extends AbstractRecordMarshallable[LocalTime]
+
+  implicit object LocalDateTimeRecordMarshallable extends AbstractRecordMarshallable[LocalDateTime]
+
+  implicit object ValueTimeRecordMarshallable extends AbstractRecordMarshallable[Value]
+
+  implicit object HNilRecordMarshallable extends AbstractRecordMarshallable[HNil]
+
+  implicit def unitMarshallable: RecordMarshallable[Unit] = _ => Right[Throwable, Unit](())
 
   implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMarshallable[H],
                                                              tailDecoder: RecordMarshallable[T]): RecordMarshallable[H :: T] =
@@ -112,4 +129,12 @@ package object implicits {
 
 class AbstractValueMarshallable[T](f: Value => T) extends ValueMarshallable[T] {
   override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] = extract(fieldName, value, f)
+}
+
+class AbstractRecordMarshallable[T](implicit marshallable: ValueMarshallable[T]) extends RecordMarshallable[T] {
+  override def to(fields: Seq[(String, Value)]): Either[Throwable, T] = {
+    fields.headOption.map {
+      case (name, value) => marshallable.to(name, Some(value))
+    }.getOrElse(marshallable.to("", None))
+  }
 }

@@ -9,7 +9,7 @@ import neotypes.implicits.StringExt
 import org.neo4j.driver.v1.GraphDatabase
 import org.scalatest.{AsyncFlatSpec}
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
-import shapeless.{::, HNil}
+import shapeless._
 
 import scala.concurrent.Future
 
@@ -35,7 +35,7 @@ class SessionSpec extends AsyncFlatSpec with ForAllTestContainer {
       double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double]().single(s)
       float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float]().single(s)
       cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person]().single(s)
-      //hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)]().list(s)
+      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil]().list(s)
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)
@@ -46,9 +46,9 @@ class SessionSpec extends AsyncFlatSpec with ForAllTestContainer {
       assert(cc.name.contains("Charlize Theron"))
       assert(cc.born == 1975)
       assert(cc.f.isEmpty)
-      //assert(hlist.size == 2)
-      //assert(hlist.head.head.name.contains("Charlize Theron"))
-      //assert(hlist.head.last.title == "The Devil's Advocate")
+      assert(hlist.size == 2)
+      assert(hlist.head.head.name.contains("Charlize Theron"))
+      assert(hlist.head.last.title == "That Thing You Do")
     }
   }
 
