@@ -1,5 +1,7 @@
 ![Logo](neotypes.png)
 
+[![Build Status](https://travis-ci.org/neotypes/neotypes.svg?branch=master)](https://travis-ci.org/neotypes/neotypes)
+
 # neotypes
 
 Type-safe scala asynchronous driver for neo4j
