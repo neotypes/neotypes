@@ -1,13 +1,15 @@
 package neotypes
 
 import java.time.{LocalDate, LocalDateTime, LocalTime}
-import java.util.Date
 
 import neotypes.Session.LazySession
-import neotypes.excpetions.{NoFieldsDefinedException, PropertyNotFoundException}
+import neotypes.excpetions.{ConversionException, PropertyNotFoundException}
 import neotypes.implicits.extract
-import org.neo4j.driver.internal.value.IntegerValue
+import neotypes.types._
+import org.neo4j.driver.internal.types.InternalTypeSystem
+import org.neo4j.driver.internal.value.{IntegerValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.Value
+import org.neo4j.driver.v1.types.{Node, Relationship, Path => NPath}
 import shapeless.labelled.FieldType
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 
@@ -40,7 +42,13 @@ package object implicits {
 
   implicit object LocalDateTimeValueMarshallable extends AbstractValueMarshallable[LocalDateTime](_.asLocalDateTime())
 
-  implicit object ValueTimeValueMarshallable extends AbstractValueMarshallable[Value](identity)
+  implicit object ValueValueMarshallable extends AbstractValueMarshallable[Value](identity)
+
+  implicit object NodeValueMarshallable extends AbstractValueMarshallable[Node](_.asNode())
+
+  implicit object PathValueMarshallable extends AbstractValueMarshallable[NPath](_.asPath())
+
+  implicit object RelationshipValueMarshallable extends AbstractValueMarshallable[Relationship](_.asRelationship())
 
   implicit object HNilMarshallable extends ValueMarshallable[HNil] {
     override def to(fieldName: String, value: Option[Value]): Either[Throwable, HNil] = Right(HNil)
@@ -54,6 +62,33 @@ package object implicits {
 
   implicit def ccValueMarshallable[T: RecordMarshallable]: ValueMarshallable[T] =
     (fieldName, value) => implicitly[RecordMarshallable[T]].to(Seq((fieldName, value.get)))
+
+  implicit def pathMarshallable[N, R](implicit nm: RecordMarshallable[N], rm: RecordMarshallable[R]): ValueMarshallable[Path[N, R]] =
+    (fieldName, value) =>
+      value.map { v =>
+        if (v.`type`() == InternalTypeSystem.TYPE_SYSTEM.PATH()) {
+          val path = v.asPath()
+
+          val nodes = path.nodes().asScala.toSeq.zipWithIndex.map {
+            case (node, index) => nm.to(Seq((s"node $index", new NodeValue(node))))
+          }
+
+          val relationships = path.relationships().asScala.toSeq.zipWithIndex.map {
+            case (relationship, index) => rm.to(Seq((s"relationship $index", new RelationshipValue(relationship))))
+          }
+
+          val failed = Seq(
+            nodes.collectFirst { case Left(ex) => ex },
+            relationships.collectFirst { case Left(ex) => ex }
+          ).flatten.headOption
+
+          failed
+            .map(Left(_))
+            .getOrElse(Right(new types.Path[N, R](nodes.collect { case Right(r) => r }, relationships.collect { case Right(r) => r }, path)))
+        } else {
+          Left(ConversionException(s"$fieldName of type ${v.`type`()} cannot be converted into Path"))
+        }
+      }.getOrElse(Left(PropertyNotFoundException(s"Property $fieldName not found")))
 
   /**
     * RecordMarshallables
@@ -83,6 +118,13 @@ package object implicits {
 
   implicit object HNilRecordMarshallable extends AbstractRecordMarshallable[HNil]
 
+  implicit object NodeRecordMarshallable extends AbstractRecordMarshallable[Node]
+
+  implicit object RelationshipRecordMarshallable extends AbstractRecordMarshallable[Relationship]
+
+  implicit def pathRecordMarshallable[N: RecordMarshallable, R: RecordMarshallable]: RecordMarshallable[Path[N, R]] =
+    new AbstractRecordMarshallable[Path[N, R]]
+
   implicit def unitMarshallable: RecordMarshallable[Unit] = _ => Right[Throwable, Unit](())
 
   implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMarshallable[H],
@@ -102,9 +144,9 @@ package object implicits {
       val fieldName = key.value.name
 
       val convertedValue =
-        if (value.size == 1 && value.head._2.`type`().name() == "NODE") {
+        if (value.size == 1 && value.head._2.`type`() == InternalTypeSystem.TYPE_SYSTEM.NODE) {
           val node = value.head._2.asNode()
-          node.keys().asScala.map(key => key -> node.get(key)).toSeq :+ ("id", new IntegerValue(node.id()))
+          node.keys().asScala.map(key => key -> node.get(key)).toSeq :+ (Constants.ID_FIELD_NAME, new IntegerValue(node.id()))
         } else {
           value
         }
