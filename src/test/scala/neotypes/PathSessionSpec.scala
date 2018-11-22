@@ -14,8 +14,8 @@ class PathSessionSpec extends BaseIntegrationSpec(PathSessionSpec.INIT_QUERY) {
     val s = new Session[Future](driver.session())
 
     for {
-      path <- "match path=(:Person)-[*]->() return path".query[types.Path[Node, Relationship]]().list(s)
-      pathHList <- "match path=(p:Person)-[*]->() return p, path limit 1".query[Person :: types.Path[Node, Relationship] :: HNil]().single(s)
+      path <- "match path=(:Person)-[*]->() return path".query[types.Path[Node, Relationship]].list(s)
+      pathHList <- "match path=(p:Person)-[*]->() return p, path limit 1".query[Person :: types.Path[Node, Relationship] :: HNil].single(s)
     } yield {
       assert(path.size == 2)
       assert(pathHList.head == Person("Charlize Theron"))

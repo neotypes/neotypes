@@ -10,8 +10,8 @@ class ParameterSessionSpec extends BaseIntegrationSpec {
     val s = new Session[Future](driver.session())
 
     for {
-      _ <- "create (p:Person {name: $name})".query[Unit](Map("name" -> "test")).execute(s)
-      res <- "match (p:Person) return p.name limit 1".query[String]().single(s)
+      _ <- "create (p:Person {name: $name})".query[Unit].withParams(Map("name" -> "test")).execute(s)
+      res <- "match (p:Person) return p.name limit 1".query[String].single(s)
     } yield {
       assert(res == "test")
     }

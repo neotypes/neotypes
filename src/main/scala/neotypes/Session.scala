@@ -40,7 +40,7 @@ class Session[F[+ _]](session: NSession)(implicit F: Async[F]) {
 
 object Session {
 
-  class LazySession[T](query: String, params: Map[String, AnyRef]) {
+  case class LazySession[T](query: String, params: Map[String, Any] = Map()) {
     def list[F[+ _]](session: Session[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
       session.transact(tx => list(tx))
 
@@ -58,6 +58,8 @@ object Session {
 
     def execute[F[+ _]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
       tx.execute(query, params)
+
+    def withParams(params: Map[String, Any]): LazySession[T] = this.copy(params = params)
   }
 
 }

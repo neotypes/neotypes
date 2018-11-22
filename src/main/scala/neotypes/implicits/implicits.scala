@@ -180,8 +180,8 @@ package object implicits {
     */
 
   implicit class StringExt(query: String) {
-    def query[T](params: Map[String, AnyRef] = Map()): LazySession[T] = {
-      new LazySession(query, params)
+    def query[T]: LazySession[T] = {
+      LazySession(query)
     }
   }
 
