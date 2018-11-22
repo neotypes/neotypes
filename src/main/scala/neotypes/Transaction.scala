@@ -2,14 +2,26 @@ package neotypes
 
 import java.util
 
+import neotypes.mappers.{ResultMapper, ExecutionMapper}
+import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
 
 class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
 
-  def list[T: RecordMarshallable](query: String, params: Map[String, AnyRef] = Map()): F[Seq[T]] = {
-    val marshaller = implicitly[RecordMarshallable[T]]
+  def execute[T: ExecutionMapper](query: String, params: Map[String, AnyRef] = Map()): F[T] = F.async[T] { cb =>
+    val executionMapper = implicitly[ExecutionMapper[T]]
+
+    transaction
+      .runAsync(query, params.asJava)
+      .thenCompose(_.consumeAsync())
+      .thenAccept((result: ResultSummary) => cb(executionMapper.to(result)))
+      .exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
+  }
+
+  def list[T: ResultMapper](query: String, params: Map[String, AnyRef] = Map()): F[Seq[T]] = {
+    val resultMapper = implicitly[ResultMapper[T]]
 
     F.async[Seq[T]] { cb =>
       transaction
@@ -19,7 +31,7 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
           cb {
             val list = result.asScala
               .map(_.fields().asScala.map(p => p.key() -> p.value()))
-              .map(marshaller.to)
+              .map(resultMapper.to)
 
             list.find(_.isLeft).map(_.asInstanceOf[Either[Exception, Seq[T]]]).getOrElse(Right(list.collect { case Right(v) => v }))
           }
@@ -27,14 +39,14 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
     }
   }
 
-  def single[T: RecordMarshallable](query: String, params: Map[String, AnyRef] = Map()): F[T] = {
-    val marshaller = implicitly[RecordMarshallable[T]]
+  def single[T: ResultMapper](query: String, params: Map[String, AnyRef] = Map()): F[T] = {
+    val resultMapper = implicitly[ResultMapper[T]]
 
     F.async[T] { cb =>
       transaction.runAsync(query, params.asJava)
         .thenCompose(_.singleAsync())
         .thenAccept((res: Record) => cb {
-          marshaller.to(res.fields().asScala.map(p => p.key() -> p.value()))
+          resultMapper.to(res.fields().asScala.map(p => p.key() -> p.value()))
         })
         .exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
     }

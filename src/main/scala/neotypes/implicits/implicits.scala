@@ -6,9 +6,11 @@ import neotypes.Session.LazySession
 import neotypes.excpetions.{ConversionException, PropertyNotFoundException}
 import neotypes.implicits.extract
 import neotypes.types._
+import neotypes.mappers._
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.Value
+import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.types.{Node, Relationship, Path => NPath}
 import shapeless.labelled.FieldType
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
@@ -22,48 +24,48 @@ package object implicits {
     value.map(f).map(Right(_)).getOrElse(Left(PropertyNotFoundException(s"Property $fieldName not found")))
   }
 
-  implicit object StringValueMarshallable extends AbstractValueMarshallable[String](_.asString())
+  implicit object StringValueMapper extends AbstractValueMapper[String](_.asString())
 
-  implicit object IntValueMarshallable extends AbstractValueMarshallable[Int](_.asInt())
+  implicit object IntValueMapper extends AbstractValueMapper[Int](_.asInt())
 
-  implicit object LongValueMarshallable extends AbstractValueMarshallable[Long](_.asLong())
+  implicit object LongValueMapper extends AbstractValueMapper[Long](_.asLong())
 
-  implicit object DoubleValueMarshallable extends AbstractValueMarshallable[Double](_.asDouble())
+  implicit object DoubleValueMapper extends AbstractValueMapper[Double](_.asDouble())
 
-  implicit object FloatValueMarshallable extends AbstractValueMarshallable[Float](_.asFloat())
+  implicit object FloatValueMapper extends AbstractValueMapper[Float](_.asFloat())
 
-  implicit object BooleanValueMarshallable extends AbstractValueMarshallable[Boolean](_.asBoolean())
+  implicit object BooleanValueMapper extends AbstractValueMapper[Boolean](_.asBoolean())
 
-  implicit object ByteArrayValueMarshallable extends AbstractValueMarshallable[Array[Byte]](_.asByteArray())
+  implicit object ByteArrayValueMapper extends AbstractValueMapper[Array[Byte]](_.asByteArray())
 
-  implicit object LocalDateValueMarshallable extends AbstractValueMarshallable[LocalDate](_.asLocalDate())
+  implicit object LocalDateValueMapper extends AbstractValueMapper[LocalDate](_.asLocalDate())
 
-  implicit object LocalTimeValueMarshallable extends AbstractValueMarshallable[LocalTime](_.asLocalTime())
+  implicit object LocalTimeValueMapper extends AbstractValueMapper[LocalTime](_.asLocalTime())
 
-  implicit object LocalDateTimeValueMarshallable extends AbstractValueMarshallable[LocalDateTime](_.asLocalDateTime())
+  implicit object LocalDateTimeValueMapper extends AbstractValueMapper[LocalDateTime](_.asLocalDateTime())
 
-  implicit object ValueValueMarshallable extends AbstractValueMarshallable[Value](identity)
+  implicit object ValueValueMapper extends AbstractValueMapper[Value](identity)
 
-  implicit object NodeValueMarshallable extends AbstractValueMarshallable[Node](_.asNode())
+  implicit object NodeValueMapper extends AbstractValueMapper[Node](_.asNode())
 
-  implicit object PathValueMarshallable extends AbstractValueMarshallable[NPath](_.asPath())
+  implicit object PathValueMapper extends AbstractValueMapper[NPath](_.asPath())
 
-  implicit object RelationshipValueMarshallable extends AbstractValueMarshallable[Relationship](_.asRelationship())
+  implicit object RelationshipValueMapper extends AbstractValueMapper[Relationship](_.asRelationship())
 
-  implicit object HNilMarshallable extends ValueMarshallable[HNil] {
+  implicit object HNilMapper extends ValueMapper[HNil] {
     override def to(fieldName: String, value: Option[Value]): Either[Throwable, HNil] = Right(HNil)
   }
 
-  implicit def option[T: ValueMarshallable]: ValueMarshallable[Option[T]] =
+  implicit def option[T: ValueMapper]: ValueMapper[Option[T]] =
     (fieldName, value) =>
       value
-        .map(v => implicitly[ValueMarshallable[T]].to(fieldName, Some(v)).map(Some(_)))
+        .map(v => implicitly[ValueMapper[T]].to(fieldName, Some(v)).map(Some(_)))
         .getOrElse(Right(None))
 
-  implicit def ccValueMarshallable[T: RecordMarshallable]: ValueMarshallable[T] =
-    (fieldName, value) => implicitly[RecordMarshallable[T]].to(Seq((fieldName, value.get)))
+  implicit def ccValueMarshallable[T: ResultMapper]: ValueMapper[T] =
+    (fieldName, value) => implicitly[ResultMapper[T]].to(Seq((fieldName, value.get)))
 
-  implicit def pathMarshallable[N, R](implicit nm: RecordMarshallable[N], rm: RecordMarshallable[R]): ValueMarshallable[Path[N, R]] =
+  implicit def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] =
     (fieldName, value) =>
       value.map { v =>
         if (v.`type`() == InternalTypeSystem.TYPE_SYSTEM.PATH()) {
@@ -91,44 +93,44 @@ package object implicits {
       }.getOrElse(Left(PropertyNotFoundException(s"Property $fieldName not found")))
 
   /**
-    * RecordMarshallables
+    * ResultMapper
     */
 
-  implicit object StringRecordMarshallable extends AbstractRecordMarshallable[String]
+  implicit object StringResultMapper extends AbstractResultMapper[String]
 
-  implicit object IntRecordMarshallable extends AbstractRecordMarshallable[Int]
+  implicit object IntResultMapper extends AbstractResultMapper[Int]
 
-  implicit object LongRecordMarshallable extends AbstractRecordMarshallable[Long]
+  implicit object LongResultMapper extends AbstractResultMapper[Long]
 
-  implicit object DoubleRecordMarshallable extends AbstractRecordMarshallable[Double]
+  implicit object DoubleResultMapper extends AbstractResultMapper[Double]
 
-  implicit object FloatRecordMarshallable extends AbstractRecordMarshallable[Float]
+  implicit object FloatResultMapper extends AbstractResultMapper[Float]
 
-  implicit object BooleanRecordMarshallable extends AbstractRecordMarshallable[Boolean]
+  implicit object BooleanResultMapper extends AbstractResultMapper[Boolean]
 
-  implicit object ByteArrayRecordMarshallable extends AbstractRecordMarshallable[Array[Byte]]
+  implicit object ByteArrayResultMapper extends AbstractResultMapper[Array[Byte]]
 
-  implicit object LocalDateRecordMarshallable extends AbstractRecordMarshallable[LocalDate]
+  implicit object LocalDateResultMapper extends AbstractResultMapper[LocalDate]
 
-  implicit object LocalTimeRecordMarshallable extends AbstractRecordMarshallable[LocalTime]
+  implicit object LocalTimeResultMapper extends AbstractResultMapper[LocalTime]
 
-  implicit object LocalDateTimeRecordMarshallable extends AbstractRecordMarshallable[LocalDateTime]
+  implicit object LocalDateTimeResultMapper extends AbstractResultMapper[LocalDateTime]
 
-  implicit object ValueTimeRecordMarshallable extends AbstractRecordMarshallable[Value]
+  implicit object ValueTimeResultMapper extends AbstractResultMapper[Value]
 
-  implicit object HNilRecordMarshallable extends AbstractRecordMarshallable[HNil]
+  implicit object HNilResultMapper extends AbstractResultMapper[HNil]
 
-  implicit object NodeRecordMarshallable extends AbstractRecordMarshallable[Node]
+  implicit object NodeResultMapper extends AbstractResultMapper[Node]
 
-  implicit object RelationshipRecordMarshallable extends AbstractRecordMarshallable[Relationship]
+  implicit object RelationshipResultMapper extends AbstractResultMapper[Relationship]
 
-  implicit def pathRecordMarshallable[N: RecordMarshallable, R: RecordMarshallable]: RecordMarshallable[Path[N, R]] =
-    new AbstractRecordMarshallable[Path[N, R]]
+  implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
+    new AbstractResultMapper[Path[N, R]]
 
-  implicit def unitMarshallable: RecordMarshallable[Unit] = _ => Right[Throwable, Unit](())
+  implicit def unitMarshallable: ResultMapper[Unit] = _ => Right[Throwable, Unit](())
 
-  implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMarshallable[H],
-                                                             tailDecoder: RecordMarshallable[T]): RecordMarshallable[H :: T] =
+  implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
+                                                             tailDecoder: ResultMapper[T]): ResultMapper[H :: T] =
     (value: Seq[(String, Value)]) => {
       val (headName, headValue) = value.head
       val head = fieldDecoder.to(headName, Some(headValue))
@@ -138,8 +140,8 @@ package object implicits {
     }
 
   implicit def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
-                                                                  head: ValueMarshallable[H],
-                                                                  tail: RecordMarshallable[T]): RecordMarshallable[FieldType[K, H] :: T] =
+                                                                  head: ValueMapper[H],
+                                                                  tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :: T] =
     (value: Seq[(String, Value)]) => {
       val fieldName = key.value.name
 
@@ -157,23 +159,39 @@ package object implicits {
     }
 
   implicit def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
-                                             reprDecoder: Lazy[RecordMarshallable[R]],
-                                             ct: ClassTag[A]): RecordMarshallable[A] =
+                                             reprDecoder: Lazy[ResultMapper[R]],
+                                             ct: ClassTag[A]): ResultMapper[A] =
     (value: Seq[(String, Value)]) => reprDecoder.value.to(value).map(gen.from)
 
+  /**
+    * ExecutionMappers
+    */
+
+  implicit object ResultSummaryExecutionMapper extends ExecutionMapper[ResultSummary] {
+    override def to(resultSummary: ResultSummary): Either[Throwable, ResultSummary] = Right(resultSummary)
+  }
+
+  implicit object UnitExecutionMapper extends ExecutionMapper[Unit] {
+    override def to(resultSummary: ResultSummary): Either[Throwable, Unit] = Right(())
+  }
+
+  /**
+    * Extras
+    */
+
   implicit class StringExt(query: String) {
-    def query[T: RecordMarshallable](params: Map[String, AnyRef] = Map()): LazySession[T] = {
+    def query[T](params: Map[String, AnyRef] = Map()): LazySession[T] = {
       new LazySession(query, params)
     }
   }
 
 }
 
-class AbstractValueMarshallable[T](f: Value => T) extends ValueMarshallable[T] {
+class AbstractValueMapper[T](f: Value => T) extends ValueMapper[T] {
   override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] = extract(fieldName, value, f)
 }
 
-class AbstractRecordMarshallable[T](implicit marshallable: ValueMarshallable[T]) extends RecordMarshallable[T] {
+class AbstractResultMapper[T](implicit marshallable: ValueMapper[T]) extends ResultMapper[T] {
   override def to(fields: Seq[(String, Value)]): Either[Throwable, T] = {
     fields.headOption.map {
       case (name, value) => marshallable.to(name, Some(value))

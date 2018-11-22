@@ -10,7 +10,7 @@ import org.scalatest.junit.JUnitRunner
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
 @RunWith(classOf[JUnitRunner])
-abstract class BaseIntegrationSpec(initQuery: String) extends AsyncFlatSpec with ForAllTestContainer {
+abstract class BaseIntegrationSpec(initQuery: String = null) extends AsyncFlatSpec with ForAllTestContainer {
   override val container = GenericContainer("neo4j:3.4.5",
     env = Map("NEO4J_AUTH" -> "none"),
     exposedPorts = Seq(7687),
@@ -20,13 +20,15 @@ abstract class BaseIntegrationSpec(initQuery: String) extends AsyncFlatSpec with
   lazy val driver = GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
 
   override def afterStart(): Unit = {
-    val session = driver.session()
-    try {
-      session.writeTransaction(tx =>
-        tx.run(initQuery)
-      )
-    } finally {
-      session.close()
+    if (initQuery != null) {
+      val session = driver.session()
+      try {
+        session.writeTransaction(tx =>
+          tx.run(initQuery)
+        )
+      } finally {
+        session.close()
+      }
     }
   }
 }

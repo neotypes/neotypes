@@ -1,6 +1,7 @@
 package neotypes
 
 import neotypes.Async.AsyncExt
+import neotypes.mappers.{ResultMapper, ExecutionMapper}
 import org.neo4j.driver.v1.{Session => NSession}
 
 class Session[F[+ _]](session: NSession)(implicit F: Async[F]) {
@@ -39,18 +40,24 @@ class Session[F[+ _]](session: NSession)(implicit F: Async[F]) {
 
 object Session {
 
-  class LazySession[T: RecordMarshallable](query: String, params: Map[String, AnyRef]) {
-    def list[F[+ _]](session: Session[F]): F[Seq[T]] =
+  class LazySession[T, P](query: String, params: Map[String, AnyRef]) {
+    def list[F[+ _]](session: Session[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
       session.transact(tx => list(tx))
 
-    def single[F[+ _]](session: Session[F]): F[T] =
+    def single[F[+ _]](session: Session[F])(implicit rm: ResultMapper[T]): F[T] =
       session.transact(tx => single(tx))
 
-    def list[F[+ _]](tx: Transaction[F]): F[Seq[T]] =
+    def execute[F[+ _]](session: Session[F])(implicit rm: ExecutionMapper[T]): F[T] =
+      session.transact(tx => execute(tx))
+
+    def list[F[+ _]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
       tx.list(query, params)
 
-    def single[F[+ _]](tx: Transaction[F]): F[T] =
+    def single[F[+ _]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[T] =
       tx.single(query, params)
+
+    def execute[F[+ _]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
+      tx.execute(query, params)
   }
 
 }

@@ -8,9 +8,10 @@
 
 :warning: The library is under heavy development. There is no publicly available artifact yet. :warning:
 
-**Scala type-safe asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
+**Scala lightweight and type-safe asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
 * **Scala** - the driver provides you with support for all standard Scala types without the need to convert Scala <-> Java types back and forth and you can easily add your types.
+* **Lightweight** - the driver depends on `shapeless` and `neo4j Java driver`
 * **Type-safe** - the driver leverages [typeclasses](https://blog.scalac.io/2017/04/19/typeclasses-in-scala.html) to derive all needed conversions at the compile time.
 * **Asynchronous** - the driver sits on top of [asynchronous Java driver](https://neo4j.com/blog/beta-release-java-driver-async-api-neo4j/).
 * **Not opinionated on side-effect implementation** - you can use it with any implementation of side-effects of your chose (scala.Future, cats-effect
@@ -48,8 +49,8 @@ The project aims to provide seamless integration with most popular scala infrast
       assert(string == "Charlize Theron")
       assert(int == 1975)
       assert(long == 1975)
-      assert(Math.abs(double - 1975) < 0.0001)
-      assert(Math.abs(float - 1975) < 0.0001)
+      assert((double - 1975).abs < 0.0001)
+      assert((float - 1975).abs < 0.0001)
       assert(cc.id >= 0)
       assert(cc.name.contains("Charlize Theron"))
       assert(cc.born == 1975)
