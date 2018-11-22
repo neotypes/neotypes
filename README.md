@@ -6,6 +6,8 @@
 
 # neotypes
 
+:warning: The library is under heavy development. There is no publicly available artifact yet. :warning:
+
 **Scala type-safe asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
 * **Scala** - the driver provides you with support for all standard Scala types without the need to convert Scala <-> Java types back and forth and you can easily add your types.
