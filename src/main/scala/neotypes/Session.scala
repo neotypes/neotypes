@@ -40,7 +40,7 @@ class Session[F[+ _]](session: NSession)(implicit F: Async[F]) {
 
 object Session {
 
-  class LazySession[T, P](query: String, params: Map[String, AnyRef]) {
+  class LazySession[T](query: String, params: Map[String, AnyRef]) {
     def list[F[+ _]](session: Session[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
       session.transact(tx => list(tx))
 
