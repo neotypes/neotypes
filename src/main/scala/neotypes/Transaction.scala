@@ -3,6 +3,7 @@ package neotypes
 import java.util
 
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
+import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, Transaction => NTransaction}
 
@@ -48,7 +49,13 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
         .thenAccept((res: Record) => cb {
           resultMapper.to(res.fields().asScala.map(p => p.key() -> p.value()))
         })
-        .exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
+        .exceptionally { ex =>
+          if (ex.getClass == classOf[NoSuchRecordException] || ex.getCause.getClass == classOf[NoSuchRecordException]) {
+            cb(resultMapper.to(Seq())).asInstanceOf[Void]
+          } else {
+            cb(Left(ex)).asInstanceOf[Void]
+          }
+        }
     }
   }
 

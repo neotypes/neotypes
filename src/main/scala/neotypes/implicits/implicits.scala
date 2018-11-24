@@ -6,7 +6,7 @@ import neotypes.Session.LazySession
 import neotypes.excpetions.{ConversionException, PropertyNotFoundException}
 import neotypes.implicits.extract
 import neotypes.types._
-import neotypes.mappers._
+import neotypes.mappers.{ValueMapper, _}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.Value
@@ -14,6 +14,7 @@ import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.types.{Node, Relationship, Path => NPath}
 import shapeless.labelled.FieldType
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
+import org.neo4j.driver.v1.{Session => NSession}
 
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
@@ -55,6 +56,18 @@ package object implicits {
   implicit object HNilMapper extends ValueMapper[HNil] {
     override def to(fieldName: String, value: Option[Value]): Either[Throwable, HNil] = Right(HNil)
   }
+
+  implicit def mapValueMapper[T: ValueMapper]: ValueMapper[Map[String, T]] =
+    (_: String, value: Option[Value]) => {
+      value
+        .map(_.asMap(v => implicitly[ValueMapper[T]].to("", Some(v))).asScala)
+        .map(result =>
+          result
+            .collectFirst {case (_, l @ Left(_)) => l.asInstanceOf[Either[Throwable, Map[String, T]]]}
+            .getOrElse(Right(result.collect {case (k, Right(v)) => k -> v}.toMap))
+        )
+        .getOrElse(Right[Throwable, Map[String, T]](Map()))
+    }
 
   implicit def option[T: ValueMapper]: ValueMapper[Option[T]] =
     (fieldName, value) =>
@@ -124,6 +137,10 @@ package object implicits {
 
   implicit object RelationshipResultMapper extends AbstractResultMapper[Relationship]
 
+  implicit def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] = new AbstractResultMapper[Map[String, T]]
+
+  implicit def optionResultMapper[T: ValueMapper]: ResultMapper[Option[T]] = new AbstractResultMapper[Option[T]]
+
   implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
     new AbstractResultMapper[Path[N, R]]
 
@@ -183,6 +200,10 @@ package object implicits {
     def query[T]: LazySession[T] = {
       LazySession(query)
     }
+  }
+
+  implicit class SessionExt(session: NSession) {
+    def asScala[F[+ _] : Async]: Session[F] = new Session[F](session)
   }
 
 }

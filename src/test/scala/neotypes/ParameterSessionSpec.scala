@@ -7,7 +7,7 @@ import scala.concurrent.Future
 
 class ParameterSessionSpec extends BaseIntegrationSpec {
   it should "convert parameters" in {
-    val s = new Session[Future](driver.session())
+    val s = driver.session().asScala[Future]
 
     for {
       _ <- "create (p:Person {name: $name})".query[Unit].withParams(Map("name" -> "test")).execute(s)

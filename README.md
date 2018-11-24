@@ -38,13 +38,13 @@ The project aims to provide seamless integration with most popular scala infrast
   case class Movie(id: Long, released: Int, title: String)
 
     for {
-      string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String]().single(s)
-      int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int]().single(s)
-      long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long]().single(s)
-      double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double]().single(s)
-      float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float]().single(s)
-      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person]().single(s)
-      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil]().list(s)
+      string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
+      int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int].single(s)
+      long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long].single(s)
+      double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double].single(s)
+      float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float].single(s)
+      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
+      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)

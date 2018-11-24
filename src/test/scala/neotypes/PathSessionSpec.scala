@@ -11,7 +11,7 @@ import scala.concurrent.Future
 class PathSessionSpec extends BaseIntegrationSpec(PathSessionSpec.INIT_QUERY) {
 
   it should "map path to Seq" in {
-    val s = new Session[Future](driver.session())
+    val s = driver.session().asScala[Future]
 
     for {
       path <- "match path=(:Person)-[*]->() return path".query[types.Path[Node, Relationship]].list(s)
@@ -24,7 +24,6 @@ class PathSessionSpec extends BaseIntegrationSpec(PathSessionSpec.INIT_QUERY) {
   }
 
 }
-
 
 object PathSessionSpec {
 
