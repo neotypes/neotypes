@@ -10,10 +10,12 @@ class ParameterSessionSpec extends BaseIntegrationSpec {
     val s = driver.session().asScala[Future]
 
     for {
-      _ <- "create (p:Person {name: $name})".query[Unit].withParams(Map("name" -> "test")).execute(s)
-      res <- "match (p:Person) return p.name limit 1".query[String].single(s)
+      _ <- "create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "test", "born" -> 123)).execute(s)
+      res <- "match (p:Person) return p.name, p.born limit 1".query[String :: Int :: HNil].single(s)
     } yield {
-      assert(res == "test")
+      val name :: born :: HNil = res
+      assert(name == "test")
+      assert(born == 123)
     }
   }
 }

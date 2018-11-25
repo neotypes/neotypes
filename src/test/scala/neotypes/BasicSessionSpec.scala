@@ -18,9 +18,11 @@ class BasicSessionSpec extends BaseIntegrationSpec(BasicSessionSpec.INIT_QUERY) 
       long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long].single(s)
       double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double].single(s)
       float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float].single(s)
+      notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover{ case ex => ex.toString }
       cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
       map <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Map[String, Value]].single(s)
       emptyResult <- "match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
+      emptyResultList <- "match (p:Person {name: '1243'}) return p.born".query[Int].list(s)
       emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover{ case ex => ex.toString }
       hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
       //tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
@@ -40,9 +42,23 @@ class BasicSessionSpec extends BaseIntegrationSpec(BasicSessionSpec.INIT_QUERY) 
       assert(map("name").asString == "Charlize Theron")
       assert(map("born").asInt == 1975)
       assert(emptyResult.isEmpty)
+      assert(emptyResultList.isEmpty)
       assert(emptyResultEx == "neotypes.excpetions.PropertyNotFoundException: Property  not found") // TODO test separately
+      assert(notString == "neotypes.excpetions.UncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
       //assert(tuple.head._1.name.contains("Charlize Theron"))
       //assert(tuple.head._2.title == "That Thing You Do")
+
+    }
+  }
+
+  it should "map result to tuples" in {
+    val s = driver.session().asScala[Future]
+
+    for {
+      tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+    } yield {
+      assert(tuple.head._1.name.contains("Charlize Theron"))
+      assert(tuple.head._2.title == "That Thing You Do")
 
     }
   }

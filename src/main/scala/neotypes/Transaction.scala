@@ -5,7 +5,7 @@ import java.util
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
-import org.neo4j.driver.v1.{Record, Transaction => NTransaction}
+import org.neo4j.driver.v1.{Record, Value, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
 
@@ -30,9 +30,7 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
         .thenCompose(_.listAsync())
         .thenAccept((result: util.List[Record]) =>
           cb {
-            val list = result.asScala
-              .map(_.fields().asScala.map(p => p.key() -> p.value()))
-              .map(resultMapper.to)
+            val list = result.asScala.map(v => resultMapper.to(recordToSeq(v), None))
 
             list.find(_.isLeft).map(_.asInstanceOf[Either[Exception, Seq[T]]]).getOrElse(Right(list.collect { case Right(v) => v }))
           }
@@ -47,11 +45,11 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
       transaction.runAsync(query, params.asJava.asInstanceOf[util.Map[String, Object]])
         .thenCompose(_.singleAsync())
         .thenAccept((res: Record) => cb {
-          resultMapper.to(res.fields().asScala.map(p => p.key() -> p.value()))
+          resultMapper.to(recordToSeq(res), None)
         })
         .exceptionally { ex =>
           if (ex.getClass == classOf[NoSuchRecordException] || ex.getCause.getClass == classOf[NoSuchRecordException]) {
-            cb(resultMapper.to(Seq())).asInstanceOf[Void]
+            cb(resultMapper.to(Seq(), None)).asInstanceOf[Void]
           } else {
             cb(Left(ex)).asInstanceOf[Void]
           }
@@ -70,4 +68,6 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
       .thenAccept(_ => cb(Right(())))
       .exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
   )
+
+  private[this] def recordToSeq(record: Record): Seq[(String, Value)] = record.fields().asScala.map(p => p.key() -> p.value())
 }
