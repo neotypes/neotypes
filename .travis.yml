@@ -1,7 +1,17 @@
 language: scala
 
-jdk:
-- oraclejdk8
-
 os:
 - linux
+
+sudo: required
+
+services:
+- docker
+
+script:
+- ./sbt +test
+
+cache:
+  directories:
+  - $HOME/.ivy2/cache
+  - $HOME/.sbt
