@@ -9,7 +9,7 @@ val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.5"
 val slf4jVersion = "1.7.21"
 
-lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
+//lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 lazy val root = (project in file("."))
   .settings(
@@ -17,8 +17,8 @@ lazy val root = (project in file("."))
     scalaVersion in ThisBuild := "2.12.2",
     crossScalaVersions := Seq("2.11.11", "2.12.2"),
     name := "testcontainers-scala",
-    compileScalastyle := scalastyle.in(Compile).toTask("").value,
-    test in Test := (test in Test).dependsOn(compileScalastyle in Compile).value,
+//    compileScalastyle := scalastyle.in(Compile).toTask("").value,
+//    test in Test := (test in Test).dependsOn(compileScalastyle in Compile).value,
 
     /**
       * Dependencies
