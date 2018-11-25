@@ -1,11 +1,7 @@
-language: java
+language: scala
 
 jdk:
 - oraclejdk8
 
 os:
 - linux
-
-cache:
-  directories:
-  - $HOME/.gradle
