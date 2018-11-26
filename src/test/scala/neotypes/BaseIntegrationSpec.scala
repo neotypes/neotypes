@@ -9,7 +9,6 @@ import org.scalatest.AsyncFlatSpec
 import org.scalatest.junit.JUnitRunner
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
-@RunWith(classOf[JUnitRunner])
 abstract class BaseIntegrationSpec(initQuery: String = null) extends AsyncFlatSpec with ForAllTestContainer {
   override val container = GenericContainer("neo4j:3.4.5",
     env = Map("NEO4J_AUTH" -> "none"),
