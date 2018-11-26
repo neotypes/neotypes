@@ -6,7 +6,9 @@
 
 # neotypes
 
-:warning: The library is under heavy development. There is no publicly available artifact yet. :warning:
+:warning: The library is under heavy development. Do not use in production :warning:
+
+For early adopters: `"com.dimafeng" % "neotypes_2.12" % "0.1.0"`
 
 **Scala lightweight and type-safe asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
@@ -26,39 +28,57 @@ The project aims to provide seamless integration with most popular scala infrast
 * Java 8+
 * neo4j 3.4.*+
 
-## Usage
+## Overview and philosophy
+`neotypes` adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` that allows to build a `neotypes`'s session wrapper. You can
+parametrize `asScala` by any type that you have a typeclass `neotypes.Async` implementation for. The typeclass implementation for `scala.concurrent.Future` is 
+built-in. Please node that you have to make sure that the session is properly closed at the end of the application execution.
+
+Once you have a session constructed, you can start querying the database. The import `neotypes.implicits._` adds an extension method `query[T]` to each
+string literal in its scope. Type parameter `[T]` specifies a resulted return type. You can specify query parameters using a method `withParams` as follows:
+```scala
+"create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "test", "born" -> 123)).execute(s)
+```
+A query can be run in three different ways:
+* `execute(s)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`. If you need to support your return types for this 
+type of queries, you can provide an implementation of `ExecutionMapper` for any custom type.
+* `single(s)` - runs a query and return single result.
+* `list(s)` - runs a query and returns list of results. 
+
+## Usage example
 
 ```scala
-    import neotypes.Async._
-    import neotypes.implicits._
-    import shapeless._
+import org.neo4j.driver.v1._
+import neotypes.Async._
+import neotypes.implicits._
+import shapeless._
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.Future
 
-  case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
+scala> val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+Nov 26, 2018 10:42:42 AM org.neo4j.driver.internal.logging.JULogger info
+INFO: Direct driver instance 542400040 created for server address localhost:7687
+driver: org.neo4j.driver.v1.Driver = org.neo4j.driver.internal.InternalDriver@20545e28
 
-  case class Movie(id: Long, released: Int, title: String)
+scala> val session = driver.session().asScala[Future]
+session: neotypes.Session[scala.concurrent.Future] = neotypes.Session@6f30d4df
 
-    for {
-      string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
-      int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int].single(s)
-      long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long].single(s)
-      double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double].single(s)
-      float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float].single(s)
-      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
-      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
-    } yield {
-      assert(string == "Charlize Theron")
-      assert(int == 1975)
-      assert(long == 1975)
-      assert((double - 1975).abs < 0.0001)
-      assert((float - 1975).abs < 0.0001)
-      assert(cc.id >= 0)
-      assert(cc.name.contains("Charlize Theron"))
-      assert(cc.born == 1975)
-      assert(cc.f.isEmpty)
-      assert(hlist.size == 1)
-      assert(hlist.head.head.name.contains("Charlize Theron"))
-      assert(hlist.head.last.title == "That Thing You Do")
-    }
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+scala> val people = "match (p:Person) return p.name, p.born limit 10".query[(String, Int)].list(session)
+people: scala.concurrent.Future[Seq[(String, Int)]] = Future(<not completed>)
+
+scala> Await.result(people, 1 second)
+res0: Seq[(String, Int)] = ArrayBuffer((Charlize Theron,1975), (Keanu Reeves,1964), (Carrie-Anne Moss,1967), (Laurence Fishburne,1961), (Hugo Weaving,1960), (Lilly Wachowski,1967), (Lana Wachowski,1965), (Joel Silver,1952), (Emil Eifrem,1978), (Charlize Theron,1975))
+
+scala> case class Person(id: Long, born: Int, name: Option[String], notExists: Option[Int])
+defined class Person
+
+scala> val peopleCC = "match (p:Person) return p limit 10".query[Person].list(session)
+peopleCC: scala.concurrent.Future[Seq[Person]] = Future(<not completed>)
+
+scala> Await.result(peopleCC, 1 second)
+res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
 ```
 
 ## Supported types
@@ -66,23 +86,25 @@ The project aims to provide seamless integration with most popular scala infrast
 
 | Type                                      | Query result   | Field of a case class | Query parameter  |
 | ----------------------------------------- |:--------------:| :--------------------:|:-----------------|
-| `scala.Int                             `  | ✓              |✓||
-| `scala.Long                            `  | ✓              |✓||
-| `scala.Double                          `  | ✓              |✓||
-| `scala.Float                           `  | ✓              |✓||
-| `java.lang.String                      `  | ✓              |✓||
-| `scala.Option[T]                       `  | ✓              |✓||
-| `scala.Boolean                         `  | ✓              |✓||
-| `scala.Array[Byte]                     `  | ✓              |✓||
-| `java.time.LocalDate                   `  | ✓              |✓||
-| `java.time.LocalTime                   `  | ✓              |✓||
-| `java.time.LocalDateTime               `  | ✓              |✓||
-| `org.neo4j.driver.v1.Value             `  | ✓              |||
-| `org.neo4j.driver.v1.types.Node        `  | ✓              |✓||
-| `org.neo4j.driver.v1.types.Relationship`  | ✓              |✓||
-| `shapeless.HList                       `  | ✓              |||
-| `neotypes.types.Path                   `  | ✓              |||
-| `User defined case class               `  | ✓              |||
+| `scala.Int                             `  | ✓              |✓                     |✓|
+| `scala.Long                            `  | ✓              |✓                     |✓|
+| `scala.Double                          `  | ✓              |✓                     |✓|
+| `scala.Float                           `  | ✓              |✓                     |✓|
+| `java.lang.String                      `  | ✓              |✓                     |✓|
+| `scala.Option[T]                       `  | ✓              |✓                     ||
+| `scala.Boolean                         `  | ✓              |✓                     |✓|
+| `scala.Array[Byte]                     `  | ✓              |✓                     |✓|
+| `scala.Map[String, T: ValueMapper]     `  | ✓              |                      ||
+| `java.time.LocalDate                   `  | ✓              |✓                     |✓|
+| `java.time.LocalTime                   `  | ✓              |✓                     |✓|
+| `java.time.LocalDateTime               `  | ✓              |✓                     |✓|
+| `org.neo4j.driver.v1.Value             `  | ✓              |                      ||
+| `org.neo4j.driver.v1.types.Node        `  | ✓              |✓                     ||
+| `org.neo4j.driver.v1.types.Relationship`  | ✓              |✓                     ||
+| `shapeless.HList                       `  | ✓              |                      ||
+| `neotypes.types.Path                   `  | ✓              |                      ||
+| `Tuple (1-22)                          `  | ✓              |                      ||
+| `User defined case class               `  | ✓              |                      ||
 
 
 ## Side-effect implementation
@@ -91,11 +113,16 @@ In order to support your implementation of side-effects, you need to implement `
 
 ## Roadmap
 
-TODO
+- [ ] Support more query parameter types
+- [ ] Type-safe query parameter passing
+- [ ] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
+- [ ] `Async` implementations for `cats-effects`, `Monix`, etc 
+- [ ] Scala 2.11 support
 
 ## Release notes
 
-TODO
+* **0.1.0**
+    * First release
 
 ## Publishing
 
