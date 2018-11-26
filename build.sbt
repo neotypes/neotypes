@@ -35,6 +35,8 @@ lazy val root = (project in file("."))
         "org.slf4j" % "slf4j-simple" % slf4jVersion,
       ),
 
+    parallelExecution in ThisBuild := false,
+    
     /**
       * Publishing
       */
