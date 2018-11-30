@@ -23,4 +23,11 @@ class CypherQueryInterpolationSpec extends FlatSpec {
     assert(query.rawQuery == """create (a:Test {name: $p1, born: $p2})""")
     assert(query.params == Map("p1" -> "John", "p2" -> 1980))
   }
+
+  it should "concat LazySessionBuilder with String" in {
+    val name = "John"
+    val query = c"""create (a:Test {name: $name,""" + "born: 1980})"
+    assert(query.rawQuery == """create (a:Test {name: $p1, born: 1980})""")
+    assert(query.params == Map("p1" -> "John"))
+  }
 }

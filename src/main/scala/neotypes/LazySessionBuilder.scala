@@ -26,6 +26,12 @@ class LazySessionBuilder(private[neotypes] val parts: Seq[Part]) {
       (parts.slice(0, parts.size - 1) :+ parts.last.asInstanceOf[Query].merge(other.parts.head.asInstanceOf[Query])) ++ other.parts.tail
     )
   }
+
+  def +(other: String): LazySessionBuilder = {
+    new LazySessionBuilder(
+      parts.slice(0, parts.size - 1) :+ parts.last.asInstanceOf[Query].merge(Query(other))
+    )
+  }
 }
 
 object LazySessionBuilder {
