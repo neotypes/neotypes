@@ -30,12 +30,12 @@ class LazySessionBuilder(private[neotypes] val parts: Seq[Part]) {
 
 object LazySessionBuilder {
 
-  val PARAMETER_NAME_PREFIX = "par"
+  val PARAMETER_NAME_PREFIX = "p"
 
   sealed trait Part
 
   case class Query(part: String) extends Part {
-    def merge(query: Query) = Query(part + " " + query)
+    def merge(query: Query) = Query(part + " " + query.part)
   }
 
   case class Param(value: Any) extends Part
