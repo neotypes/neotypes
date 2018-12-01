@@ -2,20 +2,27 @@ package neotypes
 
 import neotypes.Async._
 import neotypes.implicits._
-import shapeless._
+import org.neo4j.driver.v1.types.Node
+
 import scala.concurrent.Future
 
 class ParameterSessionSpec extends BaseIntegrationSpec {
   it should "convert parameters" in {
     val s = driver.session().asScala[Future]
 
+    val name = "test"
+    val born = 123
+    val lastName = None
+    val middleName = Some("test2")
+
     for {
-      _ <- "create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "test", "born" -> 123)).execute(s)
-      res <- "match (p:Person) return p.name, p.born limit 1".query[String :: Int :: HNil].single(s)
+      _ <- c"create (p:Person {name: $name, born: $born, lastName: $lastName, middleName: $middleName})".query[Unit].execute(s)
+      res <- "match (p:Person) return p limit 1".query[Node].single(s)
     } yield {
-      val name :: born :: HNil = res
-      assert(name == "test")
-      assert(born == 123)
+      assert(res.get("name").asString() == "test")
+      assert(res.get("born").asInt() == 123)
+      assert(res.get("lastName").isNull)
+      assert(res.get("middleName").asString() == "test2")
     }
   }
 }

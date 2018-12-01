@@ -2,6 +2,7 @@ package neotypes
 
 import java.util
 
+import neotypes.Transaction.convertParams
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
@@ -15,7 +16,7 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
     val executionMapper = implicitly[ExecutionMapper[T]]
 
     transaction
-      .runAsync(query, params.asJava.asInstanceOf[util.Map[String, Object]])
+      .runAsync(query, convertParams(params))
       .thenCompose(_.consumeAsync())
       .thenAccept((result: ResultSummary) => cb(executionMapper.to(result)))
       .exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
@@ -26,7 +27,7 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
 
     F.async[Seq[T]] { cb =>
       transaction
-        .runAsync(query, params.asJava.asInstanceOf[util.Map[String, Object]])
+        .runAsync(query, convertParams(params))
         .thenCompose(_.listAsync())
         .thenAccept((result: util.List[Record]) =>
           cb {
@@ -42,7 +43,7 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
     val resultMapper = implicitly[ResultMapper[T]]
 
     F.async[T] { cb =>
-      transaction.runAsync(query, params.asJava.asInstanceOf[util.Map[String, Object]])
+      transaction.runAsync(query, convertParams(params))
         .thenCompose(_.singleAsync())
         .thenAccept((res: Record) => cb {
           resultMapper.to(recordToSeq(res), None)
@@ -70,4 +71,20 @@ class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
   )
 
   private[this] def recordToSeq(record: Record): Seq[(String, Value)] = record.fields().asScala.map(p => p.key() -> p.value())
+}
+
+object Transaction {
+  def convertParams(params: Map[String, Any]): util.Map[String, Object] = {
+    params.map {
+      case (k, v) => k -> toNeoType(v)
+    }.asJava.asInstanceOf[util.Map[String, Object]]
+  }
+
+  def toNeoType(value: Any): Any = value match {
+    case s: Seq[Any] => new util.ArrayList[Any](s.map(toNeoType).asJava)
+    case m: Map[Any, Any] => new util.HashMap[Any, Any](m.mapValues(toNeoType).asJava)
+    case Some(v) => v
+    case None => null
+    case v: Any => v
+  }
 }
