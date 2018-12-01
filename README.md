@@ -3,6 +3,8 @@
 > neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed
 
 [![Build Status](https://travis-ci.org/neotypes/neotypes.svg?branch=master)](https://travis-ci.org/neotypes/neotypes)
+[![Maven Central](https://img.shields.io/maven-central/v/com.dimafeng/neotypes_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.dimafeng/neotypes_2.12)
+
 
 # neotypes
 
