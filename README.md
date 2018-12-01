@@ -106,10 +106,10 @@ res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Perso
 | `scala.Double                          `  | ✓              |✓                     |✓|
 | `scala.Float                           `  | ✓              |✓                     |✓|
 | `java.lang.String                      `  | ✓              |✓                     |✓|
-| `scala.Option[T]                       `  | ✓              |✓                     ||
-| `scala.Boolean                         `  | ✓              |✓                     |✓|
+| `scala.Option[T]                       `  | ✓              |✓                     |✓|
+| `scala.Boolean                         `  | ✓              |✓                     |✓`*`|
 | `scala.Array[Byte]                     `  | ✓              |✓                     |✓|
-| `scala.Map[String, T: ValueMapper]     `  | ✓              |                      ||
+| `scala.Map[String, T: ValueMapper]     `  | ✓              |                      |✓`**`|
 | `java.time.LocalDate                   `  | ✓              |✓                     |✓|
 | `java.time.LocalTime                   `  | ✓              |✓                     |✓|
 | `java.time.LocalDateTime               `  | ✓              |✓                     |✓|
@@ -121,6 +121,8 @@ res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Perso
 | `Tuple (1-22)                          `  | ✓              |                      ||
 | `User defined case class               `  | ✓              |                      ||
 
+* `*` - `None` is converted into `null`
+* `**` - scala.Map[String, Any] 
 
 ## Side-effect implementation
 
