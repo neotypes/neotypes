@@ -8,7 +8,7 @@
 
 :warning: The library is under heavy development. Do not use in production :warning:
 
-For early adopters: `"com.dimafeng" % "neotypes_2.12" % "0.1.0"`
+For early adopters: `"com.dimafeng" % "neotypes_2.12" % "0.2.0"`
 
 **Scala lightweight and type-safe asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
@@ -135,11 +135,15 @@ In order to support your implementation of side-effects, you need to implement `
 - [x] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
 - [ ] `Async` implementations for `cats-effects`, `Monix`, etc 
 - [ ] Scala 2.11 support
+- [ ] Functional streams to consume result lazily
 
 ## Release notes
 
 * **0.1.0**
     * First release
+    
+* **0.2.0**
+    * PR #2
 
 ## Publishing
 
