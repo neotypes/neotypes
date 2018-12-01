@@ -34,9 +34,15 @@ parametrize `asScala` by any type that you have a typeclass `neotypes.Async` imp
 built-in. Please node that you have to make sure that the session is properly closed at the end of the application execution.
 
 Once you have a session constructed, you can start querying the database. The import `neotypes.implicits._` adds an extension method `query[T]` to each
-string literal in its scope. Type parameter `[T]` specifies a resulted return type. You can specify query parameters using a method `withParams` as follows:
+string literal in its scope or you can use string interpolation. Type parameter `[T]` specifies a resulted return type.
 ```scala
-"create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "test", "born" -> 123)).execute(s)
+"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)
+"create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "John", "born" -> 1980)).execute(s)
+
+val name = "John"
+val born = 1980
+c"create (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation
+
 ```
 A query can be run in three different ways:
 * `execute(s)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`. If you need to support your return types for this 
@@ -44,7 +50,16 @@ type of queries, you can provide an implementation of `ExecutionMapper` for any 
 * `single(s)` - runs a query and return single result.
 * `list(s)` - runs a query and returns list of results. 
 
-## Usage example
+```scala
+"match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
+"match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
+"match (p:Person {name: 'Charlize Theron'}) return p".query[Map[String, Value]].single(s)
+"match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
+"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
+"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+```
+
+## Showcase
 
 ```scala
 import org.neo4j.driver.v1._
@@ -91,10 +106,10 @@ res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Perso
 | `scala.Double                          `  | ✓              |✓                     |✓|
 | `scala.Float                           `  | ✓              |✓                     |✓|
 | `java.lang.String                      `  | ✓              |✓                     |✓|
-| `scala.Option[T]                       `  | ✓              |✓                     ||
-| `scala.Boolean                         `  | ✓              |✓                     |✓|
+| `scala.Option[T]                       `  | ✓              |✓                     |✓|
+| `scala.Boolean                         `  | ✓              |✓                     |✓`*`|
 | `scala.Array[Byte]                     `  | ✓              |✓                     |✓|
-| `scala.Map[String, T: ValueMapper]     `  | ✓              |                      ||
+| `scala.Map[String, T: ValueMapper]     `  | ✓              |                      |✓`**`|
 | `java.time.LocalDate                   `  | ✓              |✓                     |✓|
 | `java.time.LocalTime                   `  | ✓              |✓                     |✓|
 | `java.time.LocalDateTime               `  | ✓              |✓                     |✓|
@@ -106,6 +121,8 @@ res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Perso
 | `Tuple (1-22)                          `  | ✓              |                      ||
 | `User defined case class               `  | ✓              |                      ||
 
+* `*` - `None` is converted into `null`
+* `**` - scala.Map[String, Any] 
 
 ## Side-effect implementation
 
@@ -115,7 +132,7 @@ In order to support your implementation of side-effects, you need to implement `
 
 - [ ] Support more query parameter types
 - [ ] Type-safe query parameter passing
-- [ ] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
+- [x] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
 - [ ] `Async` implementations for `cats-effects`, `Monix`, etc 
 - [ ] Scala 2.11 support
 

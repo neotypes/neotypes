@@ -2,7 +2,7 @@ package neotypes
 
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
-import neotypes.Session.LazySession
+import neotypes.DeferredQueryBuilder.Part
 import neotypes.excpetions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.types._
 import neotypes.mappers.{ValueMapper, _}
@@ -227,14 +227,19 @@ package object implicits {
     * Extras
     */
 
-  implicit class StringExt(query: String) {
-    def query[T]: LazySession[T] = {
-      LazySession(query)
-    }
-  }
+  implicit class StringExt(query: String) extends DeferredQueryBuilder(query)
 
   implicit class SessionExt(session: NSession) {
     def asScala[F[+ _] : Async]: Session[F] = new Session[F](session)
+  }
+
+  implicit class CypherString(val sc: StringContext) extends AnyVal {
+    def c(args: Any*): DeferredQueryBuilder = {
+      val queries = sc.parts.map(DeferredQueryBuilder.Query)
+      val params = args.map(DeferredQueryBuilder.Param).iterator
+
+      new DeferredQueryBuilder(queries.tail.foldLeft(Seq[Part](queries.head)) { (acc, q) => acc :+ params.next() :+ q })
+    }
   }
 
 }
