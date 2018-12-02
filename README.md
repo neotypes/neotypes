@@ -133,8 +133,6 @@ In order to support your implementation of side-effects, you need to implement `
 
 ## Roadmap
 
-- [ ] Support more query parameter types
-- [ ] Type-safe query parameter passing
 - [x] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
 - [ ] `Async` implementations for `cats-effects`, `Monix`, etc 
 - [ ] Scala 2.11 support
