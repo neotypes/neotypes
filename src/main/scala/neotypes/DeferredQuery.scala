@@ -5,22 +5,22 @@ import neotypes.mappers.{ExecutionMapper, ResultMapper}
 
 case class DeferredQuery[T](query: String, params: Map[String, Any] = Map()) {
 
-  def list[F[+ _]](session: Session[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
+  def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
     session.transact(tx => list(tx))
 
-  def single[F[+ _]](session: Session[F])(implicit rm: ResultMapper[T]): F[T] =
+  def single[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[T] =
     session.transact(tx => single(tx))
 
-  def execute[F[+ _]](session: Session[F])(implicit rm: ExecutionMapper[T]): F[T] =
+  def execute[F[_]](session: Session[F])(implicit rm: ExecutionMapper[T]): F[T] =
     session.transact(tx => execute(tx))
 
-  def list[F[+ _]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
+  def list[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
     tx.list(query, params)
 
-  def single[F[+ _]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[T] =
+  def single[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
 
-  def execute[F[+ _]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
+  def execute[F[_]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
   def withParams(params: Map[String, Any]): DeferredQuery[T] = copy(params = this.params ++ params)

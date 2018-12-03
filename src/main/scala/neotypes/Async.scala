@@ -3,7 +3,7 @@ package neotypes
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-trait Async[F[+ _]] {
+trait Async[F[_]] {
   def async[T](cb: (Either[Throwable, T] => Unit) => Unit): F[T]
 
   def flatMap[T, U](m: F[T])(f: T => F[U]): F[U]
@@ -17,7 +17,7 @@ trait Async[F[+ _]] {
 
 object Async {
 
-  implicit class AsyncExt[F[+ _], +T](m: F[T])(implicit F: Async[F]) {
+  implicit class AsyncExt[F[_], T](m: F[T])(implicit F: Async[F]) {
     def map[U](f: T => U) = F.map(m)(f)
 
     def flatMap[U](f: T => F[U]) = F.flatMap(m)(f)

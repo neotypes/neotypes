@@ -10,7 +10,7 @@ import org.neo4j.driver.v1.{Record, Value, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
 
-class Transaction[F[+ _]](transaction: NTransaction)(implicit F: Async[F]) {
+class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
 
   def execute[T: ExecutionMapper](query: String, params: Map[String, Any] = Map()): F[T] = F.async[T] { cb =>
     val executionMapper = implicitly[ExecutionMapper[T]]

@@ -4,7 +4,7 @@ import neotypes.Async.AsyncExt
 import neotypes.mappers.{ResultMapper, ExecutionMapper}
 import org.neo4j.driver.v1.{Session => NSession}
 
-class Session[F[+ _]](session: NSession)(implicit F: Async[F]) {
+class Session[F[_]](session: NSession)(implicit F: Async[F]) {
   def beginTransaction(): F[Transaction[F]] = {
     F.async[Transaction[F]] { cb =>
       session.beginTransactionAsync().thenAccept(tx =>
