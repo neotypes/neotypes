@@ -5,6 +5,12 @@ title: "Documentation"
 
 # Overview
 
+## Requirements
+
+* Scala 2.12 (2.11 coming soon)
+* Java 8+
+* neo4j 3.4.*+
+
 ## Session creation
 
 `neotypes` adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` that allows to build a `neotypes`'s session wrapper. You can

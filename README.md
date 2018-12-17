@@ -26,12 +26,6 @@ The project aims to provide seamless integration with most popular scala infrast
 
 See [Documentation](https://neotypes.github.io/neotypes/) for more details
 
-## Requirements
-
-* Scala 2.12
-* Java 8+
-* neo4j 3.4.*+
-
 ## Showcase
 
 ```scala
@@ -68,14 +62,3 @@ peopleCC: scala.concurrent.Future[Seq[Person]] = Future(<not completed>)
 scala> Await.result(peopleCC, 1 second)
 res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
 ```
-
-## Roadmap
-
-- [x] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
-- [ ] `Async` implementations for `cats-effects`, `Monix`, etc 
-- [ ] Scala 2.11 support
-- [ ] Functional streams to consume result lazily
-
-## Publishing
-
-TODO
