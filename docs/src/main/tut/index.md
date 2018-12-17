@@ -5,7 +5,7 @@ section: home
 title: "Home"
 ---
 
-![Logo](/img/neotypes.png)
+![Logo](img/neotypes.png)
 
 > neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed
 
@@ -27,3 +27,9 @@ title: "Home"
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
 
 See [Documentation](/docs.html) for more details
+
+## Setup
+
+```scala
+libraryDependencies += "com.dimafeng" % "neotypes_2.12" % neotypesVersion
+```

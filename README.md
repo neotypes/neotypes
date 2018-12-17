@@ -24,6 +24,8 @@ For early adopters: `"com.dimafeng" % "neotypes_2.12" % "0.2.0"`
 
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
 
+See [Documentation](https://neotypes.github.io/neotypes/) for more details
+
 ## Requirements
 
 * Scala 2.12

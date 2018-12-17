@@ -16,6 +16,12 @@ val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo
 val session = driver.session().asScala[Future]
 ```
 
+Please note that the session should be closed to make sure all resources (such as network connection) obtained by the session will always be cleaned up properly.
+
+```scala
+session.close()
+```
+
 ## Query execution
 
 Once you have a session constructed, you can start querying the database. The import `neotypes.implicits._` adds an extension method `query[T]` to each

@@ -7,5 +7,8 @@ options:
   - title: Supported Types
     url: docs/types.html
 
+  - title: Parameterized Queries
+    url: docs/parameterized_queries.html
+
   - title: Side effect
     url: docs/alternative_effects.html
