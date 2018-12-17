@@ -26,7 +26,7 @@ title: "Home"
 
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
 
-See [Documentation](/docs.html) for more details
+See [Documentation](docs.html) for more details
 
 ## Setup
 
