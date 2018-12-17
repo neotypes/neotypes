@@ -5,6 +5,14 @@ section: home
 title: "Home"
 ---
 
+![Logo](/img/neotypes.png)
+
+> neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed
+
+[![Build Status](https://travis-ci.org/neotypes/neotypes.svg?branch=master)](https://travis-ci.org/neotypes/neotypes)
+[![Maven Central](https://img.shields.io/maven-central/v/com.dimafeng/neotypes_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.dimafeng/neotypes_2.12)
+[![Gitter Chat](https://badges.gitter.im/neotypes-neotypes/Lobby.svg)](https://gitter.im/neotypes-neotypes/Lobby)
+
 # neotypes
 
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
@@ -17,3 +25,5 @@ title: "Home"
  IO, Monix Task, etc) by implementing a simple typeclass. `scala.Future` is implemented and comes out of the box.
 
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
+
+See [Documentation](/docs.html) for more details

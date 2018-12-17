@@ -72,10 +72,11 @@ lazy val microsite = (project in file("docs"))
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
     micrositeAuthor := "dimafeng",
     micrositeHighlightTheme := "atom-one-light",
-    micrositeHomepage := "http://todo",
+    micrositeHomepage := "https://neotypes.github.io/neotypes/",
     micrositeDocumentationUrl := "docs.html",
     micrositeGithubOwner := "neotypes",
     micrositeGithubRepo := "neotypes",
+    micrositeBaseUrl := "/neotypes",
     ghpagesNoJekyll := false,
     fork in tut := true
   )

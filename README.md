@@ -1,4 +1,4 @@
-![Logo](neotypes.png)
+![Logo](docs/src/main/resources/microsite/img/neotypes.png)
 
 > neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed
 
@@ -23,7 +23,6 @@ For early adopters: `"com.dimafeng" % "neotypes_2.12" % "0.2.0"`
  IO, Monix Task, etc) by implementing a simple typeclass. `scala.Future` is implemented and comes out of the box.
 
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
-
 
 ## Requirements
 
@@ -68,24 +67,12 @@ scala> Await.result(peopleCC, 1 second)
 res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
 ```
 
-## Side-effect implementation
-
-In order to support your implementation of side-effects, you need to implement `neotypes.Async[YourIO]` and add to the implicit scope.
-
 ## Roadmap
 
 - [x] Query parameter interpolation e.g. `cypher"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)`
 - [ ] `Async` implementations for `cats-effects`, `Monix`, etc 
 - [ ] Scala 2.11 support
 - [ ] Functional streams to consume result lazily
-
-## Release notes
-
-* **0.1.0**
-    * First release
-    
-* **0.2.0**
-    * PR #2
 
 ## Publishing
 

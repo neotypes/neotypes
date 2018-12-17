@@ -707,3 +707,8 @@ pre code {
     top: -1px;
     left: -26px;
     z-index: 35; }
+
+.header-link {
+    font-size: 0.7em;
+    padding-left: 10px;
+}

@@ -6,3 +6,6 @@ options:
   nested_options:
   - title: Supported Types
     url: docs/types.html
+
+  - title: Side effect
+    url: docs/alternative_effects.html
