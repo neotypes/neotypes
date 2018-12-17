@@ -2,7 +2,7 @@ package neotypes.excpetions
 
 import org.neo4j.driver.v1.exceptions.value.Uncoercible
 
-sealed class NeotypesException(message: String, cause: Throwable = this) extends Exception(message, cause)
+sealed class NeotypesException(message: String, cause: Throwable = null) extends Exception(message, cause)
 
 case class PropertyNotFoundException(message: String) extends NeotypesException(message)
 
