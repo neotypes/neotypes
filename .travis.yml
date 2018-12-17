@@ -10,8 +10,17 @@ services:
 
 script:
 - ./sbt +test
+- ./sbt "project microsite" makeMicrosite
 
 cache:
   directories:
   - $HOME/.ivy2/cache
   - $HOME/.sbt
+
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  local_dir: docs/target/site
+  on:
+    branch: gh-pages

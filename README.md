@@ -13,7 +13,7 @@
 
 For early adopters: `"com.dimafeng" % "neotypes_2.12" % "0.2.0"`
 
-**Scala lightweight and type-safe asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
+**Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
 * **Scala** - the driver provides you with support for all standard Scala types without the need to convert Scala <-> Java types back and forth and you can easily add your types.
 * **Lightweight** - the driver depends on `shapeless` and `neo4j Java driver`
@@ -30,37 +30,6 @@ The project aims to provide seamless integration with most popular scala infrast
 * Scala 2.12
 * Java 8+
 * neo4j 3.4.*+
-
-## Overview and philosophy
-`neotypes` adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` that allows to build a `neotypes`'s session wrapper. You can
-parametrize `asScala` by any type that you have a typeclass `neotypes.Async` implementation for. The typeclass implementation for `scala.concurrent.Future` is 
-built-in. Please node that you have to make sure that the session is properly closed at the end of the application execution.
-
-Once you have a session constructed, you can start querying the database. The import `neotypes.implicits._` adds an extension method `query[T]` to each
-string literal in its scope or you can use string interpolation. Type parameter `[T]` specifies a resulted return type.
-```scala
-"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)
-"create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "John", "born" -> 1980)).execute(s)
-
-val name = "John"
-val born = 1980
-c"create (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation
-
-```
-A query can be run in three different ways:
-* `execute(s)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`. If you need to support your return types for this 
-type of queries, you can provide an implementation of `ExecutionMapper` for any custom type.
-* `single(s)` - runs a query and return single result.
-* `list(s)` - runs a query and returns list of results. 
-
-```scala
-"match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
-"match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
-"match (p:Person {name: 'Charlize Theron'}) return p".query[Map[String, Value]].single(s)
-"match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
-```
 
 ## Showcase
 
@@ -98,34 +67,6 @@ peopleCC: scala.concurrent.Future[Seq[Person]] = Future(<not completed>)
 scala> Await.result(peopleCC, 1 second)
 res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
 ```
-
-## Supported types
-
-
-| Type                                      | Query result   | Field of a case class | Query parameter  |
-| ----------------------------------------- |:--------------:| :--------------------:|:-----------------|
-| `scala.Int                             `  | ✓              |✓                     |✓|
-| `scala.Long                            `  | ✓              |✓                     |✓|
-| `scala.Double                          `  | ✓              |✓                     |✓|
-| `scala.Float                           `  | ✓              |✓                     |✓|
-| `java.lang.String                      `  | ✓              |✓                     |✓|
-| `scala.Option[T]                       `  | ✓              |✓                     |✓|
-| `scala.Boolean                         `  | ✓              |✓                     |✓`*`|
-| `scala.Array[Byte]                     `  | ✓              |✓                     |✓|
-| `scala.Map[String, T: ValueMapper]     `  | ✓              |                      |✓`**`|
-| `java.time.LocalDate                   `  | ✓              |✓                     |✓|
-| `java.time.LocalTime                   `  | ✓              |✓                     |✓|
-| `java.time.LocalDateTime               `  | ✓              |✓                     |✓|
-| `org.neo4j.driver.v1.Value             `  | ✓              |                      ||
-| `org.neo4j.driver.v1.types.Node        `  | ✓              |✓                     ||
-| `org.neo4j.driver.v1.types.Relationship`  | ✓              |✓                     ||
-| `shapeless.HList                       `  | ✓              |                      ||
-| `neotypes.types.Path                   `  | ✓              |                      ||
-| `Tuple (1-22)                          `  | ✓              |                      ||
-| `User defined case class               `  | ✓              |                      ||
-
-* `*` - `None` is converted into `null`
-* `**` - scala.Map[String, Any] 
 
 ## Side-effect implementation
 

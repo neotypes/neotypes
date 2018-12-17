@@ -17,8 +17,8 @@ lazy val root = (project in file("."))
     scalaVersion in ThisBuild := "2.12.2",
     crossScalaVersions := Seq("2.12.2"),
     name := "neotypes",
-//    compileScalastyle := scalastyle.in(Compile).toTask("").value,
-//    test in Test := (test in Test).dependsOn(compileScalastyle in Compile).value,
+    //    compileScalastyle := scalastyle.in(Compile).toTask("").value,
+    //    test in Test := (test in Test).dependsOn(compileScalastyle in Compile).value,
 
     /**
       * Dependencies
@@ -36,7 +36,7 @@ lazy val root = (project in file("."))
       ),
 
     parallelExecution in ThisBuild := false,
-    
+
     /**
       * Publishing
       */
@@ -62,4 +62,20 @@ lazy val root = (project in file("."))
       releaseStepCommand("sonatypeReleaseAll"),
       pushChanges
     )
+  )
+
+lazy val microsite = (project in file("docs"))
+  .settings(moduleName := "docs")
+  .enablePlugins(MicrositesPlugin)
+  .settings(
+    micrositeName := "neotypes",
+    micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
+    micrositeAuthor := "dimafeng",
+    micrositeHighlightTheme := "atom-one-light",
+    micrositeHomepage := "http://todo",
+    micrositeDocumentationUrl := "docs.html",
+    micrositeGithubOwner := "neotypes",
+    micrositeGithubRepo := "neotypes",
+    ghpagesNoJekyll := false,
+    fork in tut := true
   )
