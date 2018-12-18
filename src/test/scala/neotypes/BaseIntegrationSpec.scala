@@ -3,10 +3,9 @@ package neotypes
 import java.time.Duration
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import org.junit.runner.RunWith
-import org.neo4j.driver.v1.GraphDatabase
+import org.neo4j.driver.v1
+import org.neo4j.driver.v1.{GraphDatabase, Transaction, TransactionWork}
 import org.scalatest.AsyncFlatSpec
-import org.scalatest.junit.JUnitRunner
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
 abstract class BaseIntegrationSpec(initQuery: String = null) extends AsyncFlatSpec with ForAllTestContainer {
@@ -22,9 +21,9 @@ abstract class BaseIntegrationSpec(initQuery: String = null) extends AsyncFlatSp
     if (initQuery != null) {
       val session = driver.session()
       try {
-        session.writeTransaction(tx =>
-          tx.run(initQuery)
-        )
+        session.writeTransaction(new TransactionWork[Unit] {
+          override def execute(tx: v1.Transaction): Unit = tx.run(initQuery)
+        })
       } finally {
         session.close()
       }

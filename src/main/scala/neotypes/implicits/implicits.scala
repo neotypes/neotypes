@@ -1,10 +1,12 @@
 package neotypes
 
 import java.time.{LocalDate, LocalDateTime, LocalTime}
+import java.util.function
 
 import neotypes.DeferredQueryBuilder.Part
 import neotypes.excpetions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.types._
+import neotypes.utils.FunctionUtils._
 import neotypes.mappers.{ValueMapper, _}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, NodeValue, RelationshipValue}
@@ -79,10 +81,11 @@ package object implicits {
     override def to(fieldName: String, value: Option[Value]): Either[Throwable, HNil] = Right(HNil)
   }
 
-  implicit def mapValueMapper[T: ValueMapper]: ValueMapper[Map[String, T]] =
-    (_: String, value: Option[Value]) => {
+  implicit def mapValueMapper[T: ValueMapper]: ValueMapper[Map[String, T]] = new ValueMapper[Map[String, T]] {
+    override def to(fieldName: String, value: Option[Value]): Either[Throwable, Map[String, T]] = {
+      val mapper = implicitly[ValueMapper[T]]
       value
-        .map(_.asMap(v => implicitly[ValueMapper[T]].to("", Some(v))).asScala)
+        .map(values => values.keys().asScala.map { key => key -> mapper.to(key, Some(values.get(key))) })
         .map(result =>
           result
             .collectFirst { case (_, l@Left(_)) => l.asInstanceOf[Either[Throwable, Map[String, T]]] }
@@ -90,44 +93,44 @@ package object implicits {
         )
         .getOrElse(Right[Throwable, Map[String, T]](Map()))
     }
+  }
 
-  implicit def option[T: ValueMapper]: ValueMapper[Option[T]] =
-    (fieldName, value) =>
-      value
-        .map(v => implicitly[ValueMapper[T]].to(fieldName, Some(v)).map(Some(_)))
-        .getOrElse(Right(None))
+  implicit def option[T: ValueMapper]: ValueMapper[Option[T]] = new ValueMapper[Option[T]] {
+    override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] = value
+      .map(v => implicitly[ValueMapper[T]].to(fieldName, Some(v)).right.map(Some(_)))
+      .getOrElse(Right(None))
+  }
 
-  implicit def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] =
-    (fieldName, value) => {
-      implicitly[ResultMapper[T]].to(Seq((fieldName, value.get)), Some(TypeHint(ct)))
-    }
+  implicit def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] = new ValueMapper[T] {
+    override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] = implicitly[ResultMapper[T]].to(Seq((fieldName, value.get)), Some(TypeHint(ct)))
+  }
 
-  implicit def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] =
-    (fieldName, value) =>
-      value.map { v =>
-        if (v.`type`() == InternalTypeSystem.TYPE_SYSTEM.PATH()) {
-          val path = v.asPath()
+  implicit def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] = new ValueMapper[Path[N, R]] {
+    override def to(fieldName: String, value: Option[Value]): Either[Throwable, Path[N, R]] = value.map { v =>
+      if (v.`type`() == InternalTypeSystem.TYPE_SYSTEM.PATH()) {
+        val path = v.asPath()
 
-          val nodes = path.nodes().asScala.toSeq.zipWithIndex.map {
-            case (node, index) => nm.to(Seq((s"node $index", new NodeValue(node))), None)
-          }
-
-          val relationships = path.relationships().asScala.toSeq.zipWithIndex.map {
-            case (relationship, index) => rm.to(Seq((s"relationship $index", new RelationshipValue(relationship))), None)
-          }
-
-          val failed = Seq(
-            nodes.collectFirst { case Left(ex) => ex },
-            relationships.collectFirst { case Left(ex) => ex }
-          ).flatten.headOption
-
-          failed
-            .map(Left(_))
-            .getOrElse(Right(new types.Path[N, R](nodes.collect { case Right(r) => r }, relationships.collect { case Right(r) => r }, path)))
-        } else {
-          Left(ConversionException(s"$fieldName of type ${v.`type`()} cannot be converted into Path"))
+        val nodes = path.nodes().asScala.toSeq.zipWithIndex.map {
+          case (node, index) => nm.to(Seq((s"node $index", new NodeValue(node))), None)
         }
-      }.getOrElse(Left(PropertyNotFoundException(s"Property $fieldName not found")))
+
+        val relationships = path.relationships().asScala.toSeq.zipWithIndex.map {
+          case (relationship, index) => rm.to(Seq((s"relationship $index", new RelationshipValue(relationship))), None)
+        }
+
+        val failed = Seq(
+          nodes.collectFirst { case Left(ex) => ex },
+          relationships.collectFirst { case Left(ex) => ex }
+        ).flatten.headOption
+
+        failed
+          .map(Left(_))
+          .getOrElse(Right(new types.Path[N, R](nodes.collect { case Right(r) => r }, relationships.collect { case Right(r) => r }, path)))
+      } else {
+        Left(ConversionException(s"$fieldName of type ${v.`type`()} cannot be converted into Path"))
+      }
+    }.getOrElse(Left(PropertyNotFoundException(s"Property $fieldName not found")))
+  }
 
   /**
     * ResultMapper
@@ -168,22 +171,25 @@ package object implicits {
   implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
     new AbstractResultMapper[Path[N, R]]
 
-  implicit def unitMarshallable: ResultMapper[Unit] = (_, _) => Right[Throwable, Unit](())
+  implicit def unitMarshallable: ResultMapper[Unit] = new ResultMapper[Unit] {
+    override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Unit] = Right[Throwable, Unit](())
+  }
 
   implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
-                                                             tailDecoder: ResultMapper[T]): ResultMapper[H :: T] =
-    (value: Seq[(String, Value)], _: Option[TypeHint]) => {
+                                                             tailDecoder: ResultMapper[T]): ResultMapper[H :: T] = new ResultMapper[H :: T] {
+    override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :: T] = {
       val (headName, headValue) = value.head
       val head = fieldDecoder.to(headName, Some(headValue))
       val tail = tailDecoder.to(value.tail, None)
 
-      head.flatMap(h => tail.map(t => h :: t))
+      head.right.flatMap(h => tail.right.map(t => h :: t))
     }
+  }
 
   implicit def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
                                                                   head: ValueMapper[H],
-                                                                  tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :: T] =
-    (value: Seq[(String, Value)], typeHint: Option[TypeHint]) => {
+                                                                  tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :: T] = new ResultMapper[FieldType[K, H] :: T] {
+    override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :: T] = {
       val fieldName = key.value.name
 
       val convertedValue =
@@ -198,18 +204,20 @@ package object implicits {
         case Some(TypeHint(true)) =>
           val index = fieldName.substring(1).toInt - 1
           val decodedHead = head.to(fieldName, if (value.size <= index) None else Some(value(index)._2))
-          decodedHead.flatMap(v => tail.to(value, typeHint).map(t => labelled.field[K](v) :: t))
+          decodedHead.right.flatMap(v => tail.to(value, typeHint).right.map(t => labelled.field[K](v) :: t))
 
         case _ =>
           val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
-          decodedHead.flatMap(v => tail.to(convertedValue, typeHint).map(t => labelled.field[K](v) :: t))
+          decodedHead.right.flatMap(v => tail.to(convertedValue, typeHint).right.map(t => labelled.field[K](v) :: t))
       }
     }
+  }
 
   implicit def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
                                              reprDecoder: Lazy[ResultMapper[R]],
-                                             ct: ClassTag[A]): ResultMapper[A] =
-    (value: Seq[(String, Value)], _: Option[TypeHint]) => reprDecoder.value.to(value, Some(TypeHint(ct))).map(gen.from)
+                                             ct: ClassTag[A]): ResultMapper[A] = new ResultMapper[A] {
+    override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = reprDecoder.value.to(value, Some(TypeHint(ct))).right.map(gen.from)
+  }
 
   /**
     * ExecutionMappers

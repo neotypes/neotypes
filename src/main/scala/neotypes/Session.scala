@@ -1,22 +1,22 @@
 package neotypes
 
 import neotypes.Async.AsyncExt
-import neotypes.mappers.{ResultMapper, ExecutionMapper}
-import org.neo4j.driver.v1.{Session => NSession}
+import neotypes.utils.FunctionUtils._
+import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
 
 class Session[F[_]](session: NSession)(implicit F: Async[F]) {
   def beginTransaction(): F[Transaction[F]] = {
     F.async[Transaction[F]] { cb =>
-      session.beginTransactionAsync().thenAccept(tx =>
-        cb(Right(new Transaction(tx)(F)))
-      ).exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
+      session.beginTransactionAsync()
+        .thenAccept { tx: NTransaction => cb(Right(new Transaction(tx)(F))) }
+        .exceptionally { ex: Throwable => cb(Left(ex)).asInstanceOf[Void] }
     }
   }
 
   def close(): F[Unit] = F.async(cb =>
     session.closeAsync()
-      .thenAccept(_ => cb(Right(())))
-      .exceptionally(ex => cb(Left(ex)).asInstanceOf[Void])
+      .thenAccept { _: Void => cb(Right(())) }
+      .exceptionally { ex: Throwable => cb(Left(ex)).asInstanceOf[Void] }
   )
 
   def transact[T](txF: Transaction[F] => F[T]): F[T] = {
@@ -37,4 +37,3 @@ class Session[F[_]](session: NSession)(implicit F: Async[F]) {
     }
   }
 }
-
