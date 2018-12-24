@@ -4,6 +4,7 @@ import java.util
 
 import neotypes.Transaction.convertParams
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
+import neotypes.utils.CompletionUtils.exceptionally
 import neotypes.utils.FunctionUtils._
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
@@ -20,7 +21,7 @@ class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
       .runAsync(query, convertParams(params))
       .thenCompose { x: StatementResultCursor => x.consumeAsync() }
       .thenAccept((result: ResultSummary) => cb(executionMapper.to(result)))
-      .exceptionally { ex: Throwable => cb(Left(ex)).asInstanceOf[Void] }
+      .exceptionally(exceptionally(e => cb(Left(e))))
   }
 
   def list[T: ResultMapper](query: String, params: Map[String, Any] = Map()): F[Seq[T]] = {
@@ -36,7 +37,7 @@ class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
 
             list.find(_.isLeft).map(_.asInstanceOf[Either[Exception, Seq[T]]]).getOrElse(Right(list.collect { case Right(v) => v }))
           }
-        ).exceptionally { ex: Throwable => cb(Left(ex)).asInstanceOf[Void] }
+        ).exceptionally(exceptionally(e => cb(Left(e))))
     }
   }
 
@@ -49,26 +50,25 @@ class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .thenAccept((res: Record) => cb {
           resultMapper.to(recordToSeq(res), None)
         })
-        .exceptionally { ex: Throwable =>
-          if (ex.getClass == classOf[NoSuchRecordException] || ex.getCause.getClass == classOf[NoSuchRecordException]) {
-            cb(resultMapper.to(Seq(), None)).asInstanceOf[Void]
-          } else {
-            cb(Left(ex)).asInstanceOf[Void]
-          }
-        }
+        .exceptionally(exceptionally {
+          case _: NoSuchRecordException =>
+            cb(resultMapper.to(Seq(), None))
+          case ex: Throwable =>
+            cb(Left(ex))
+        })
     }
   }
 
   def commit(): F[Unit] = F.async(cb =>
     transaction.commitAsync()
       .thenAccept { _: Void => cb(Right(())) }
-      .exceptionally { ex: Throwable => cb(Left(ex)).asInstanceOf[Void] }
+      .exceptionally(exceptionally(ex => cb(Left(ex))))
   )
 
   def rollback(): F[Unit] = F.async(cb =>
     transaction.rollbackAsync()
       .thenAccept { _: Void => cb(Right(())) }
-      .exceptionally { ex: Throwable => cb(Left(ex)).asInstanceOf[Void] }
+      .exceptionally(exceptionally(ex => cb(Left(ex))))
   )
 
   private[this] def recordToSeq(record: Record): Seq[(String, Value)] = record.fields().asScala.map(p => p.key() -> p.value())

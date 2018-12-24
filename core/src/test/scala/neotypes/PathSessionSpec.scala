@@ -5,10 +5,11 @@ import neotypes.implicits.{StringExt, _}
 import org.neo4j.driver.v1.types.{Node, Relationship}
 import shapeless._
 import PathSessionSpec._
+import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.Future
 
-class PathSessionSpec extends BaseIntegrationSpec(PathSessionSpec.INIT_QUERY) {
+class PathSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
 
   it should "map path to Seq" in {
     val s = driver.session().asScala[Future]
@@ -22,7 +23,7 @@ class PathSessionSpec extends BaseIntegrationSpec(PathSessionSpec.INIT_QUERY) {
       assert(pathHList.last.nodes.size == 2)
     }
   }
-
+  override val initQuery: String = PathSessionSpec.INIT_QUERY
 }
 
 object PathSessionSpec {

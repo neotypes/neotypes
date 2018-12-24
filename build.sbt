@@ -8,46 +8,37 @@ val testcontainersScalaVersion = "0.20.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.5"
 val slf4jVersion = "1.7.21"
+val catsEffectsVersion = "1.1.0"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
+val commonSettings = Seq(
+  scalaVersion in ThisBuild := "2.11.8",
+  crossScalaVersions := Seq("2.12.2", "2.11.8"),
+
+  /**
+    * Publishing
+    */
+  useGpg := true,
+  publishTo := sonatypePublishTo.value,
+  publishMavenStyle := true,
+  sonatypeProfileName := "neotypes",
+  sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
+  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
+  organization in ThisBuild := "com.dimafeng",
+
+  releaseCrossBuild := true,
+
+  parallelExecution in ThisBuild := false
+)
+
 lazy val root = (project in file("."))
+  .aggregate(
+    core,
+    catsEffect
+  )
   .settings(
-    organization in ThisBuild := "com.dimafeng",
-    scalaVersion in ThisBuild := "2.11.8",
-    crossScalaVersions := Seq("2.12.2", "2.11.8"),
-    name := "neotypes",
-    //    compileScalastyle := scalastyle.in(Compile).toTask("").value,
-    //    test in Test := (test in Test).dependsOn(compileScalastyle in Compile).value,
 
-    /**
-      * Dependencies
-      */
-    libraryDependencies ++=
-      COMPILE(
-        "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion,
-        "com.chuusai" %% "shapeless" % shapelessVersion
-      )
-        ++ TEST(
-        "org.scalatest" %% "scalatest" % scalaTestVersion,
-        "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
-        "org.mockito" % "mockito-all" % mockitoVersion,
-        "org.slf4j" % "slf4j-simple" % slf4jVersion
-      ),
-
-    parallelExecution in ThisBuild := false,
-
-    /**
-      * Publishing
-      */
-    useGpg := true,
-    publishTo := sonatypePublishTo.value,
-    publishMavenStyle := true,
-    sonatypeProfileName := "neotypes",
-    sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
-    licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
-
-    releaseCrossBuild := true,
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
@@ -61,6 +52,34 @@ lazy val root = (project in file("."))
       commitNextVersion,
       releaseStepCommand("sonatypeReleaseAll"),
       pushChanges
+    )
+  )
+
+lazy val core = (project in file("core"))
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes",
+
+    libraryDependencies ++=
+      COMPILE(
+        "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion,
+        "com.chuusai" %% "shapeless" % shapelessVersion
+      )
+        ++ TEST(
+        "org.scalatest" %% "scalatest" % scalaTestVersion,
+        "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
+        "org.mockito" % "mockito-all" % mockitoVersion,
+        "org.slf4j" % "slf4j-simple" % slf4jVersion
+      )
+  )
+
+lazy val catsEffect = (project in file("cats-effect"))
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-cats-effect",
+    libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )
   )
 
