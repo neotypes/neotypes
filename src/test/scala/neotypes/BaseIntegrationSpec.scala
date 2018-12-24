@@ -4,11 +4,13 @@ import java.time.Duration
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.neo4j.driver.v1
-import org.neo4j.driver.v1.{GraphDatabase, Transaction, TransactionWork}
-import org.scalatest.AsyncFlatSpec
+import org.neo4j.driver.v1.{GraphDatabase, TransactionWork}
+import org.scalatest.Suite
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
-abstract class BaseIntegrationSpec(initQuery: String = null) extends AsyncFlatSpec with ForAllTestContainer {
+trait BaseIntegrationSpec extends Suite with ForAllTestContainer {
+  val initQuery: String = null
+
   override val container = GenericContainer("neo4j:3.4.5",
     env = Map("NEO4J_AUTH" -> "none"),
     exposedPorts = Seq(7687),

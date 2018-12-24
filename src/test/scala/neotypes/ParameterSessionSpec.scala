@@ -3,10 +3,11 @@ package neotypes
 import neotypes.Async._
 import neotypes.implicits._
 import org.neo4j.driver.v1.types.Node
+import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.Future
 
-class ParameterSessionSpec extends BaseIntegrationSpec {
+class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
   it should "convert parameters" in {
     val s = driver.session().asScala[Future]
 

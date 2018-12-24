@@ -7,8 +7,10 @@ import shapeless._
 import scala.concurrent.Future
 import BasicSessionSpec._
 import org.neo4j.driver.v1.Value
+import org.scalatest.AsyncFlatSpec
 
-class BasicSessionSpec extends BaseIntegrationSpec(BasicSessionSpec.INIT_QUERY) {
+class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+
   it should "map result to hlist and case classes" in {
     val s = driver.session().asScala[Future]
 
@@ -62,6 +64,7 @@ class BasicSessionSpec extends BaseIntegrationSpec(BasicSessionSpec.INIT_QUERY) 
 
     }
   }
+  override val initQuery: String = BasicSessionSpec.INIT_QUERY
 }
 
 object BasicSessionSpec {

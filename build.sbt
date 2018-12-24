@@ -8,6 +8,7 @@ val testcontainersScalaVersion = "0.20.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.5"
 val slf4jVersion = "1.7.21"
+val catsEffectsVersion = "1.1.0"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -61,6 +62,14 @@ lazy val root = (project in file("."))
       commitNextVersion,
       releaseStepCommand("sonatypeReleaseAll"),
       pushChanges
+    )
+  )
+
+lazy val catsEffect = (project in file("cats-effect"))
+  .dependsOn(root % "compile->compile;test->test")
+  .settings(
+    libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )
   )
 
