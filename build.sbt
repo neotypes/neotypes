@@ -32,7 +32,7 @@ lazy val root = (project in file("."))
         "org.scalatest" %% "scalatest" % scalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
         "org.mockito" % "mockito-all" % mockitoVersion,
-        "org.slf4j" % "slf4j-simple" % slf4jVersion,
+        "org.slf4j" % "slf4j-simple" % slf4jVersion
       ),
 
     parallelExecution in ThisBuild := false,
