@@ -55,14 +55,16 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
   }
 
   it should "map result to tuples" in {
-    val s = driver.session().asScala[Future]
+    val d = driver.asScala[Future]
 
-    for {
-      tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
-    } yield {
-      assert(tuple.head._1.name.contains("Charlize Theron"))
-      assert(tuple.head._2.title == "That Thing You Do")
-    }
+    d.readSession(s =>
+      for {
+        tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+      } yield {
+        assert(tuple.head._1.name.contains("Charlize Theron"))
+        assert(tuple.head._2.title == "That Thing You Do")
+      }
+    )
   }
 
   it should "map result to a case class with list" in {

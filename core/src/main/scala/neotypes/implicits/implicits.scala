@@ -9,7 +9,7 @@ import neotypes.utils.FunctionUtils._
 import neotypes.mappers.{ValueMapper, _}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
-import org.neo4j.driver.v1.{Value, Session => NSession}
+import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
 import org.neo4j.driver.v1.exceptions.value.Uncoercible
 import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.types.{Node, Relationship, Path => NPath}
@@ -266,7 +266,11 @@ package object implicits {
   implicit class StringExt(query: String) extends DeferredQueryBuilder(query)
 
   implicit class SessionExt(session: NSession) {
-    def asScala[F[+ _] : Async]: Session[F] = new Session[F](session)
+    def asScala[F[_] : Async]: Session[F] = new Session[F](session)
+  }
+
+  implicit class DriverExt(driver: NDriver) {
+    def asScala[F[_] : Async]: Driver[F] = new Driver[F](driver)
   }
 
   implicit class CypherString(val sc: StringContext) extends AnyVal {
