@@ -11,8 +11,8 @@
 
 :warning: The library is under heavy development. Do not use in production :warning:
 
-For early adopters: `"com.dimafeng" %% "neotypes" % "0.3.0"`
-Cats-effects: `"com.dimafeng" %% "neotypes-cats-effect" % "0.3.0"`
+For early adopters: `"com.dimafeng" %% "neotypes" % "0.3.1"`
+Cats-effects: `"com.dimafeng" %% "neotypes-cats-effect" % "0.3.1"`
 
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
