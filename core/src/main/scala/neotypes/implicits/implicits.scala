@@ -1,7 +1,6 @@
 package neotypes
 
 import java.time.{LocalDate, LocalDateTime, LocalTime}
-import java.util.function
 
 import neotypes.DeferredQueryBuilder.Part
 import neotypes.excpetions.{ConversionException, PropertyNotFoundException, UncoercibleException}
@@ -9,11 +8,12 @@ import neotypes.types._
 import neotypes.utils.FunctionUtils._
 import neotypes.mappers.{ValueMapper, _}
 import org.neo4j.driver.internal.types.InternalTypeSystem
-import org.neo4j.driver.internal.value.{IntegerValue, NodeValue, RelationshipValue}
+import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.{Value, Session => NSession}
 import org.neo4j.driver.v1.exceptions.value.Uncoercible
 import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.types.{Node, Relationship, Path => NPath}
+import org.neo4j.driver.v1.util.Function
 import shapeless.labelled.FieldType
 import shapeless.{::, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 
@@ -95,6 +95,19 @@ package object implicits {
     }
   }
 
+  implicit def listValueMapper[T](implicit vm: ValueMapper[T]): ValueMapper[List[T]] = new ValueMapper[List[T]] {
+    override def to(fieldName: String, value: Option[Value]): Either[Throwable, List[T]] = value match {
+      case Some(v) =>
+        val list: List[Either[Throwable, T]] = v.asList(new Function[Value, Either[Throwable, T]] {
+          override def apply(t: Value): Either[Throwable, T] = vm.to("", Some(t))
+        }).asScala.toList
+        list
+          .collectFirst { case l@Left(ex) => l.asInstanceOf[Either[Throwable, List[T]]] }
+          .getOrElse(Right(list.collect { case Right(v) => v }))
+      case _ => Right(List())
+    }
+  }
+
   implicit def option[T: ValueMapper]: ValueMapper[Option[T]] = new ValueMapper[Option[T]] {
     override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] = value
       .map(v => implicitly[ValueMapper[T]].to(fieldName, Some(v)).right.map(Some(_)))
@@ -102,7 +115,14 @@ package object implicits {
   }
 
   implicit def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] = new ValueMapper[T] {
-    override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] = implicitly[ResultMapper[T]].to(Seq((fieldName, value.get)), Some(TypeHint(ct)))
+    override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] = {
+      value match {
+        case Some(v: MapValue) => resultMapper.to(v.keys().asScala.map(key => key -> v.get(key)).toSeq, Some(TypeHint(ct)))
+        case Some(v) => resultMapper.to(Seq((fieldName, v)), Some(TypeHint(ct)))
+        case None => Left(ConversionException(s"Cannot convert $fieldName [$value]"))
+      }
+
+    }
   }
 
   implicit def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] = new ValueMapper[Path[N, R]] {
