@@ -76,12 +76,24 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
                  RETURN movie.title as title, collect({name:person.name, job:head(split(lower(type(r)),'_')), role:head(r.roles)}) as cast
                  LIMIT 1
         """.query[Movie2].single(s)
+
+      ссOption <-
+        """
+          MATCH (movie:Movie {title: 'That Thing You Do'})
+                 OPTIONAL MATCH (movie)<-[r]-(person:Person)
+                 RETURN movie.title as title, collect({name:person.name, job:head(split(lower(type(r)),'_')), role:head(r.roles)}) as cast
+                 LIMIT 1
+        """.query[Option[Movie2]].single(s)
     } yield {
       assert(сс3.title == "That Thing You Do")
       assert(сс3.cast.size == 1)
       assert(сс3.cast.head.job == "acted")
       assert(сс3.cast.head.name == "Charlize Theron")
       assert(сс3.cast.head.role == "Tina")
+
+      assert(ссOption.isDefined)
+      assert(ссOption.get.title == "That Thing You Do")
+      assert(ссOption.get.cast.size == 1)
     }
   }
 

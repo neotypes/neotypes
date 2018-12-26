@@ -186,7 +186,15 @@ package object implicits {
 
   implicit def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] = new AbstractResultMapper[Map[String, T]]
 
-  implicit def optionResultMapper[T: ValueMapper]: ResultMapper[Option[T]] = new AbstractResultMapper[Option[T]]
+  implicit def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] = new ResultMapper[Option[T]] {
+    override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] = {
+      if (fields.isEmpty) {
+        Right(None)
+      } else {
+        mapper.to(fields, typeHint).right.map(Some(_))
+      }
+    }
+  }
 
   implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
     new AbstractResultMapper[Path[N, R]]
