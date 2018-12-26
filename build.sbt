@@ -9,6 +9,7 @@ val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.5"
 val slf4jVersion = "1.7.21"
 val catsEffectsVersion = "1.1.0"
+val monixVersion = "3.0.0-RC2"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -45,7 +46,8 @@ lazy val noPublishSettings = Seq(
 lazy val root = (project in file("."))
   .aggregate(
     core,
-    catsEffect
+    catsEffect,
+    monix
   )
   .settings(noPublishSettings)
   .settings(
@@ -91,6 +93,16 @@ lazy val catsEffect = (project in file("cats-effect"))
     name := "neotypes-cats-effect",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-effect" % catsEffectsVersion
+    )
+  )
+
+lazy val monix = (project in file("monix"))
+  .dependsOn(core % "compile->compile;test->test")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-monix",
+    libraryDependencies ++= PROVIDED(
+      "io.monix" %% "monix" % monixVersion
     )
   )
 
