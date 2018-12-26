@@ -20,7 +20,13 @@ val commonSettings = Seq(
     * Publishing
     */
   useGpg := true,
-  publishTo := sonatypePublishTo.value,
+  publishTo := {
+    val nexus = "https://oss.sonatype.org/"
+    if (isSnapshot.value)
+      Some("snapshots" at nexus + "content/repositories/snapshots")
+    else
+      Some("releases" at nexus + "service/local/staging/deploy/maven2")
+  },
   publishMavenStyle := true,
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
@@ -32,11 +38,16 @@ val commonSettings = Seq(
   parallelExecution in ThisBuild := false
 )
 
+lazy val noPublishSettings = Seq(
+  skip in publish := true
+)
+
 lazy val root = (project in file("."))
   .aggregate(
     core,
     catsEffect
   )
+  .settings(noPublishSettings)
   .settings(
 
     releaseProcess := Seq[ReleaseStep](
