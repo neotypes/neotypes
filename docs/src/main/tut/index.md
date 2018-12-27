@@ -26,11 +26,14 @@ title: "Home"
 
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
 
-See [Documentation](docs.html) for more details
+## Resources
+
+* [Official Documentation](https://neotypes.github.io/neotypes/docs.html)
+* [Example project (Akka-http + neotypes)](https://github.com/neotypes/examples)
 
 ## Setup
 
-|||
+{:.table}
 | ----------------------------------------- |:--------------|
 |`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`| `cats.effect.Async[F]` implementation|

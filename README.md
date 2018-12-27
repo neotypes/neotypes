@@ -32,7 +32,7 @@ The project aims to provide seamless integration with most popular scala infrast
 
 ## Resources
 
-* [Official Documentation](https://neotypes.github.io/neotypes/)
+* [Official Documentation](https://neotypes.github.io/neotypes/docs.html)
 * [Example project (Akka-http + neotypes)](https://github.com/neotypes/examples)
 
 ## Showcase
