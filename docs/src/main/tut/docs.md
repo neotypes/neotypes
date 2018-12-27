@@ -13,9 +13,9 @@ title: "Documentation"
 
 ## Session creation
 
-`neotypes` adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` that allows to build a `neotypes`'s session wrapper. You can
+`neotypes` adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` and `org.neo4j.driver.v1.Driver` that allows to build a `neotypes`'s session and driver wrappers. You can
 parametrize `asScala` by any type that you have a typeclass `neotypes.Async` implementation for. The typeclass implementation for `scala.concurrent.Future` is 
-built-in. Please node that you have to make sure that the session is properly closed at the end of the application execution.
+built-in (Please read more about [side effect implementations][alternative_effects.html]). Please note that you have to make sure that the session is properly closed at the end of the application execution if you decide to manage session lifecycle manually.
 
 ```scala
 val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -27,6 +27,19 @@ Please note that the session should be closed to make sure all resources (such a
 ```scala
 session.close()
 ```
+
+or you may decide to use `neotypes.Driver` to help you with it.
+
+```scala
+val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "****")).asScala[Future]
+
+val result: Future[Seq[Movie]] = driver.readSession { session =>
+    c"""MATCH (movie:Movie)
+        WHERE lower(movie.title) CONTAINS ${query.toLowerCase}
+        RETURN movie""".query[Movie].list(session)
+  }
+```
+In this case, the session will be properly closed after query execution.
 
 ## Query execution
 

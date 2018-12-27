@@ -30,6 +30,8 @@ See [Documentation](docs.html) for more details
 
 ## Setup
 
-```scala
-libraryDependencies += "com.dimafeng" % "neotypes_2.12" % neotypesVersion
-```
+|||
+| ----------------------------------------- |:--------------|
+|`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
+|`"com.dimafeng" %% "neotypes-cats-effect" % version`| `cats.effect.Async[F]` implementation|
+|`"com.dimafeng" %% "neotypes-monix" % version`| `monix.eval.Task` implementation|

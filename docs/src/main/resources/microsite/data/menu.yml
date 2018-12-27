@@ -10,5 +10,8 @@ options:
   - title: Parameterized Queries
     url: docs/parameterized_queries.html
 
-  - title: Side effect
+  - title: Driver -> Session -> Transaction
+    url: docs/driver_session_transaction.html
+
+  - title: Side effect: Future/IO/Task
     url: docs/alternative_effects.html

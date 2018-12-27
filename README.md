@@ -11,8 +11,13 @@
 
 :warning: The library is under heavy development. Do not use in production :warning:
 
-For early adopters: `"com.dimafeng" %% "neotypes" % "0.3.1"`
-Cats-effects: `"com.dimafeng" %% "neotypes-cats-effect" % "0.3.1"`
+For early adopters: 
+
+|||
+| ----------------------------------------- |:--------------|
+|`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
+|`"com.dimafeng" %% "neotypes-cats-effect" % version`| `cats.effect.Async[F]` implementation|
+|`"com.dimafeng" %% "neotypes-monix" % version`| `monix.eval.Task` implementation|
 
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
