@@ -30,7 +30,10 @@ For early adopters:
 
 The project aims to provide seamless integration with most popular scala infrastructures such as lightbend (Akka, Akka-http, Lagom, etc), typelevel (cats, http4s, etc), twitter (finch, etc)...
 
-See [Documentation](https://neotypes.github.io/neotypes/) for more details
+## Resources
+
+* [Official Documentation](https://neotypes.github.io/neotypes/)
+* [Example project (Akka-http + neotypes)](https://github.com/neotypes/examples)
 
 ## Showcase
 
