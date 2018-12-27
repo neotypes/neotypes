@@ -7,9 +7,9 @@ title: "Documentation"
 
 ## Requirements
 
-* Scala 2.12 (2.11 coming soon)
+* Scala 2.12/2.11
 * Java 8+
-* neo4j 3.4.*+
+* neo4j 3.*.*+
 
 ## Session creation
 
