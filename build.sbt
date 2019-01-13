@@ -89,7 +89,7 @@ lazy val core = (project in file("core"))
   )
 
 lazy val catsEffect = (project in file("cats-effect"))
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
   .settings(commonSettings: _*)
   .settings(
     name := "neotypes-cats-effect",
@@ -99,7 +99,7 @@ lazy val catsEffect = (project in file("cats-effect"))
   )
 
 lazy val monix = (project in file("monix"))
-  .dependsOn(core % "compile->compile;test->test")
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
   .settings(commonSettings: _*)
   .settings(
     name := "neotypes-monix",
