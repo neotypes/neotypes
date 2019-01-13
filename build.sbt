@@ -74,8 +74,10 @@ lazy val core = (project in file("core"))
     name := "neotypes",
 
     libraryDependencies ++=
-      COMPILE(
-        "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion,
+      PROVIDED(
+        "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
+      )
+        ++ COMPILE(
         "com.chuusai" %% "shapeless" % shapelessVersion
       )
         ++ TEST(
