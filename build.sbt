@@ -10,6 +10,7 @@ val scalaTestVersion = "3.0.5"
 val slf4jVersion = "1.7.21"
 val catsEffectsVersion = "1.1.0"
 val monixVersion = "3.0.0-RC2"
+val akkaStreamVersion = "2.5.19"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -47,7 +48,8 @@ lazy val root = (project in file("."))
   .aggregate(
     core,
     catsEffect,
-    monix
+    monix,
+    akkaStream
   )
   .settings(noPublishSettings)
   .settings(
@@ -105,6 +107,16 @@ lazy val monix = (project in file("monix"))
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
       "io.monix" %% "monix" % monixVersion
+    )
+  )
+
+lazy val akkaStream = (project in file("akka-stream"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-akka-stream",
+    libraryDependencies ++= PROVIDED(
+      "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
     )
   )
 
