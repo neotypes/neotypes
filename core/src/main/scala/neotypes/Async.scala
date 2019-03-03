@@ -13,6 +13,8 @@ trait Async[F[_]] {
   def recoverWith[T, U >: T](m: F[T])(f: PartialFunction[Throwable, F[U]]): F[U]
 
   def failed[T](e: Throwable): F[T]
+
+  def success[T](t: => T): F[T]
 }
 
 object Async {
@@ -43,6 +45,8 @@ object Async {
     override def recoverWith[T, U >: T](m: Future[T])(f: PartialFunction[Throwable, Future[U]]): Future[U] = m.recoverWith(f)
 
     override def failed[T](e: Throwable): Future[T] = Future.failed(e)
+
+    override def success[T](t: => T): Future[T] = Future.successful(t)
   }
 
   implicit def futureAsync(implicit ec: ExecutionContext): Async[Future] = new FutureAsync

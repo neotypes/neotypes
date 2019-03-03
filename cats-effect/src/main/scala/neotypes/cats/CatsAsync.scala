@@ -15,6 +15,8 @@ class CatsAsync[F[_]](implicit e: effect.Async[F], ae: ApplicativeError[F, Throw
     e.recoverWith(m)(f.asInstanceOf[PartialFunction[Throwable, F[T]]]).asInstanceOf[F[U]]
 
   override def failed[T](e: Throwable): F[T] = ae.raiseError(e)
+
+  override def success[T](t: => T): F[T] = e.delay(t)
 }
 
 object implicits {
