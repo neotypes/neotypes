@@ -9,7 +9,6 @@ import neotypes.akkastreams.AkkaStream._
 import neotypes.implicits.{StringExt, _}
 import org.scalatest.AsyncFlatSpec
 
-import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 
 class AkkaStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
