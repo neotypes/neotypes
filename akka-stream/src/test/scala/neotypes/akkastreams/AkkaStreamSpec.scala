@@ -17,14 +17,13 @@ class AkkaStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     implicit val system = ActorSystem("QuickStart")
     implicit val materializer = ActorMaterializer()
 
-    s.transact { tx =>
-      "match (p:Person) return p.name"
-        .query[Int]
-        .stream[AkkaStream.Stream, Future](tx)
-        .runForeach(i ⇒ println(i))(materializer)
-    }.map { _ =>
-      assert(1 == 1)
-    }
+    "match (p:Person) return p.name"
+      .query[Int]
+      .stream[AkkaStream.Stream, Future](s)
+      .runForeach(i ⇒ println(i))(materializer)
+      .map { _ =>
+        assert(1 == 1)
+      }
   }
 
   override val initQuery: String =

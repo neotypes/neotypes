@@ -12,6 +12,7 @@ import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.Future
 
 class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
 
@@ -81,7 +82,7 @@ class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         stream.next(() => F.map(nextAsyncToF(x.nextAsync()))(Option(_)))
       }
       .exceptionally(exceptionally(ex =>
-        stream.failure(ex)
+        stream.next(() => F.failed(ex))
       ))
 
     stream.toStream
