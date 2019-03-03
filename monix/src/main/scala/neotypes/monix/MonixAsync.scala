@@ -16,6 +16,8 @@ class MonixAsync(implicit s: Scheduler) extends Async[Task] {
     m.onErrorRecoverWith(f)
 
   override def failed[T](e: Throwable): Task[T] = Task.raiseError(e)
+
+  override def success[T](t: => T): Task[T] = Task(t)
 }
 
 object implicits {
