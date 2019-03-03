@@ -12,7 +12,6 @@ import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
-import scala.concurrent.Future
 
 class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
 
@@ -74,18 +73,20 @@ class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
   }
 
-  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, Any] = Map())(implicit S: StreamBuilder[S, F]): S[T] = {
-    val stream = S.init[T]()
-
-    transaction.runAsync(query, convertParams(params))
-      .thenAccept { (x: StatementResultCursor) =>
-        stream.next(() => F.map(nextAsyncToF(x.nextAsync()))(Option(_)))
+  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, Any] = Map())(implicit S: Stream[S, F]): S[T] = {
+    S.fToS(
+      F.async[S[T]] { cb =>
+        transaction.runAsync(query, convertParams(params))
+          .thenAccept { (x: StatementResultCursor) =>
+            cb {
+              Right(S.init[T](() => F.map(nextAsyncToF(x.nextAsync()))(Option(_))))
+            }
+          }
+          .exceptionally(exceptionally(ex =>
+            cb(Left(ex))
+          ))
       }
-      .exceptionally(exceptionally(ex =>
-        stream.next(() => F.failed(ex))
-      ))
-
-    stream.toStream
+    )
   }
 
   def commit(): F[Unit] = F.async(cb =>

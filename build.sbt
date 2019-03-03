@@ -2,7 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "1.6.3"
+val neo4jDriverVersion = "1.7.2"
 val shapelessVersion = "2.3.3"
 val testcontainersScalaVersion = "0.22.0"
 val mockitoVersion = "1.10.19"

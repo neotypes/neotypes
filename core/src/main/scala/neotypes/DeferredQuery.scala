@@ -17,7 +17,7 @@ case class DeferredQuery[T](query: String, params: Map[String, Any] = Map()) {
   def execute[F[_]](session: Session[F])(implicit rm: ExecutionMapper[T]): F[T] =
     session.transact(tx => execute(tx))
 
-  def stream[S[_], F[_]](session: Session[F])(implicit rm: ResultMapper[T], sb: StreamBuilder[S, F], F: Async[F]): S[T] = {
+  def stream[S[_], F[_]](session: Session[F])(implicit rm: ResultMapper[T], sb: Stream[S, F], F: Async[F]): S[T] = {
     val tx = session.beginTransaction()
     sb.fToS(
       F.flatMap(tx) { t =>
@@ -40,7 +40,7 @@ case class DeferredQuery[T](query: String, params: Map[String, Any] = Map()) {
   def execute[F[_]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
-  def stream[S[_], F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T], sb: StreamBuilder[S, F]): S[T] =
+  def stream[S[_], F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T], sb: Stream[S, F]): S[T] =
     tx.stream(query, params)
 
   def withParams(params: Map[String, Any]): DeferredQuery[T] = copy(params = this.params ++ params)
