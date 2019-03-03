@@ -15,8 +15,8 @@ val akkaStreamVersion = "2.5.19"
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  scalaVersion in ThisBuild := "2.11.8",
-  crossScalaVersions := Seq("2.12.2", "2.11.8"),
+  scalaVersion in ThisBuild := "2.11.12",
+  crossScalaVersions := Seq("2.12.8", "2.11.12"),
 
   /**
     * Publishing
