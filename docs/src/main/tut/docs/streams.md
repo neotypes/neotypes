@@ -24,19 +24,19 @@ implicit val materializer = ActorMaterializer()
       .runWith(Sink.foreach(println))
 ``` 
 
-The code snippet above is lazily retrieving data from neo4j loading each element of the result only when it's requested.
-This approach aims to improve performance and memory footpring with large volumes of resulted data.
+The code snippet above is lazily retrieving data from neo4j loading each element of the result only when it's requested and commits the transaction once all elements are read.
+This approach aims to improve performance and memory footpring with large volumes of returning data.
 
 ## Transaction management
 
 You have two options in transaction management:
 * **Manual**: if you use `neotypes.Transaction` and call `stream`, you need to ensure that the transaction is gracefully closed after reading is finished.
-* **Auto-closing**: when you work with `neotypes.Session`, you may wish to automatically commit (or rollback on failure) the transaction once
-all elements are consumed.
+* **Auto-closing**: you may wish to automatically commit (or rollback on failure) the transaction once
+all elements are consumed. This behaviour is provided by `stream` method available in `neotypes.Session`
 
 ## Alternative stream implementations
 
 If you don't see your stream supported, you can add your implementation of `neotypes.Stream[S[_], F[_]]` typeclass and include to the implicit scope.
 The type parameters in the signature indicate:
-* `S[_]` - type of your stream
-* `F[_]` - effect that will be used to produce each element retrieval
+* `S[_]` - a type of your stream
+* `F[_]` - an effect that will be used to produce each element retrieval
