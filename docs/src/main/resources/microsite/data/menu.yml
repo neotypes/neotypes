@@ -15,3 +15,6 @@ options:
 
   - title: "Side effect: Future/IO/Task"
     url: docs/alternative_effects.html
+
+  - title: "Streams"
+    url: docs/streams.html

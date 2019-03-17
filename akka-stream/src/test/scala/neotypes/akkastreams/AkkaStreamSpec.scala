@@ -6,7 +6,7 @@ import akka.stream.scaladsl.Sink
 import neotypes.Async._
 import neotypes.BaseIntegrationSpec
 import neotypes.akkastreams.AkkaStream._
-import neotypes.implicits.{StringExt, _}
+import neotypes.implicits._
 import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.Future

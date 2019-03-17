@@ -18,6 +18,7 @@ For early adopters:
 |`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`| `cats.effect.Async[F]` implementation|
 |`"com.dimafeng" %% "neotypes-monix" % version`| `monix.eval.Task` implementation|
+|`"com.dimafeng" %% "neotypes-akka-stream" % version`| result streaming for Akka Streams|
 
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
