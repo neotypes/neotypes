@@ -19,12 +19,15 @@ trait Async[F[_]] {
 
 object Async {
 
-  implicit class AsyncExt[F[_], T](m: F[T])(implicit F: Async[F]) {
-    def map[U](f: T => U) = F.map(m)(f)
+  implicit class AsyncExt[F[_], T](val m: F[T]) extends AnyVal {
+    def map[U](f: T => U)(implicit F: Async[F]): F[U] =
+      F.map(m)(f)
 
-    def flatMap[U](f: T => F[U]) = F.flatMap(m)(f)
+    def flatMap[U](f: T => F[U])(implicit F: Async[F]): F[U] =
+      F.flatMap(m)(f)
 
-    def recoverWith[U >: T](f: PartialFunction[Throwable, F[U]]): F[U] = F.recoverWith[T, U](m)(f)
+    def recoverWith[U >: T](f: PartialFunction[Throwable, F[U]])(implicit F: Async[F]): F[U] =
+      F.recoverWith[T, U](m)(f)
   }
 
   class FutureAsync(implicit ec: ExecutionContext) extends Async[Future] {
