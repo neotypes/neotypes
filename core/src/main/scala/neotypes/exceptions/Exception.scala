@@ -1,4 +1,4 @@
-package neotypes.excpetions
+package neotypes.exceptions
 
 import org.neo4j.driver.v1.exceptions.value.Uncoercible
 

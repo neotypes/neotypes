@@ -48,8 +48,8 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       assert(map("born").asInt == 1975)
       assert(emptyResult.isEmpty)
       assert(emptyResultList.isEmpty)
-      assert(emptyResultEx == "neotypes.excpetions.PropertyNotFoundException: Property  not found") // TODO test separately
-      assert(notString == "neotypes.excpetions.UncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
+      assert(emptyResultEx == "neotypes.exceptions.PropertyNotFoundException: Property  not found") // TODO test separately
+      assert(notString == "neotypes.exceptions.UncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
 
     }
   }

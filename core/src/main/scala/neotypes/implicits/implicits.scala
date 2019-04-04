@@ -3,7 +3,7 @@ package neotypes
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
 import neotypes.DeferredQueryBuilder.Part
-import neotypes.excpetions.{ConversionException, PropertyNotFoundException, UncoercibleException}
+import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.types._
 import neotypes.utils.FunctionUtils._
 import neotypes.mappers.{ValueMapper, _}
