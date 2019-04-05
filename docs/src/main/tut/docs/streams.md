@@ -34,7 +34,7 @@ import neotypes.cats.implicits._
 import neotypes.fs2.implicits._
 import neotypes.implicits._
 
-type Fs2Stream[Y] = fs2.Stream[IO, T]
+type Fs2Stream[T] = fs2.Stream[IO, T]
 
 val s = driver.session().asScala[IO]
 
@@ -47,7 +47,7 @@ val s = driver.session().asScala[IO]
   .unsafeRunSync()
 ```
 
-The code snippets above are lazily retrieving data from neo4j loading each element of the result only when it's requested and commits the transaction once all elements are read.
+The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and commits the transaction once all elements are read.
 This approach aims to improve performance and memory footpring with large volumes of returning data.
 
 
@@ -62,5 +62,5 @@ all elements are consumed. This behaviour is provided by `stream` method availab
 
 If you don't see your stream supported, you can add your implementation of `neotypes.Stream[S[_], F[_]]` typeclass and include to the implicit scope.
 The type parameters in the signature indicate:
-* `S[_]` - a type of your stream
-* `F[_]` - an effect that will be used to produce each element retrieval
+* `S[_]` - a type of your stream.
+* `F[_]` - an effect that will be used to produce each element retrieval.

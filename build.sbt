@@ -134,7 +134,6 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     )
   )
 
-
 lazy val microsite = (project in file("docs"))
   .settings(moduleName := "docs")
   .enablePlugins(MicrositesPlugin)
