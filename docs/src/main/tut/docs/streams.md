@@ -5,9 +5,11 @@ title: "Streams"
 
 # Streams
 
-Starting version `0.5.0`, you can stream the query result. As of `0.5.0`, there is only one implementation of streaming - Akka Stream.
+Starting version `0.5.0`, you can stream the query result. As of `?.?.?`, there are two implementations of streaming - [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html) & [FS2](https://fs2.io/).
 
 ## Usage
+
+### Akka Streams
 
 ```scala
 import neotypes.Async._
@@ -19,13 +21,35 @@ implicit val system = ActorSystem("QuickStart")
 implicit val materializer = ActorMaterializer()
 
 "match (p:Person) return p.name"
-      .query[String]
-      .stream[AkkaStream.Stream, Future](session)
-      .runWith(Sink.foreach(println))
+  .query[String]
+  .stream[AkkaStream.Stream, Future](session)
+  .runWith(Sink.foreach(println))
 ``` 
 
-The code snippet above is lazily retrieving data from neo4j loading each element of the result only when it's requested and commits the transaction once all elements are read.
+### FS2 _(with cats.effect.IO)_
+
+```scala
+import cats.effect.IO
+import neotypes.cats.implicits._
+import neotypes.fs2.implicits._
+import neotypes.implicits._
+
+type Fs2Stream[T] = fs2.Stream[IO, T]
+
+val s = driver.session().asScala[IO]
+
+"match (p:Person) return p.name"
+  .query[Int]
+  .stream[Fs2Stream, IO](s)
+  .evalMap(n => IO(println(n)))
+  .compile
+  .drain
+  .unsafeRunSync()
+```
+
+The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and commits the transaction once all elements are read.
 This approach aims to improve performance and memory footpring with large volumes of returning data.
+
 
 ## Transaction management
 
@@ -38,5 +62,5 @@ all elements are consumed. This behaviour is provided by `stream` method availab
 
 If you don't see your stream supported, you can add your implementation of `neotypes.Stream[S[_], F[_]]` typeclass and include to the implicit scope.
 The type parameters in the signature indicate:
-* `S[_]` - a type of your stream
-* `F[_]` - an effect that will be used to produce each element retrieval
+* `S[_]` - a type of your stream.
+* `F[_]` - an effect that will be used to produce each element retrieval.

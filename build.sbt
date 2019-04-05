@@ -11,6 +11,7 @@ val slf4jVersion = "1.7.21"
 val catsEffectsVersion = "1.2.0"
 val monixVersion = "3.0.0-RC2"
 val akkaStreamVersion = "2.5.19"
+val fs2Version = "1.0.4"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -49,7 +50,8 @@ lazy val root = (project in file("."))
     core,
     catsEffect,
     monix,
-    akkaStream
+    akkaStream,
+    fs2Stream
   )
   .settings(noPublishSettings)
   .settings(
@@ -117,6 +119,18 @@ lazy val akkaStream = (project in file("akka-stream"))
     name := "neotypes-akka-stream",
     libraryDependencies ++= PROVIDED(
       "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
+    )
+  )
+
+lazy val fs2Stream = (project in file("fs2-stream"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .dependsOn(catsEffect % "test->test")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-fs2-stream",
+    libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "co.fs2" %% "fs2-core" % fs2Version
     )
   )
 

@@ -1,10 +1,9 @@
 package neotypes.cats
 
-import cats.{ApplicativeError, effect}
+import cats.effect
 import neotypes.Async
 
-class CatsAsync[F[_]](implicit F: effect.Async[F]) extends Async[F] {
-
+final class CatsAsync[F[_]](implicit F: effect.Async[F]) extends Async[F] {
   override def async[T](cb: (Either[Throwable, T] => Unit) => Unit): F[T] =
     F.async(cb)
 
@@ -15,7 +14,7 @@ class CatsAsync[F[_]](implicit F: effect.Async[F]) extends Async[F] {
     F.map(m)(f)
 
   override def recoverWith[T, U >: T](m: F[T])(f: PartialFunction[Throwable, F[U]]): F[U] =
-    F.recoverWith(F.map(m)(identity): F[U])(f)
+    F.recoverWith(F.map(m)(identity[U]))(f)
 
   override def failed[T](e: Throwable): F[T] =
     F.raiseError(e)
