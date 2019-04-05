@@ -124,6 +124,7 @@ lazy val akkaStream = (project in file("akka-stream"))
 
 lazy val fs2Stream = (project in file("fs2-stream"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .dependsOn(catsEffect % "test->test")
   .settings(commonSettings: _*)
   .settings(
     name := "neotypes-fs2-stream",
