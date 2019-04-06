@@ -181,7 +181,7 @@ object implicits {
                 .asScala
                 .iterator
                 .map(key => key -> value.get(key))
-                .toSeq,
+                .toList,
               Some(TypeHint(ct))
             )
 
@@ -328,17 +328,16 @@ object implicits {
                     .iterator
                     .map(key => key -> node.get(key))
                     .toList
-
                 (Constants.ID_FIELD_NAME -> new IntegerValue(node.id)) :: nodes
-            } else {
-              value
-            }
+              } else {
+                value
+              }
 
             val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
             decodedHead.right.flatMap(v => tail.to(convertedValue, typeHint).right.map(t => labelled.field[K](v) :: t))
         }
+      }
     }
-  }
 
   implicit def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
                                              reprDecoder: Lazy[ResultMapper[R]],
