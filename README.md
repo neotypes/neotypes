@@ -73,3 +73,7 @@ peopleCC: scala.concurrent.Future[Seq[Person]] = Future(<not completed>)
 scala> Await.result(peopleCC, 1 second)
 res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
 ```
+
+## Special thanks
+
+* [Luis Miguel Mejía Suárez](https://github.com/BalmungSan)
