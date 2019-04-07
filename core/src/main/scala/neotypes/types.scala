@@ -1,5 +1,7 @@
 package neotypes
 
+import org.neo4j.driver.v1.types.{Path => NPath}
+
 object types {
-  final class Path[NODE, RELATIONSHIP](val nodes: Seq[NODE], val relationships: Seq[RELATIONSHIP], path: org.neo4j.driver.v1.types.Path)
+  final case class Path[N, R](nodes: Seq[N], relationships: Seq[R], path: NPath)
 }

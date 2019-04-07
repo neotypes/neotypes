@@ -106,7 +106,7 @@ object implicits {
         case Right(value) => loop(acc = value :: acc)
         case Left(e)      => Left(e)
       } else {
-        Right(acc)
+        Right(acc.reverse)
       }
     loop(acc = List.empty)
   }

@@ -5,7 +5,6 @@ import java.util.concurrent.CompletionStage
 
 import neotypes.Transaction.convertParams
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
-import neotypes.utils.CompletionUtils.exceptionally
 import neotypes.utils.FunctionUtils._
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary

@@ -1,7 +1,6 @@
 package neotypes
 
 import neotypes.Async.AsyncExt
-import neotypes.utils.CompletionUtils._
 import neotypes.utils.FunctionUtils._
 import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
 

@@ -2,7 +2,6 @@ package neotypes
 
 import org.neo4j.driver.v1.{AccessMode, Driver => NDriver, Session => NSession}
 import Async._
-import neotypes.utils.CompletionUtils.exceptionally
 import neotypes.utils.FunctionUtils._
 
 class Driver[F[_]](driver: NDriver)(implicit F: Async[F]) {
