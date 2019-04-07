@@ -38,3 +38,5 @@ The project aims to provide seamless integration with most popular scala infrast
 |`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`| `cats.effect.Async[F]` implementation|
 |`"com.dimafeng" %% "neotypes-monix" % version`| `monix.eval.Task` implementation|
+|`"com.dimafeng" %% "neotypes-akka-stream" % version`| result streaming for Akka Streams|
+|`"com.dimafeng" %% "neotypes-fs2-stream" % version`| result streaming for FS2|

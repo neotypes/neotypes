@@ -9,7 +9,7 @@
 
 # neotypes
 
-:warning: The library is under heavy development. Do not use in production :warning:
+:warning: The library is under heavy development. Production use is at your own risk and is not recommended. :warning:
 
 For early adopters: 
 
@@ -19,6 +19,7 @@ For early adopters:
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`| `cats.effect.Async[F]` implementation|
 |`"com.dimafeng" %% "neotypes-monix" % version`| `monix.eval.Task` implementation|
 |`"com.dimafeng" %% "neotypes-akka-stream" % version`| result streaming for Akka Streams|
+|`"com.dimafeng" %% "neotypes-fs2-stream" % version`| result streaming for FS2|
 
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 

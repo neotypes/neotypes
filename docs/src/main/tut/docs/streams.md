@@ -5,7 +5,8 @@ title: "Streams"
 
 # Streams
 
-Starting version `0.5.0`, you can stream the query result. As of `?.?.?`, there are two implementations of streaming - [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html) & [FS2](https://fs2.io/).
+**Neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream. 
+Currently, there are two implementations of streaming supported out of the box - [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html)  [FS2](https://fs2.io/).
 
 ## Usage
 
@@ -47,16 +48,16 @@ val s = driver.session().asScala[IO]
   .unsafeRunSync()
 ```
 
-The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and commits the transaction once all elements are read.
-This approach aims to improve performance and memory footpring with large volumes of returning data.
+The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and rolls back the transaction once all elements are read.
+This approach aims to improve performance and memory footprint with large volumes of returning data.
 
 
 ## Transaction management
 
 You have two options in transaction management:
 * **Manual**: if you use `neotypes.Transaction` and call `stream`, you need to ensure that the transaction is gracefully closed after reading is finished.
-* **Auto-closing**: you may wish to automatically commit (or rollback on failure) the transaction once
-all elements are consumed. This behaviour is provided by `stream` method available in `neotypes.Session`
+* **Auto-closing**: you may wish to automatically rollback the transaction once
+all elements are consumed. This behaviour is provided by `DeferredQuery.stream(Session[F])`
 
 ## Alternative stream implementations
 
