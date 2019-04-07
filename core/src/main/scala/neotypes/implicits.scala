@@ -47,6 +47,10 @@ object implicits {
       case Some(v) => coerce(v, f)
     }
 
+  /**
+    * ValueMappers
+    */
+
   implicit val StringValueMapper: ValueMapper[String] =
     new AbstractValueMapper[String](_.asString())
 

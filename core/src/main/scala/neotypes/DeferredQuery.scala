@@ -1,10 +1,8 @@
 package neotypes
 
-import neotypes.DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query}
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
 
-case class DeferredQuery[T](query: String, params: Map[String, Any] = Map()) {
-
+final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.empty) {
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
@@ -43,51 +41,52 @@ case class DeferredQuery[T](query: String, params: Map[String, Any] = Map()) {
   def stream[S[_], F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T], sb: Stream[S, F]): S[T] =
     tx.stream(query, params)
 
-  def withParams(params: Map[String, Any]): DeferredQuery[T] = copy(params = this.params ++ params)
-
+  def withParams(params: Map[String, Any]): DeferredQuery[T] =
+    copy(params = this.params ++ params)
 }
 
-class DeferredQueryBuilder(private[neotypes] val parts: Seq[Part]) {
-  protected[neotypes] lazy val rawQuery: String = parts.zipWithIndex.map {
-    case (Query(part), _) => part
-    case (Param(_), index) => "$" + PARAMETER_NAME_PREFIX + (index / 2 + 1)
-  }.mkString("")
+private[neotypes] class DeferredQueryBuilder(private[neotypes] val parts: Seq[DeferredQueryBuilder.Part]) {
+  def this(query: String) =
+    this(Seq(DeferredQueryBuilder.Query(query)))
 
-  protected[neotypes] lazy val params: Map[String, Any] = parts.collect {
-    case Param(value) => value
-  }.zipWithIndex.map {
-    case (value, index) => PARAMETER_NAME_PREFIX + (index + 1) -> value
-  }.toMap
+  import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query}
 
-  def this(query: String) = this(Seq(Query(query)))
+  protected[neotypes] lazy val rawQuery: String =
+    parts.iterator.zipWithIndex.map {
+      case (Query(part), _)  => part
+      case (Param(_), index) => s"$$${PARAMETER_NAME_PREFIX}${index / 2 + 1}"
+    }.mkString
 
-  def query[T]: DeferredQuery[T] = {
+  protected[neotypes] lazy val params: Map[String, Any] =
+    parts.iterator.collect {
+      case Param(value) => value
+    }.zipWithIndex.map {
+      case (value, index) => s"${PARAMETER_NAME_PREFIX}${index + 1}" -> value
+    }.toMap
+
+  def query[T]: DeferredQuery[T] =
     DeferredQuery(rawQuery, params)
-  }
 
-  def +(other: DeferredQueryBuilder): DeferredQueryBuilder = {
+  def +(other: DeferredQueryBuilder): DeferredQueryBuilder =
     new DeferredQueryBuilder(
-      (parts.slice(0, parts.size - 1) :+ parts.last.asInstanceOf[Query].merge(other.parts.head.asInstanceOf[Query])) ++ other.parts.tail
+      (parts.init :+ parts.last.asInstanceOf[Query].merge(other.parts.head.asInstanceOf[Query])) ++ other.parts.tail
     )
-  }
 
-  def +(other: String): DeferredQueryBuilder = {
+  def +(other: String): DeferredQueryBuilder =
     new DeferredQueryBuilder(
-      parts.slice(0, parts.size - 1) :+ parts.last.asInstanceOf[Query].merge(Query(other))
+      parts.init :+ parts.last.asInstanceOf[Query].merge(Query(other))
     )
-  }
 }
 
 object DeferredQueryBuilder {
+  final val PARAMETER_NAME_PREFIX: String = "p"
 
-  val PARAMETER_NAME_PREFIX = "p"
+  sealed trait Part extends Product with Serializable
 
-  sealed trait Part
+  final case class Param(value: Any) extends Part
 
-  case class Query(part: String) extends Part {
-    def merge(query: Query) = Query(part + " " + query.part)
+  final case class Query(part: String) extends Part {
+    def merge(that: Query): Query =
+      copy(part = s"${this.part} ${that.part}")
   }
-
-  case class Param(value: Any) extends Part
-
 }
