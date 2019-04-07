@@ -36,9 +36,9 @@ val commonSettings = Seq(
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
   organization in ThisBuild := "com.dimafeng",
 
-  releaseCrossBuild := true,
-
-  parallelExecution in ThisBuild := false
+  parallelExecution in Global := false,
+  
+  releaseCrossBuild := true
 )
 
 lazy val noPublishSettings = Seq(
@@ -55,7 +55,6 @@ lazy val root = (project in file("."))
   )
   .settings(noPublishSettings)
   .settings(
-
     releaseProcess := Seq[ReleaseStep](
       checkSnapshotDependencies,
       inquireVersions,
