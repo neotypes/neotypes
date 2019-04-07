@@ -1,7 +1,7 @@
 package neotypes
 
 import neotypes.Async._
-import neotypes.implicits.{StringExt, _}
+import neotypes.implicits._
 import shapeless._
 
 import scala.concurrent.Future

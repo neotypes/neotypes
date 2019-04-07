@@ -371,8 +371,6 @@ object implicits {
     * Extras
     */
 
-  implicit class StringExt(query: String) extends DeferredQueryBuilder(query)
-
   implicit class SessionExt(val session: NSession) extends AnyVal {
     def asScala[F[_] : Async]: Session[F] =
       new Session[F](session)
@@ -382,6 +380,9 @@ object implicits {
     def asScala[F[_] : Async]: Driver[F] =
       new Driver[F](driver)
   }
+
+  implicit def String2QueryBuilder(query: String): DeferredQueryBuilder =
+    new DeferredQueryBuilder(List(DeferredQueryBuilder.Query(query)))
 
   implicit class CypherString(val sc: StringContext) extends AnyVal {
     def c(args: Any*): DeferredQueryBuilder = {
