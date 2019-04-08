@@ -14,7 +14,7 @@ Currently, there are two implementations of streaming supported out of the box -
 
 ```scala
 import neotypes.Async._
-import neotypes.akkastreams.AkkaStream._
+import neotypes.akkastreams.implicits.{AkkaStream, _}
 import neotypes.implicits._
 
 val session = driver.session().asScala[Future]
@@ -23,7 +23,7 @@ implicit val materializer = ActorMaterializer()
 
 "match (p:Person) return p.name"
   .query[String]
-  .stream[AkkaStream.Stream, Future](session)
+  .stream[AkkaStream, Future](session)
   .runWith(Sink.foreach(println))
 ``` 
 

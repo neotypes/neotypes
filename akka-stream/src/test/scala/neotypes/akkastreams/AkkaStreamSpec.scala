@@ -5,7 +5,7 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import neotypes.Async._
 import neotypes.BaseIntegrationSpec
-import neotypes.akkastreams.AkkaStream._
+import neotypes.akkastreams.implicits.{AkkaStream, _}
 import neotypes.implicits._
 import org.scalatest.AsyncFlatSpec
 
@@ -19,10 +19,10 @@ class AkkaStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
 
     "match (p:Person) return p.name"
       .query[Int]
-      .stream[AkkaStream.Stream, Future](s)
-      .runWith(Sink.seq[Int]).map { r =>
-      assert(r == (0 to 10))
-    }
+      .stream[AkkaStream, Future](s)
+      .runWith(Sink.seq[Int]).map {
+        names => assert(names == (0 to 10))
+      }
   }
 
   override val initQuery: String =
