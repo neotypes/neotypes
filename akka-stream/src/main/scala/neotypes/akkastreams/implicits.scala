@@ -4,10 +4,7 @@ import akka.stream.scaladsl.{Flow, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-
 object implicits {
-  type AkkaStream[T] = Source[T, Future[Unit]]
-
   implicit def akkaStream(implicit ec: ExecutionContext): neotypes.Stream[AkkaStream, Future] =
     new neotypes.Stream[AkkaStream, Future] {
       override def init[T](value: () => Future[Option[T]]): AkkaStream[T] =

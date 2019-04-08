@@ -13,8 +13,8 @@ Currently, there are two implementations of streaming supported out of the box -
 ### Akka Streams
 
 ```scala
-import neotypes.Async._
-import neotypes.akkastreams.implicits.{AkkaStream, _}
+import neotypes.akkastreams.AkkaStream
+import neotypes.akkastreams.implicits._
 import neotypes.implicits._
 
 val session = driver.session().asScala[Future]
@@ -27,25 +27,46 @@ implicit val materializer = ActorMaterializer()
   .runWith(Sink.foreach(println))
 ``` 
 
-### FS2 _(with cats.effect.IO)_
+### FS2
+
+#### With cats.effect.IO
 
 ```scala
 import cats.effect.IO
 import neotypes.cats.implicits._
+import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._
 import neotypes.implicits._
-
-type Fs2Stream[T] = fs2.Stream[IO, T]
 
 val s = driver.session().asScala[IO]
 
 "match (p:Person) return p.name"
   .query[Int]
-  .stream[Fs2Stream, IO](s)
+  .stream[Fs2IoStream, IO](s)
   .evalMap(n => IO(println(n)))
   .compile
   .drain
   .unsafeRunSync()
+```
+
+#### With other effect type.
+
+```scala
+import neotypes.cats.implicits._
+import neotypes.fs2.Fs2FStream
+import neotypes.fs2.implicits._
+import neotypes.implicits._
+
+type F[_] = ??? // As long as there is an instance of cats.effect.Async[F].
+
+val s = driver.session().asScala[IO]
+
+"match (p:Person) return p.name"
+  .query[Int]
+  .stream[Fs2FStream[F]#T, F](s)
+  .evalMap(n => F.delay(println(n)))
+  .compile
+  .drain
 ```
 
 The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and rolls back the transaction once all elements are read.

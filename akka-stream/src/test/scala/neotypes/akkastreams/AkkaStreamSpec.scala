@@ -5,7 +5,7 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import neotypes.Async._
 import neotypes.BaseIntegrationSpec
-import neotypes.akkastreams.implicits.{AkkaStream, _}
+import neotypes.akkastreams.implicits._
 import neotypes.implicits._
 import org.scalatest.AsyncFlatSpec
 
