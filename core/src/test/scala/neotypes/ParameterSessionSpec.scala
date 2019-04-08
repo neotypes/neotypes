@@ -26,4 +26,6 @@ class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       assert(res.get("middleName").asString() == "test2")
     }
   }
+
+  override val initQuery: String = null
 }
