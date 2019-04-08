@@ -2,10 +2,10 @@ package neotypes
 
 import java.time.{LocalDate, LocalDateTime, LocalTime}
 
-import neotypes.DeferredQueryBuilder.Part
 import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
-import neotypes.types.Path
 import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
+import neotypes.types.Path
+import neotypes.utils.sequence.{sequenceAsList, sequenceAsMap}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
@@ -98,30 +98,6 @@ object implicits {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, HNil] =
         Right(HNil)
     }
-
-  private[implicits] def sequenceAsList[T](iter: Iterator[Either[Throwable, T]]): Either[Throwable, List[T]] = {
-    @annotation.tailrec
-    def loop(acc: List[T]): Either[Throwable, List[T]] =
-      if (iter.hasNext) iter.next() match {
-        case Right(value) => loop(acc = value :: acc)
-        case Left(e)      => Left(e)
-      } else {
-        Right(acc.reverse)
-      }
-    loop(acc = List.empty)
-  }
-
-  private[implicits] def sequenceAsMap[T](iter: Iterator[(String, Either[Throwable, T])]): Either[Throwable, Map[String, T]] = {
-    @annotation.tailrec
-    def loop(acc: Map[String, T]): Either[Throwable, Map[String, T]] =
-      if (iter.hasNext) iter.next() match {
-        case (key, Right(value)) => loop(acc = acc + (key -> value))
-        case (_,   Left(e))      => Left(e)
-      } else {
-        Right(acc)
-      }
-    loop(acc = Map.empty)
-  }
 
   implicit def mapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Map[String, T]] =
     new ValueMapper[Map[String, T]] {
@@ -372,12 +348,12 @@ object implicits {
     */
 
   implicit class SessionExt(val session: NSession) extends AnyVal {
-    def asScala[F[_] : Async]: Session[F] =
+    def asScala[F[_]: Async]: Session[F] =
       new Session[F](session)
   }
 
   implicit class DriverExt(val driver: NDriver) extends AnyVal {
-    def asScala[F[_] : Async]: Driver[F] =
+    def asScala[F[_]: Async]: Driver[F] =
       new Driver[F](driver)
   }
 
@@ -389,10 +365,10 @@ object implicits {
       val queries = sc.parts.iterator.map(DeferredQueryBuilder.Query)
       val params = args.iterator.map(DeferredQueryBuilder.Param)
 
-      val parts = new Iterator[Part] {
+      val parts = new Iterator[DeferredQueryBuilder.Part] {
         private var paramNext: Boolean = false
         override def hasNext: Boolean = queries.hasNext
-        override def next(): Part = {
+        override def next(): DeferredQueryBuilder.Part =
           if (paramNext && params.hasNext) {
             paramNext = false
             params.next()
@@ -400,7 +376,6 @@ object implicits {
             paramNext = true
             queries.next()
           }
-        }
       }
 
       new DeferredQueryBuilder(parts.toList)

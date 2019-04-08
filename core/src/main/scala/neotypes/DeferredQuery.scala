@@ -8,9 +8,6 @@ final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
-  def seq[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
-    session.transact(tx => seq(tx))
-
   def single[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[T] =
     session.transact(tx => single(tx))
 
@@ -21,18 +18,15 @@ final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.
     val tx = session.beginTransaction()
     sb.fToS(
       F.flatMap(tx) { t =>
-        F.success(sb.onComplete(stream(t)) {
-          t.rollback()
-        })
+        F.success(
+          sb.onComplete(stream(t))(t.rollback())
+        )
       }
     )
   }
 
   def list[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
-
-  def seq[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Seq[T]] =
-    tx.seq(query, params)
 
   def single[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
