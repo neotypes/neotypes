@@ -1,6 +1,5 @@
 package neotypes
 
-import neotypes.Async._
 import neotypes.implicits._
 import org.neo4j.driver.v1.types.Node
 import org.scalatest.AsyncFlatSpec

@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.Async._
+import neotypes.implicits._
 import neotypes.utils.stage._
 import org.neo4j.driver.v1.{AccessMode, Driver => NDriver, Session => NSession}
 

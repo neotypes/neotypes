@@ -1,6 +1,5 @@
 package neotypes
 
-import neotypes.Async._
 import neotypes.implicits._
 import shapeless._
 

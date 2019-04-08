@@ -3,7 +3,6 @@ package neotypes.akkastreams
 import akka.actor.ActorSystem
 import akka.stream._
 import akka.stream.scaladsl.Sink
-import neotypes.Async._
 import neotypes.BaseIntegrationSpec
 import neotypes.akkastreams.AkkaStream._
 import neotypes.implicits._

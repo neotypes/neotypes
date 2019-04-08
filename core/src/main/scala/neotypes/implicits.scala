@@ -16,7 +16,9 @@ import shapeless.labelled.FieldType
 import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 
 import scala.collection.JavaConverters._
+import scala.concurrent.{ExecutionContext, Future, Promise}
 import scala.reflect.ClassTag
+import scala.util.{Failure, Success}
 
 object implicits {
   private[implicits] final class AbstractValueMapper[T](f: Value => T) extends ValueMapper[T] {
@@ -381,4 +383,46 @@ object implicits {
       new DeferredQueryBuilder(parts.toList)
     }
   }
+
+  /**
+    * Async
+    */
+
+  implicit class AsyncExt[F[_], T](val m: F[T]) extends AnyVal {
+    def map[U](f: T => U)(implicit F: Async[F]): F[U] =
+      F.map(m)(f)
+
+    def flatMap[U](f: T => F[U])(implicit F: Async[F]): F[U] =
+      F.flatMap(m)(f)
+
+    def recoverWith[U >: T](f: PartialFunction[Throwable, F[U]])(implicit F: Async[F]): F[U] =
+      F.recoverWith[T, U](m)(f)
+  }
+
+  implicit def futureAsync(implicit ec: ExecutionContext): Async[Future] =
+    new Async[Future] {
+      override def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
+        val p = Promise[A]()
+        cb {
+          case Right(res) => p.complete(Success(res))
+          case Left(ex)   => p.complete(Failure(ex))
+        }
+        p.future
+      }
+
+      override def flatMap[T, U](m: Future[T])(f: T => Future[U]): Future[U] =
+        m.flatMap(f)
+
+      override def map[T, U](m: Future[T])(f: T => U): Future[U] =
+        m.map(f)
+
+      override def recoverWith[T, U >: T](m: Future[T])(f: PartialFunction[Throwable, Future[U]]): Future[U] =
+        m.recoverWith(f)
+
+      override def failed[T](e: Throwable): Future[T] =
+        Future.failed(e)
+
+      override def success[T](t: => T): Future[T] =
+        Future.successful(t)
+    }
 }
