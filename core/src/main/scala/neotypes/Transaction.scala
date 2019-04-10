@@ -122,12 +122,12 @@ object Transaction {
     case s: Set[_]    => s.map(toNeoType).asJava
     case m: Map[_, _] => m.mapValues(toNeoType).asJava
     case o: Option[_] => o.map(toNeoType).orNull
-    case s: String    => s
-    case c: Char      => c: java.lang.Character
-    case b: Boolean   => b: java.lang.Boolean
-    case i: Int       => i: java.lang.Integer
-    case l: Long      => l: java.lang.Long
-    case f: Float     => f: java.lang.Float
-    case d: Double    => d: java.lang.Double
+    // The following type cast is sound,
+    // since AnyRef is equivalent to java.lang.Object
+    // and all values coming from a class can be upcasted to it.
+    // For value types (Subtypes of AnyVal),
+    // this cast ends up boxing them to their objectual representation.
+    // A such, this will never fail in runtime.
+    case v            => v.asInstanceOf[AnyRef]
   }
 }
