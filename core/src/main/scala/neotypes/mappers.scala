@@ -6,8 +6,7 @@ import org.neo4j.driver.v1.summary.ResultSummary
 import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
 
-package object mappers {
-
+object mappers {
   @implicitNotFound("Could not find the ResultMapper for ${T}")
   trait ResultMapper[T] {
     def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, T]
@@ -23,9 +22,10 @@ package object mappers {
     def to(resultSummary: ResultSummary): Either[Throwable, T]
   }
 
-  case class TypeHint(isTuple: Boolean)
+  final case class TypeHint(isTuple: Boolean)
 
   object TypeHint {
-    def apply[T](classTag: ClassTag[T]): TypeHint = new TypeHint(classTag.runtimeClass.getName.startsWith("scala.Tuple"))
+    def apply[T](classTag: ClassTag[T]): TypeHint =
+      new TypeHint(classTag.runtimeClass.getName.startsWith("scala.Tuple"))
   }
 }

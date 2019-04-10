@@ -1,26 +1,27 @@
 package neotypes
 
-import neotypes.Async.AsyncExt
-import neotypes.utils.CompletionUtils._
-import neotypes.utils.FunctionUtils._
+import neotypes.implicits._
+import neotypes.utils.stage._
 import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
 
-class Session[F[_]](session: NSession)(implicit F: Async[F]) {
-  def beginTransaction(): F[Transaction[F]] = {
-    F.async[Transaction[F]] { cb =>
-      session.beginTransactionAsync()
-        .thenAccept { tx: NTransaction => cb(Right(new Transaction(tx)(F))) }
-        .exceptionally(exceptionally(ex => cb(Left(ex))))
+final class Session[F[_]](session: NSession)(implicit F: Async[F]) {
+  def beginTransaction(): F[Transaction[F]] =
+    F.async { cb =>
+      session
+        .beginTransactionAsync()
+        .accept { tx: NTransaction => cb(Right(new Transaction(tx)(F))) }
+        .recover { ex: Throwable => cb(Left(ex)) }
     }
-  }
 
-  def close(): F[Unit] = F.async(cb =>
-    session.closeAsync()
-      .thenAccept { _: Void => cb(Right(())) }
-      .exceptionally(exceptionally(ex => cb(Left(ex))))
-  )
+  def close(): F[Unit] =
+    F.async { cb =>
+      session
+        .closeAsync()
+        .accept { _: Void => cb(Right(())) }
+        .recover { ex: Throwable => cb(Left(ex)) }
+    }
 
-  def transact[T](txF: Transaction[F] => F[T]): F[T] = {
+  def transact[T](txF: Transaction[F] => F[T]): F[T] =
     beginTransaction().flatMap { t =>
       val result = for {
         res <- txF(t)
@@ -34,5 +35,4 @@ class Session[F[_]](session: NSession)(implicit F: Async[F]) {
         } yield res
       }
     }
-  }
 }

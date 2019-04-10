@@ -1,121 +1,151 @@
 package neotypes
 
-import java.util
+import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
-import neotypes.Transaction.convertParams
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
-import neotypes.utils.CompletionUtils.exceptionally
-import neotypes.utils.FunctionUtils._
+import neotypes.utils.sequence.{sequenceAsList, sequenceAsSet}
+import neotypes.utils.stage._
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
 
-class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
+final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
+  import Transaction.{convertParams, recordToSeq}
 
-  def execute[T: ExecutionMapper](query: String, params: Map[String, Any] = Map()): F[T] = F.async[T] { cb =>
-    val executionMapper = implicitly[ExecutionMapper[T]]
-
-    transaction
-      .runAsync(query, convertParams(params))
-      .thenCompose { x: StatementResultCursor => x.consumeAsync() }
-      .thenAccept((result: ResultSummary) => cb(executionMapper.to(result)))
-      .exceptionally(exceptionally(e => cb(Left(e))))
-  }
-
-  def list[T: ResultMapper](query: String, params: Map[String, Any] = Map()): F[List[T]] =
-    F.map(seq(query, params))(_.toList)
-
-  def seq[T: ResultMapper](query: String, params: Map[String, Any] = Map()): F[Seq[T]] = {
-    val resultMapper = implicitly[ResultMapper[T]]
-
-    F.async[Seq[T]] { cb =>
+  def execute[T](query: String, params: Map[String, Any] = Map.empty)
+                (implicit executionMapper: ExecutionMapper[T]): F[T] =
+    F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
-        .thenCompose { x: StatementResultCursor => x.listAsync() }
-        .thenAccept((result: util.List[Record]) =>
-          cb {
-            val list = result.asScala.map(v => resultMapper.to(recordToSeq(v), None))
+        .compose { x: StatementResultCursor => x.consumeAsync() }
+        .accept { result: ResultSummary => cb(executionMapper.to(result)) }
+        .recover { ex: Throwable => cb(Left(ex)) }
+    }
 
-            list.find(_.isLeft).map(_.asInstanceOf[Either[Exception, Seq[T]]]).getOrElse(Right(list.collect { case Right(v) => v }))
+  def list[T](query: String, params: Map[String, Any] = Map.empty)
+             (implicit resultMapper: ResultMapper[T]): F[List[T]] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .compose { x: StatementResultCursor => x.listAsync() }
+        .accept { result: java.util.List[Record] =>
+          cb(
+            sequenceAsList(
+              result
+                .asScala
+                .iterator
+                .map(v => resultMapper.to(recordToSeq(v), None))
+            )
+          )
+        }.recover { ex: Throwable => cb(Left(ex)) }
+    }
+
+  def set[T](query: String, params: Map[String, Any] = Map.empty)
+            (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .compose { x: StatementResultCursor => x.listAsync() }
+        .accept { result: java.util.List[Record] =>
+          cb(
+            sequenceAsSet(
+              result
+                .asScala
+                .iterator
+                .map(v => resultMapper.to(recordToSeq(v), None))
+            )
+          )
+        }.recover { ex: Throwable => cb(Left(ex)) }
+    }
+
+  def single[T](query: String, params: Map[String, Any] = Map.empty)
+               (implicit resultMapper: ResultMapper[T]): F[T] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .compose { x: StatementResultCursor => x.singleAsync() }
+        .accept { res: Record => cb(resultMapper.to(recordToSeq(res), None)) }
+        .recover {
+          case _: NoSuchRecordException => cb(resultMapper.to(Seq.empty, None))
+          case ex: Throwable            => cb(Left(ex))
+        }
+    }
+
+  private[this] def nextAsyncToF[T](cs: CompletionStage[Record])
+                                   (implicit resultMapper: ResultMapper[T]): F[Option[T]] =
+    F.async { cb =>
+      cs.accept { res: Record =>
+        cb(
+          Option(res) match {
+            case None =>
+              Right(None)
+
+            case Some(res) =>
+              resultMapper
+                .to(recordToSeq(res), None)
+                .right
+                .map(t => Some(t))
           }
-        ).exceptionally(exceptionally(e => cb(Left(e))))
+        )
+      }.recover { ex: Throwable => cb(Left(ex)) }
     }
-  }
 
-  def single[T: ResultMapper](query: String, params: Map[String, Any] = Map()): F[T] = {
-    val resultMapper = implicitly[ResultMapper[T]]
-
-    F.async[T] { cb =>
-      transaction.runAsync(query, convertParams(params))
-        .thenCompose((x: StatementResultCursor) => x.singleAsync())
-        .thenAccept((res: Record) => cb {
-          resultMapper.to(recordToSeq(res), None)
-        })
-        .exceptionally(exceptionally {
-          case _: NoSuchRecordException =>
-            cb(resultMapper.to(Seq(), None))
-          case ex: Throwable =>
-            cb(Left(ex))
-        })
-    }
-  }
-
-  private[this] def nextAsyncToF[T: ResultMapper](cs: CompletionStage[Record]): F[T] = {
-    val resultMapper = implicitly[ResultMapper[T]]
-
-    F.async[T] { cb =>
-      cs.thenAccept { res: Record =>
-        cb(if (res == null) Right[Throwable, T](null.asInstanceOf[T]) else resultMapper.to(recordToSeq(res), None))
-      }.exceptionally(exceptionally { ex => cb(Left(ex)) })
-    }
-  }
-
-  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, Any] = Map())(implicit S: Stream[S, F]): S[T] = {
+  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, Any] = Map.empty)
+                                   (implicit S: Stream[S, F]): S[T] =
     S.fToS(
-      F.async[S[T]] { cb =>
-        transaction.runAsync(query, convertParams(params))
-          .thenAccept { (x: StatementResultCursor) =>
-            cb {
-              Right(S.init[T](() => F.map(nextAsyncToF(x.nextAsync()))(Option(_))))
-            }
-          }
-          .exceptionally(exceptionally(ex =>
-            cb(Left(ex))
-          ))
+      F.async { cb =>
+        transaction
+          .runAsync(query, convertParams(params))
+          .accept { x: StatementResultCursor =>
+            cb(
+              Right(
+                S.init(
+                  () => nextAsyncToF(x.nextAsync())
+                )
+              )
+            )
+          }.recover { ex: Throwable => cb(Left(ex)) }
       }
     )
-  }
 
-  def commit(): F[Unit] = F.async(cb =>
-    transaction.commitAsync()
-      .thenAccept { _: Void => cb(Right(())) }
-      .exceptionally(exceptionally(ex => cb(Left(ex))))
-  )
+  def commit(): F[Unit] =
+    F.async{ cb =>
+      transaction
+        .commitAsync()
+        .accept { _: Void => cb(Right(())) }
+        .recover { ex: Throwable => cb(Left(ex)) }
+    }
 
-  def rollback(): F[Unit] = F.async(cb =>
-    transaction.rollbackAsync()
-      .thenAccept { _: Void => cb(Right(())) }
-      .exceptionally(exceptionally(ex => cb(Left(ex))))
-  )
-
-  private[this] def recordToSeq(record: Record): Seq[(String, Value)] = record.fields().asScala.map(p => p.key() -> p.value())
+  def rollback(): F[Unit] =
+    F.async { cb =>
+      transaction
+        .rollbackAsync()
+        .accept { _: Void => cb(Right(())) }
+        .recover { ex => cb(Left(ex)) }
+    }
 }
 
 object Transaction {
-  def convertParams(params: Map[String, Any]): util.Map[String, Object] = {
-    params.map {
-      case (k, v) => k -> toNeoType(v)
-    }.asJava.asInstanceOf[util.Map[String, Object]]
-  }
+  private def recordToSeq(record: Record): Seq[(String, Value)] =
+    record.fields.asScala.map(p => p.key -> p.value)
 
-  def toNeoType(value: Any): Any = value match {
-    case s: Seq[Any] => new util.ArrayList[Any](s.map(toNeoType).asJava)
-    case m: Map[Any, Any] => new util.HashMap[Any, Any](m.mapValues(toNeoType).asJava)
-    case Some(v) => v
-    case None => null
-    case v: Any => v
+  private def convertParams(params: Map[String, Any]): JMap[String, Object] =
+    params.mapValues(toNeoType).asJava
+
+  private def toNeoType(value: Any): AnyRef = value match {
+    case s: Seq[_]    => s.map(toNeoType).asJava
+    case s: Set[_]    => s.map(toNeoType).asJava
+    case m: Map[_, _] => m.mapValues(toNeoType).asJava
+    case o: Option[_] => o.map(toNeoType).orNull
+    // The following type cast is sound,
+    // since AnyRef is equivalent to java.lang.Object
+    // and all values coming from a class can be upcasted to it.
+    // For value types (Subtypes of AnyVal),
+    // this cast ends up boxing them to their objectual representation.
+    // A such, this will never fail in runtime.
+    case v            => v.asInstanceOf[AnyRef]
   }
 }
