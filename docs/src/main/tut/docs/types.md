@@ -16,6 +16,8 @@ title: "Supported types"
 | `scala.Option[T]                       `  | ✓              |✓                     |✓|
 | `scala.Boolean                         `  | ✓              |✓                     |✓`*`|
 | `scala.Array[Byte]                     `  | ✓              |✓                     |✓|
+| `scala.List[T: ValueMapper]            `  | ✓              |                      |✓|
+| `scala.Set[T: ValueMapper]             `  | ✓              |                      |✓|
 | `scala.Map[String, T: ValueMapper]     `  | ✓              |                      |✓`**`|
 | `java.time.LocalDate                   `  | ✓              |✓                     |✓|
 | `java.time.LocalTime                   `  | ✓              |✓                     |✓|
@@ -29,4 +31,4 @@ title: "Supported types"
 | `User defined case class               `  | ✓              |                      ||
 
 * `*` - `None` is converted into `null`
-* `**` - scala.Map[String, Any] 
+* `**` - scala.Map[String, Any]
