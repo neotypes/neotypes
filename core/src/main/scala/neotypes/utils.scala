@@ -53,6 +53,18 @@ private[neotypes] object utils {
       loop(acc = List.empty)
     }
 
+    def sequenceAsSet[T](iter: Iterator[Either[Throwable, T]]): Either[Throwable, Set[T]] = {
+      @annotation.tailrec
+      def loop(acc: Set[T]): Either[Throwable, Set[T]] =
+        if (iter.hasNext) iter.next() match {
+          case Right(value) => loop(acc = acc + value)
+          case Left(e)      => Left(e)
+        } else {
+          Right(acc)
+        }
+      loop(acc = Set.empty)
+    }
+
     def sequenceAsMap[T](iter: Iterator[(String, Either[Throwable, T])]): Either[Throwable, Map[String, T]] = {
       @annotation.tailrec
       def loop(acc: Map[String, T]): Either[Throwable, Map[String, T]] =

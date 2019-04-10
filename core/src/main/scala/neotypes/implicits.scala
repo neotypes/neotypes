@@ -5,7 +5,7 @@ import java.time.{LocalDate, LocalDateTime, LocalTime}
 import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
 import neotypes.types.Path
-import neotypes.utils.sequence.{sequenceAsList, sequenceAsMap}
+import neotypes.utils.sequence.{sequenceAsList, sequenceAsMap, sequenceAsSet}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
@@ -128,6 +128,24 @@ object implicits {
 
           case Some(value) =>
             sequenceAsList(
+              value
+                .values
+                .asScala
+                .iterator
+                .map { value => mapper.to("", Option(value)) }
+            )
+        }
+    }
+
+  implicit def setValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Set[T]] =
+    new ValueMapper[Set[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Set[T]] =
+        value match {
+          case None =>
+            Right(Set.empty)
+
+          case Some(value) =>
+            sequenceAsSet(
               value
                 .values
                 .asScala
