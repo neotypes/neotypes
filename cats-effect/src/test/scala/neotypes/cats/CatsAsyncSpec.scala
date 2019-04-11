@@ -3,21 +3,29 @@ package neotypes.cats
 import cats.effect.IO
 import neotypes.cats.implicits._
 import neotypes.implicits._
-import neotypes.{BaseIntegrationSpec, BasicSessionSpec}
+import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.scalatest.FlatSpec
+import org.scalatest.AsyncFlatSpec
 
-class CatsAsyncSpec extends FlatSpec with BaseIntegrationSpec {
+class CatsAsyncSpec extends AsyncFlatSpec with BaseIntegrationSpec {
   it should "work with IO" in {
     val s = driver.session().asScala[IO]
 
-    val string = "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s).unsafeRunSync()
-    assert(string == "Charlize Theron")
+    """match (p:Person {name: "Charlize Theron"}) return p.name"""
+      .query[String]
+      .single(s)
+      .unsafeToFuture()
+      .map {
+        name => assert(name == "Charlize Theron")
+      }
 
-    assertThrows[ClientException] {
-      "match test return p.name".query[String].single(s).unsafeRunSync()
+    recoverToSucceededIf[ClientException] {
+      "match test return p.name"
+        .query[String]
+        .single(s)
+        .unsafeToFuture()
     }
   }
 
-  override val initQuery: String = BasicSessionSpec.INIT_QUERY
+  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }

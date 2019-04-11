@@ -98,11 +98,10 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     }
   }
 
-  override val initQuery: String = BasicSessionSpec.INIT_QUERY
+  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
 object BasicSessionSpec {
-
   case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
 
   case class Person2(born: Int, name: Option[String])
@@ -112,13 +111,4 @@ object BasicSessionSpec {
   case class Cast(name: String, job: String, role: String)
 
   case class Movie2(title: String, cast: List[Cast])
-
-  val INIT_QUERY =
-    """
-      |CREATE (Charlize:Person {name:'Charlize Theron', born:1975})
-      |CREATE (ThatThingYouDo:Movie {title:'That Thing You Do', released:1996, tagline:'In every life there comes a time when that thing you dream becomes that thing you do'})
-      |CREATE (Charlize)-[:ACTED_IN {roles:['Tina']}]->(ThatThingYouDo)
-      |CREATE (t:Test {added: date('2018-11-26')})
-      |CREATE (ThatThingYouDo)-[:TEST_EDGE]->(t)
-    """.stripMargin
 }
