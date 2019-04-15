@@ -1,6 +1,6 @@
 package neotypes
 
-import java.time.{LocalDate, LocalDateTime, LocalTime}
+import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
 
 import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
@@ -11,7 +11,7 @@ import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, Relat
 import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
 import org.neo4j.driver.v1.exceptions.value.Uncoercible
 import org.neo4j.driver.v1.summary.ResultSummary
-import org.neo4j.driver.v1.types.{Node, Relationship, Path => NPath}
+import org.neo4j.driver.v1.types.{IsoDuration, Node, Path => NPath, Point, Relationship}
 import shapeless.labelled.FieldType
 import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 
@@ -21,19 +21,21 @@ import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 object implicits {
-  private[implicits] final class AbstractValueMapper[T](f: Value => T) extends ValueMapper[T] {
-    override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] =
-      extract(fieldName, value, f)
-  }
+  /**
+    * ValueMappers
+    */
 
-  private[implicits] final class AbstractResultMapper[T](implicit marshallable: ValueMapper[T]) extends ResultMapper[T] {
-    override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, T] =
-      fields
-        .headOption
-        .fold(ifEmpty = marshallable.to("", None)) {
-          case (name, value) => marshallable.to(name, Some(value))
-        }
-  }
+  private[implicits] def valueMapperFromCast[T](f: Value => T): ValueMapper[T] =
+    new ValueMapper[T] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] =
+        extract(fieldName, value, f)
+    }
+
+  private[implicits] def extract[T](fieldName: String, value: Option[Value], f: Value => T): Either[Throwable, T] =
+    value match {
+      case None    => Left(PropertyNotFoundException(s"Property $fieldName not found"))
+      case Some(v) => coerce(v, f)
+    }
 
   private[implicits] def coerce[T](value: Value, f: Value => T): Either[Throwable, T] =
     try {
@@ -43,57 +45,62 @@ object implicits {
       case ex: Throwable   => Left(ex)
     }
 
-  private[implicits] def extract[T](fieldName: String, value: Option[Value], f: Value => T): Either[Throwable, T] =
-    value match {
-      case None    => Left(PropertyNotFoundException(s"Property $fieldName not found"))
-      case Some(v) => coerce(v, f)
-    }
-
-  /**
-    * ValueMappers
-    */
-
-  implicit val StringValueMapper: ValueMapper[String] =
-    new AbstractValueMapper[String](_.asString())
-
-  implicit val IntValueMapper: ValueMapper[Int] =
-    new AbstractValueMapper[Int](_.asInt())
-
-  implicit val LongValueMapper: ValueMapper[Long] =
-    new AbstractValueMapper[Long](_.asLong())
-
-  implicit val DoubleValueMapper: ValueMapper[Double] =
-    new AbstractValueMapper[Double](_.asDouble())
-
-  implicit val FloatValueMapper: ValueMapper[Float] =
-    new AbstractValueMapper[Float](_.asFloat())
-
   implicit val BooleanValueMapper: ValueMapper[Boolean] =
-    new AbstractValueMapper[Boolean](_.asBoolean())
+    valueMapperFromCast(_.asBoolean)
 
   implicit val ByteArrayValueMapper: ValueMapper[Array[Byte]] =
-    new AbstractValueMapper[Array[Byte]](_.asByteArray())
+    valueMapperFromCast(_.asByteArray)
+
+  implicit val DoubleValueMapper: ValueMapper[Double] =
+    valueMapperFromCast(_.asDouble)
+
+  implicit val FloatValueMapper: ValueMapper[Float] =
+    valueMapperFromCast(_.asFloat)
+
+  implicit val IntValueMapper: ValueMapper[Int] =
+    valueMapperFromCast(_.asInt)
+
+  implicit val IsoDurationValueMapper: ValueMapper[IsoDuration] =
+    valueMapperFromCast(_.asIsoDuration)
 
   implicit val LocalDateValueMapper: ValueMapper[LocalDate] =
-    new AbstractValueMapper[LocalDate](_.asLocalDate())
-
-  implicit val LocalTimeValueMapper: ValueMapper[LocalTime] =
-    new AbstractValueMapper[LocalTime](_.asLocalTime())
+    valueMapperFromCast(_.asLocalDate)
 
   implicit val LocalDateTimeValueMapper: ValueMapper[LocalDateTime] =
-    new AbstractValueMapper[LocalDateTime](_.asLocalDateTime())
+    valueMapperFromCast(_.asLocalDateTime)
 
-  implicit val ValueValueMapper: ValueMapper[Value] =
-    new AbstractValueMapper[Value](identity)
+  implicit val LocalTimeValueMapper: ValueMapper[LocalTime] =
+    valueMapperFromCast(_.asLocalTime)
+
+  implicit val LongValueMapper: ValueMapper[Long] =
+    valueMapperFromCast(_.asLong)
 
   implicit val NodeValueMapper: ValueMapper[Node] =
-    new AbstractValueMapper[Node](_.asNode())
+    valueMapperFromCast(_.asNode)
+
+  implicit val OffsetDateTimeValueMapper: ValueMapper[OffsetDateTime] =
+    valueMapperFromCast(_.asOffsetDateTime)
+
+  implicit val OffsetTimeValueMapper: ValueMapper[OffsetTime] =
+    valueMapperFromCast(_.asOffsetTime)
 
   implicit val PathValueMapper: ValueMapper[NPath] =
-    new AbstractValueMapper[NPath](_.asPath())
+    valueMapperFromCast(_.asPath)
+
+  implicit val PointValueMapper: ValueMapper[Point] =
+    valueMapperFromCast(_.asPoint)
 
   implicit val RelationshipValueMapper: ValueMapper[Relationship] =
-    new AbstractValueMapper[Relationship](_.asRelationship())
+    valueMapperFromCast(_.asRelationship)
+
+  implicit val StringValueMapper: ValueMapper[String] =
+    valueMapperFromCast(_.asString)
+
+  implicit val ZonedDateTimeValueMapper: ValueMapper[ZonedDateTime] =
+    valueMapperFromCast(_.asZonedDateTime)
+
+  implicit val ValueValueMapper: ValueMapper[Value] =
+    valueMapperFromCast(identity)
 
   implicit val HNilMapper: ValueMapper[HNil] =
     new ValueMapper[HNil] {
@@ -164,7 +171,7 @@ object implicits {
 
           case Some(value) =>
             mapper
-              .to(fieldName, Option(value))
+              .to(fieldName, Some(value))
               .right
               .map(Option(_))
         }
@@ -215,7 +222,7 @@ object implicits {
               for {
                 nodes <- sequenceAsList(nodes).right
                 relationships <- sequenceAsList(relationships).right
-              } yield new types.Path(nodes, relationships, path)
+              } yield Path(nodes, relationships, path)
             } else {
               Left(ConversionException(s"$fieldName of type ${value.`type`} cannot be converted into a Path"))
             }
@@ -226,50 +233,93 @@ object implicits {
     * ResultMapper
     */
 
-  implicit val StringResultMapper: ResultMapper[String] =
-    new AbstractResultMapper[String]
-
-  implicit val IntResultMapper: ResultMapper[Int] =
-    new AbstractResultMapper[Int]
-
-  implicit val LongResultMapper: ResultMapper[Long] =
-    new AbstractResultMapper[Long]
-
-  implicit val DoubleResultMapper: ResultMapper[Double] =
-    new AbstractResultMapper[Double]
-
-  implicit val FloatResultMapper: ResultMapper[Float] =
-    new AbstractResultMapper[Float]
+  private[implicits] def resultMapperFromValueMapper[T](implicit marshallable: ValueMapper[T]): ResultMapper[T] =
+    new ResultMapper[T] {
+      override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, T] =
+        fields
+          .headOption
+          .fold(ifEmpty = marshallable.to("", None)) {
+            case (name, value) => marshallable.to(name, Some(value))
+          }
+    }
 
   implicit val BooleanResultMapper: ResultMapper[Boolean] =
-    new AbstractResultMapper[Boolean]
+    resultMapperFromValueMapper
 
   implicit val ByteArrayResultMapper: ResultMapper[Array[Byte]] =
-    new AbstractResultMapper[Array[Byte]]
+    resultMapperFromValueMapper
+
+  implicit val DoubleResultMapper: ResultMapper[Double] =
+    resultMapperFromValueMapper
+
+  implicit val FloatResultMapper: ResultMapper[Float] =
+    resultMapperFromValueMapper
+
+  implicit val IntResultMapper: ResultMapper[Int] =
+    resultMapperFromValueMapper
+
+  implicit val IsoDurationResultMapper: ResultMapper[IsoDuration] =
+    resultMapperFromValueMapper
 
   implicit val LocalDateResultMapper: ResultMapper[LocalDate] =
-    new AbstractResultMapper[LocalDate]
-
-  implicit val LocalTimeResultMapper: ResultMapper[LocalTime] =
-    new AbstractResultMapper[LocalTime]
+    resultMapperFromValueMapper
 
   implicit val LocalDateTimeResultMapper: ResultMapper[LocalDateTime] =
-    new AbstractResultMapper[LocalDateTime]
+    resultMapperFromValueMapper
 
-  implicit val ValueTimeResultMapper: ResultMapper[Value] =
-    new AbstractResultMapper[Value]
+  implicit val LocalTimeResultMapper: ResultMapper[LocalTime] =
+    resultMapperFromValueMapper
 
-  implicit val HNilResultMapper: ResultMapper[HNil] =
-    new AbstractResultMapper[HNil]
+  implicit val LongResultMapper: ResultMapper[Long] =
+    resultMapperFromValueMapper
 
   implicit val NodeResultMapper: ResultMapper[Node] =
-    new AbstractResultMapper[Node]
+    resultMapperFromValueMapper
+
+  implicit val OffsetDateTimeResultMapper: ResultMapper[OffsetDateTime] =
+    resultMapperFromValueMapper
+
+  implicit val OffsetTimeResultMapper: ResultMapper[OffsetTime] =
+    resultMapperFromValueMapper
+
+  implicit val PathResultMapper: ResultMapper[NPath] =
+    resultMapperFromValueMapper
+
+  implicit val PointResultMapper: ResultMapper[Point] =
+    resultMapperFromValueMapper
 
   implicit val RelationshipResultMapper: ResultMapper[Relationship] =
-    new AbstractResultMapper[Relationship]
+    resultMapperFromValueMapper
+
+  implicit val StringResultMapper: ResultMapper[String] =
+    resultMapperFromValueMapper
+
+  implicit val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
+    resultMapperFromValueMapper
+
+  implicit val ValueResultMapper: ResultMapper[Value] =
+    resultMapperFromValueMapper
+
+  implicit val HNilResultMapper: ResultMapper[HNil] =
+    resultMapperFromValueMapper
+
+  implicit val UnitResultMapper: ResultMapper[Unit] =
+    new ResultMapper[Unit] {
+      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Unit] =
+        Right(())
+    }
 
   implicit def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] =
-    new AbstractResultMapper[Map[String, T]]
+    resultMapperFromValueMapper
+
+  implicit def listResultMapper[T: ValueMapper]: ResultMapper[List[T]] =
+    resultMapperFromValueMapper
+
+  implicit def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
+    resultMapperFromValueMapper
+
+  implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
+    resultMapperFromValueMapper
 
   implicit def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
@@ -281,15 +331,6 @@ object implicits {
             .to(fields, typeHint)
             .right
             .map(Option(_))
-    }
-
-  implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
-    new AbstractResultMapper[Path[N, R]]
-
-  implicit def unitMarshallable: ResultMapper[Unit] =
-    new ResultMapper[Unit] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Unit] =
-        Right(())
     }
 
   implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],

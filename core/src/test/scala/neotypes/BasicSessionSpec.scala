@@ -4,11 +4,11 @@ import neotypes.implicits._
 import shapeless._
 
 import scala.concurrent.Future
-import BasicSessionSpec._
 import org.neo4j.driver.v1.Value
 import org.scalatest.AsyncFlatSpec
 
 class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+  import BasicSessionSpec._
 
   it should "map result to hlist and case classes" in {
     val s = driver.session().asScala[Future]
@@ -49,7 +49,6 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       assert(emptyResultList.isEmpty)
       assert(emptyResultEx == "neotypes.exceptions.PropertyNotFoundException: Property  not found") // TODO test separately
       assert(notString == "neotypes.exceptions.UncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
-
     }
   }
 
