@@ -18,8 +18,9 @@ class AkkaStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
 
     "match (p:Person) return p.name"
       .query[Int]
-      .stream[AkkaStream, Future](s)
-      .runWith(Sink.seq[Int]).map {
+      .stream[AkkaStream](s)
+      .runWith(Sink.seq[Int])
+      .map {
         names => assert(names == (0 to 10))
       }
   }

@@ -5,8 +5,10 @@ import akka.stream.scaladsl.{Flow, Source}
 import scala.concurrent.{ExecutionContext, Future}
 
 object implicits {
-  implicit def akkaStream(implicit ec: ExecutionContext): neotypes.Stream[AkkaStream, Future] =
-    new neotypes.Stream[AkkaStream, Future] {
+  implicit def akkaStream(implicit ec: ExecutionContext): neotypes.Stream.Aux[AkkaStream, Future] =
+    new neotypes.Stream[AkkaStream] {
+      override type F[T] = Future[T]
+
       override def init[T](value: () => Future[Option[T]]): AkkaStream[T] =
         Source
           .repeat(())
@@ -24,5 +26,5 @@ object implicits {
         Source
           .fromFutureSource(f)
           .viaMat(Flow[T]) { (m, _) => m.flatMap(identity) }
-  }
+    }
 }
