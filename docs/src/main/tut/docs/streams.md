@@ -5,8 +5,8 @@ title: "Streams"
 
 # Streams
 
-**Neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream. 
-Currently, there are two implementations of streaming supported out of the box - [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html)  [FS2](https://fs2.io/).
+**neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream.
+Currently, there are two implementations of streaming supported out of the box - [Akka Streams](https://doc.akka.io/docs/akka/current/stream/index.html) & [FS2](https://fs2.io/).
 
 ## Usage
 
@@ -23,9 +23,9 @@ implicit val materializer = ActorMaterializer()
 
 "match (p:Person) return p.name"
   .query[String]
-  .stream[AkkaStream, Future](session)
+  .stream[AkkaStream](session)
   .runWith(Sink.foreach(println))
-``` 
+```
 
 ### FS2
 
@@ -42,7 +42,7 @@ val s = driver.session().asScala[IO]
 
 "match (p:Person) return p.name"
   .query[Int]
-  .stream[Fs2IoStream, IO](s)
+  .stream[Fs2IoStream](s)
   .evalMap(n => IO(println(n)))
   .compile
   .drain
@@ -63,26 +63,56 @@ val s = driver.session().asScala[IO]
 
 "match (p:Person) return p.name"
   .query[Int]
-  .stream[Fs2FStream[F]#T, F](s)
+  .stream[Fs2FStream[F]#T](s)
   .evalMap(n => F.delay(println(n)))
   .compile
   .drain
 ```
 
+-----
+
+_Please note that the above provided type aliases are just for convenience_.
+
+_You can always use:_
+
+* **_Type lambdas_:**
+
+```scala
+query.stream[{ type T[A] = fs2.Stream[IO, A] }#T](s)
+```
+
+* **_Type Alias_:**
+
+```scala
+type AkkaStream[T] = akka.stream.scaladsl.Source[T, Future[Unit]]
+query.stream[AkkaStream](s)
+```
+
+* **[_Kind Projector_](https://github.com/typelevel/kind-projector):**
+
+```scala
+query.stream[fs2.Stream[F, ?]](s)
+```
+
+-----
+
 The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and rolls back the transaction once all elements are read.
 This approach aims to improve performance and memory footprint with large volumes of returning data.
-
 
 ## Transaction management
 
 You have two options in transaction management:
 * **Manual**: if you use `neotypes.Transaction` and call `stream`, you need to ensure that the transaction is gracefully closed after reading is finished.
 * **Auto-closing**: you may wish to automatically rollback the transaction once
-all elements are consumed. This behaviour is provided by `DeferredQuery.stream(Session[F])`
+all elements are consumed. This behavior is provided by `DeferredQuery.stream(Session[F])`
 
 ## Alternative stream implementations
 
-If you don't see your stream supported, you can add your implementation of `neotypes.Stream[S[_], F[_]]` typeclass and include to the implicit scope.
+If you don't see your stream supported.
+You can add your implementation of `neotypes.Stream.Aux[S[_], F[_]]` typeclass,
+and include it to the implicit scope.
+
 The type parameters in the signature indicate:
+
 * `S[_]` - a type of your stream.
 * `F[_]` - an effect that will be used to produce each element retrieval.
