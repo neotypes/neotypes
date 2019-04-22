@@ -93,6 +93,9 @@ private[neotypes] class DeferredQueryBuilder(private val parts: List[DeferredQue
 
   def +(that: DeferredQueryBuilder): DeferredQueryBuilder =
     new DeferredQueryBuilder(this.parts ::: that.parts)
+
+  def +(that: String): DeferredQueryBuilder =
+    new DeferredQueryBuilder(this.parts :+ Query(that)
 }
 
 private[neotypes] object DeferredQueryBuilder {
