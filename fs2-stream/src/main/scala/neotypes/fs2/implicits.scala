@@ -9,7 +9,7 @@ object implicits {
         fs2.Stream.repeatEval(F.suspend(value())).unNoneTerminate
 
       override def onComplete[T](s: fs2.Stream[F, T])(f: => F[Unit]): fs2.Stream[F, T] =
-        s ++ fs2.Stream.eval_(f)
+        s.onFinalize(f)
 
       override def fToS[T](f: F[fs2.Stream[F, T]]): fs2.Stream[F, T] =
         fs2.Stream.eval(f).flatten
