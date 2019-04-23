@@ -418,8 +418,10 @@ object implicits {
       new Driver[F](driver)
   }
 
-  implicit def String2QueryBuilder(query: String): DeferredQueryBuilder =
-    new DeferredQueryBuilder(List(DeferredQueryBuilder.Query(query)))
+  implicit class StringOps(val s: String) extends AnyVal {
+    def query[T]: DeferredQuery[T] =
+      DeferredQuery(query = s)
+  }
 
   implicit class CypherString(val sc: StringContext) extends AnyVal {
     def c(args: Any*): DeferredQueryBuilder = {

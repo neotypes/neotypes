@@ -4,7 +4,9 @@ import neotypes.mappers.{ExecutionMapper, ResultMapper}
 
 import scala.collection.mutable.StringBuilder
 
-final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.empty) {
+private[neotypes] final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.empty) {
+  import DeferredQuery.StreamPartiallyApplied
+
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
@@ -13,17 +15,6 @@ final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.
 
   def execute[F[_]](session: Session[F])(implicit rm: ExecutionMapper[T]): F[T] =
     session.transact(tx => execute(tx))
-
-  def stream[S[_], F[_]](session: Session[F])(implicit rm: ResultMapper[T], sb: Stream[S, F], F: Async[F]): S[T] = {
-    val tx = session.beginTransaction()
-    sb.fToS(
-      F.flatMap(tx) { t =>
-        F.success(
-          sb.onComplete(stream(t))(t.rollback())
-        )
-      }
-    )
-  }
 
   def list[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
@@ -34,11 +25,27 @@ final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.
   def execute[F[_]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
-  def stream[S[_], F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T], sb: Stream[S, F]): S[T] =
-    tx.stream(query, params)
+  def stream[S[_]]: StreamPartiallyApplied[S, T] =
+    new StreamPartiallyApplied[S, T](this)
 
   def withParams(params: Map[String, Any]): DeferredQuery[T] =
-    copy(params = this.params ++ params)
+    this.copy(params = this.params ++ params)
+}
+
+private[neotypes] object DeferredQuery {
+  private[neotypes] final class StreamPartiallyApplied[S[_], T](val dq: DeferredQuery[T]) extends AnyVal {
+    def apply[F[_]](session: Session[F])(implicit rm: ResultMapper[T], S: Stream.Aux[S, F], F: Async[F]): S[T] =
+      S.fToS(
+        F.flatMap(session.beginTransaction()) { tx =>
+          F.success(
+            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback())
+          )
+        }
+      )
+
+    def apply[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
+      tx.stream(dq.query, dq.params)
+  }
 }
 
 private[neotypes] class DeferredQueryBuilder(private val parts: List[DeferredQueryBuilder.Part]) {
@@ -85,9 +92,10 @@ private[neotypes] class DeferredQueryBuilder(private val parts: List[DeferredQue
   }
 
   def +(that: DeferredQueryBuilder): DeferredQueryBuilder =
-    new DeferredQueryBuilder(
-      this.parts ::: that.parts
-    )
+    new DeferredQueryBuilder(this.parts ::: that.parts)
+
+  def +(that: String): DeferredQueryBuilder =
+    new DeferredQueryBuilder(this.parts :+ Query(that))
 }
 
 private[neotypes] object DeferredQueryBuilder {

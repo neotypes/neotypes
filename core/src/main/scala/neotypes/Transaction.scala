@@ -94,7 +94,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def stream[T: ResultMapper, S[_]](query: String, params: Map[String, Any] = Map.empty)
-                                   (implicit S: Stream[S, F]): S[T] =
+                                   (implicit S: Stream.Aux[S, F]): S[T] =
     S.fToS(
       F.async { cb =>
         transaction

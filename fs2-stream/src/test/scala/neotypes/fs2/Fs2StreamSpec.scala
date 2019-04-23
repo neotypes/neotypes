@@ -13,7 +13,7 @@ class Fs2StreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
 
     "match (p:Person) return p.name"
       .query[Int]
-      .stream[Fs2IoStream, IO](s)
+      .stream[Fs2IoStream](s)
       .compile
       .toList
       .unsafeToFuture()

@@ -36,4 +36,4 @@ title: "Supported types"
 | `User defined case class               `  | ✓              |                       ||
 
 * `*` - `None` is converted into `null`
-* `**` - scala.Map[String, Any]
+* `**` - `scala.Map[String, Any]`
