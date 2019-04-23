@@ -51,7 +51,8 @@ lazy val root = (project in file("."))
     catsEffect,
     monix,
     akkaStream,
-    fs2Stream
+    fs2Stream,
+    monixStream
   )
   .settings(noPublishSettings)
   .settings(
@@ -107,7 +108,7 @@ lazy val monix = (project in file("monix"))
   .settings(
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
-      "io.monix" %% "monix" % monixVersion
+      "io.monix" %% "monix-eval" % monixVersion
     )
   )
 
@@ -130,6 +131,18 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "co.fs2" %% "fs2-core" % fs2Version
+    )
+  )
+
+lazy val monixStream = (project in file("monix-stream"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .dependsOn(monix % "test->test")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-monix-stream",
+    libraryDependencies ++= PROVIDED(
+      "io.monix" %% "monix-eval" % monixVersion,
+      "io.monix" %% "monix-reactive" % monixVersion
     )
   )
 

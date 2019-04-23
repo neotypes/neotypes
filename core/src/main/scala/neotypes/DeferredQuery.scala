@@ -4,7 +4,7 @@ import neotypes.mappers.{ExecutionMapper, ResultMapper}
 
 import scala.collection.mutable.StringBuilder
 
-private[neotypes] final case class DeferredQuery[T](query: String, params: Map[String, Any] = Map.empty) {
+final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, Any] = Map.empty) {
   import DeferredQuery.StreamPartiallyApplied
 
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
@@ -48,7 +48,7 @@ private[neotypes] object DeferredQuery {
   }
 }
 
-private[neotypes] class DeferredQueryBuilder(private val parts: List[DeferredQueryBuilder.Part]) {
+final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
   import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query}
 
   def query[T]: DeferredQuery[T] = {
