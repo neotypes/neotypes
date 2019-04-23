@@ -1,7 +1,7 @@
 package neotypes.fs2
 
 object implicits {
-  implicit def fs2Stream[_F[_]](implicit F: cats.effect.Sync[_F]): neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
+  implicit def fs2Stream[_F[_]](implicit F: cats.effect.Async[_F]): neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
     new neotypes.Stream[Fs2FStream[_F]#T] {
       override type F[T] = _F[T]
 

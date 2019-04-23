@@ -12,6 +12,7 @@ title: "Side effect: Future/IO/Task"
 ```scala
 import neotypes.Async._
 import neotypes.implicits._
+import scala.concurrent.Future
 
 val s = driver.session().asScala[Future]
 
@@ -37,6 +38,7 @@ import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import neotypes.monix.implicits._
 import neotypes.implicits._
+import scala.concurrent.duration._
 
 val s = driver.session().asScala[Task]
 
@@ -44,4 +46,5 @@ val s = driver.session().asScala[Task]
 ```
 
 ## Custom side effect type
-In order to support your implementation of side-effects, you need to implement `neotypes.Async[YourIO]` and add to the implicit scope.
+In order to support your implementation of side-effects,
+you need to implement `neotypes.Async[YourIO]` and add it to the implicit scope.
