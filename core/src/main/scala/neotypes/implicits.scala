@@ -5,7 +5,7 @@ import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTim
 import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
 import neotypes.types.Path
-import neotypes.utils.sequence.{sequenceAsList, sequenceAsMap, sequenceAsSet}
+import neotypes.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
@@ -116,13 +116,9 @@ object implicits {
             Right(Map.empty)
 
           case Some(value) =>
-            sequenceAsMap(
-              value
-                .keys
-                .asScala
-                .iterator
-                .map { key => key -> mapper.to(key, Option(value.get(key))) }
-            )
+            traverseAsMap(value.keys.asScala.iterator) { key: String =>
+              key -> mapper.to(key, Option(value.get(key)))
+            }
         }
     }
 
@@ -134,13 +130,9 @@ object implicits {
             Right(List.empty)
 
           case Some(value) =>
-            sequenceAsList(
-              value
-                .values
-                .asScala
-                .iterator
-                .map { value => mapper.to("", Option(value)) }
-            )
+            traverseAsList(value.values.asScala.iterator) { value: Value =>
+              mapper.to("", Option(value))
+            }
         }
     }
 
@@ -152,13 +144,9 @@ object implicits {
             Right(Set.empty)
 
           case Some(value) =>
-            sequenceAsSet(
-              value
-                .values
-                .asScala
-                .iterator
-                .map { value => mapper.to("", Option(value)) }
-            )
+            traverseAsSet(value.values.asScala.iterator) { value: Value =>
+              mapper.to("", Option(value))
+            }
         }
     }
 
@@ -211,17 +199,17 @@ object implicits {
             if (value.`type` == InternalTypeSystem.TYPE_SYSTEM.PATH) {
               val path = value.asPath
 
-              val nodes = path.nodes.asScala.iterator.zipWithIndex.map {
+              val nodes = traverseAsList(path.nodes.asScala.iterator.zipWithIndex) {
                 case (node, index) => nm.to(Seq(s"node $index" -> new NodeValue(node)), None)
               }
 
-              val relationships = path.relationships.asScala.iterator.zipWithIndex.map {
+              val relationships = traverseAsList(path.relationships.asScala.iterator.zipWithIndex) {
                 case (relationship, index) => rm.to(Seq(s"relationship $index" -> new RelationshipValue(relationship)), None)
               }
 
               for {
-                nodes <- sequenceAsList(nodes).right
-                relationships <- sequenceAsList(relationships).right
+                nodes <- nodes.right
+                relationships <- relationships.right
               } yield Path(nodes, relationships, path)
             } else {
               Left(ConversionException(s"$fieldName of type ${value.`type`} cannot be converted into a Path"))

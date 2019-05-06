@@ -4,7 +4,7 @@ import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
-import neotypes.utils.sequence.{sequenceAsList, sequenceAsSet}
+import neotypes.utils.traverse.{traverseAsList, traverseAsSet}
 import neotypes.utils.stage._
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
@@ -33,12 +33,9 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .compose { x: StatementResultCursor => x.listAsync() }
         .accept { result: java.util.List[Record] =>
           cb(
-            sequenceAsList(
-              result
-                .asScala
-                .iterator
-                .map(v => resultMapper.to(recordToSeq(v), None))
-            )
+            traverseAsList(result.asScala.iterator) { v: Record =>
+              resultMapper.to(recordToSeq(v), None)
+            }
           )
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
@@ -51,12 +48,9 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .compose { x: StatementResultCursor => x.listAsync() }
         .accept { result: java.util.List[Record] =>
           cb(
-            sequenceAsSet(
-              result
-                .asScala
-                .iterator
-                .map(v => resultMapper.to(recordToSeq(v), None))
-            )
+            traverseAsSet(result.asScala.iterator) { v: Record =>
+              resultMapper.to(recordToSeq(v), None)
+            }
           )
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
