@@ -40,11 +40,12 @@ private[neotypes] object utils {
     }
   }
 
-  object sequence {
-    def sequenceAsList[T](iter: Iterator[Either[Throwable, T]]): Either[Throwable, List[T]] = {
+  object traverse {
+    def traverseAsList[A, B](iter: Iterator[A])
+                            (f: A => Either[Throwable, B]): Either[Throwable, List[B]] = {
       @annotation.tailrec
-      def loop(acc: List[T]): Either[Throwable, List[T]] =
-        if (iter.hasNext) iter.next() match {
+      def loop(acc: List[B]): Either[Throwable, List[B]] =
+        if (iter.hasNext) f(iter.next()) match {
           case Right(value) => loop(acc = value :: acc)
           case Left(e)      => Left(e)
         } else {
@@ -53,10 +54,11 @@ private[neotypes] object utils {
       loop(acc = List.empty)
     }
 
-    def sequenceAsSet[T](iter: Iterator[Either[Throwable, T]]): Either[Throwable, Set[T]] = {
+    def traverseAsSet[A, B](iter: Iterator[A])
+                           (f: A => Either[Throwable, B]): Either[Throwable, Set[B]] = {
       @annotation.tailrec
-      def loop(acc: Set[T]): Either[Throwable, Set[T]] =
-        if (iter.hasNext) iter.next() match {
+      def loop(acc: Set[B]): Either[Throwable, Set[B]] =
+        if (iter.hasNext) f(iter.next()) match {
           case Right(value) => loop(acc = acc + value)
           case Left(e)      => Left(e)
         } else {
@@ -65,10 +67,11 @@ private[neotypes] object utils {
       loop(acc = Set.empty)
     }
 
-    def sequenceAsMap[T](iter: Iterator[(String, Either[Throwable, T])]): Either[Throwable, Map[String, T]] = {
+    def traverseAsMap[A, B](iter: Iterator[A])
+                           (f: A => (String, Either[Throwable, B])): Either[Throwable, Map[String, B]] = {
       @annotation.tailrec
-      def loop(acc: Map[String, T]): Either[Throwable, Map[String, T]] =
-        if (iter.hasNext) iter.next() match {
+      def loop(acc: Map[String, B]): Either[Throwable, Map[String, B]] =
+        if (iter.hasNext) f(iter.next()) match {
           case (key, Right(value)) => loop(acc = acc + (key -> value))
           case (_,   Left(e))      => Left(e)
         } else {
