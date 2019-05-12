@@ -5,6 +5,7 @@ import shapeless._
 
 import scala.concurrent.Future
 import org.neo4j.driver.v1.Value
+import org.neo4j.driver.v1.types.Node
 import org.scalatest.AsyncFlatSpec
 
 class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
@@ -27,7 +28,7 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       emptyResultList <- "match (p:Person {name: '1243'}) return p.born".query[Int].list(s)
       emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover { case ex => ex.toString }
       hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
-      //tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+      node <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Node].list(s)
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)
@@ -49,6 +50,7 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       assert(emptyResultList.isEmpty)
       assert(emptyResultEx == "neotypes.exceptions.PropertyNotFoundException: Property  not found") // TODO test separately
       assert(notString == "neotypes.exceptions.UncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
+      assert(node.head.get("name").asString() == "Charlize Theron")
     }
   }
 
@@ -58,9 +60,12 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     d.readSession(s =>
       for {
         tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+        tuplePrimitives <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p.name,m.title".query[(String, String)].list(s)
       } yield {
         assert(tuple.head._1.name.contains("Charlize Theron"))
         assert(tuple.head._2.title == "That Thing You Do")
+        assert(tuplePrimitives.head._1 == "Charlize Theron")
+        assert(tuplePrimitives.head._2 == "That Thing You Do")
       }
     )
   }
