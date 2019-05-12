@@ -86,6 +86,55 @@ object mappers {
     }
   }
 
+  object ResultMapper {
+
+    /**
+      * Summons an implicit [[ResultMapper]] already in scope by result type.
+      *
+      * @param mapper A [[ResultMapper]] in scope of the desired type.
+      * @tparam A The result type of the mapper.
+      * @return A [[ResultMapper]] for the given type currently in implicit scope.
+      */
+    def apply[A](implicit mapper: ResultMapper[A]): ResultMapper[A] = mapper
+
+    /**
+      * Constructs a [[ResultMapper]] that always returns a constant result value.
+      *
+      * @param a The value to always return.
+      * @tparam A The type of the result value.
+      * @return A [[ResultMapper]] that always returns the supplied value and never errors.
+      */
+    def const[A](a: A): ResultMapper[A] = new ResultMapper[A] {
+      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Right(a)
+    }
+
+    /**
+      * Constructs a [[ResultMapper]] from a function that parses the results of a Neo4j query.
+      *
+      * The supplied function takes a sequence of String/Value pairs in the order they are returned from the query per-row.
+      * It also takes a TypeHint to indicate whether or not the values are a tuple, if relevant.
+      *
+      * @param f A function that parses a list of returned field names/values and a supplied [[TypeHint]].
+      * @tparam A The result type of this [[ResultMapper]]
+      * @return A new [[ResultMapper]] that parses query results with the supplied function.
+      */
+    def instance[A](f: (Seq[(String, Value)], Option[TypeHint]) => Either[Throwable, A]): ResultMapper[A] = new ResultMapper[A] {
+      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = f(value, typeHint)
+    }
+
+    /**
+      * Constructs a [[ResultMapper]] that always returns the specified [[Throwable]].
+      *
+      * @param failure A throwable error.
+      * @tparam A The result type (never returned) of this [[ResultMapper]]
+      * @return A [[ResultMapper]] that always returns a throwable error.
+      */
+    def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
+      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
+    }
+
+  }
+
   @implicitNotFound("Could not find the ValueMapper for ${A}")
   trait ValueMapper[A] { self =>
     def to(fieldName: String, value: Option[Value]): Either[Throwable, A]
@@ -160,6 +209,54 @@ object mappers {
           }
         }
     }
+  }
+
+  object ValueMapper {
+
+    /**
+      * Summons an implicit [[ValueMapper]] already in scope by result type.
+      *
+      * @param mapper A [[ValueMapper]] in scope of the desired type.
+      * @tparam A The result type of the mapper.
+      * @return A [[ValueMapper]] for the given type currently in implicit scope.
+      */
+    def apply[A](implicit mapper: ValueMapper[A]): ValueMapper[A] = mapper
+
+    /**
+      * Constructs a [[ValueMapper]] that always returns a constant result value.
+      *
+      * @param a The value to always return.
+      * @tparam A The type of the result value.
+      * @return A [[ValueMapper]] that always returns the supplied value and never errors.
+      */
+    def const[A](a: A): ValueMapper[A] = new ValueMapper[A] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] = Right(a)
+    }
+
+    /**
+      * Constructs a [[ValueMapper]] from a function that parses the results of a Neo4j query.
+      *
+      * The supplied function takes a pair containing the field name and an optional value.
+      *
+      * @param f A function that parses a list of returned field names/values and a supplied [[TypeHint]].
+      * @tparam A The result type of this [[ValueMapper]]
+      * @return A new [[ValueMapper]] that parses query results with the supplied function.
+      */
+    def instance[A](f: (String, Option[Value]) => Either[Throwable, A]): ValueMapper[A] = new ValueMapper[A] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] = f(fieldName, value)
+    }
+
+    /**
+      * Constructs a [[ValueMapper]] that always returns the specified [[Throwable]].
+      *
+      * @param failure A throwable error.
+      * @tparam A The result type (never returned) of this [[ValueMapper]]
+      * @return A [[ValueMapper]] that always returns a throwable error.
+      */
+    def failed[A](failure: Throwable): ValueMapper[A] = new ValueMapper[A] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] = Left(failure)
+    }
+
   }
 
   @implicitNotFound("Could not find the ExecutionMapper for ${A}")
