@@ -6,27 +6,25 @@ import neotypes.monix.implicits._
 import neotypes.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.scalatest.FlatSpec
+import org.scalatest.AsyncFlatSpec
 
-import scala.concurrent.duration._
-
-class MonixAsyncSpec extends FlatSpec with BaseIntegrationSpec {
+class MonixAsyncSpec extends AsyncFlatSpec with BaseIntegrationSpec {
   it should "work with Task" in {
     val s = driver.session().asScala[Task]
 
-    val string =
-      "match (p:Person {name: 'Charlize Theron'}) return p.name"
-        .query[String]
-        .single(s)
-        .runSyncUnsafe(5 seconds)
+    "match (p:Person {name: 'Charlize Theron'}) return p.name"
+      .query[String]
+      .single(s)
+      .runToFuture
+      .map {
+        name => assert(name == "Charlize Theron")
+      }
 
-    assert(string == "Charlize Theron")
-
-    assertThrows[ClientException] {
+    recoverToSucceededIf[ClientException] {
       "match test return p.name"
         .query[String]
         .single(s)
-        .runSyncUnsafe(5 seconds)
+        .runToFuture
     }
   }
 
