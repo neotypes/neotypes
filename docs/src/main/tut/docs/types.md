@@ -25,6 +25,7 @@ title: "Supported types"
 | `java.time.OffsetDateTime              `  | ✓              |✓                      |✓|
 | `java.time.OffsetTime                  `  | ✓              |✓                      |✓|
 | `java.time.ZonedDateTime               `  | ✓              |✓                      |✓|
+| `java.util.UUID                        `  | ✓              |✓                      |✓|
 | `org.neo4j.driver.v1.Value             `  | ✓              |✓                      ||
 | `org.neo4j.driver.v1.types.IsoDuration `  | ✓              |✓                      ||
 | `org.neo4j.driver.v1.types.Node        `  | ✓              |✓                      ||
