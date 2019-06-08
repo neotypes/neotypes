@@ -1,6 +1,7 @@
 package neotypes
 
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.util.UUID
 
 import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
@@ -107,6 +108,9 @@ object implicits {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, HNil] =
         Right(HNil)
     }
+
+  implicit val UUIDValueMapper: ValueMapper[UUID] =
+    valueMapperFromCast(s => UUID.fromString(s.asString()))
 
   implicit def mapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Map[String, T]] =
     new ValueMapper[Map[String, T]] {
@@ -289,6 +293,9 @@ object implicits {
     resultMapperFromValueMapper
 
   implicit val HNilResultMapper: ResultMapper[HNil] =
+    resultMapperFromValueMapper
+
+  implicit val UUIDResultMapper: ResultMapper[UUID] =
     resultMapperFromValueMapper
 
   implicit val UnitResultMapper: ResultMapper[Unit] =
