@@ -3,6 +3,7 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
+import eu.timepit.refined.api.Refined
 import neotypes.mappers.{ExecutionMapper, ResultMapper}
 import neotypes.utils.traverse.{traverseAsList, traverseAsSet}
 import neotypes.utils.stage._
@@ -130,16 +131,17 @@ object Transaction {
     params.mapValues(toNeoType).asJava
 
   private def toNeoType(value: Any): AnyRef = value match {
-    case s: Seq[_]    => s.map(toNeoType).asJava
-    case s: Set[_]    => s.map(toNeoType).asJava
-    case m: Map[_, _] => m.mapValues(toNeoType).asJava
-    case o: Option[_] => o.map(toNeoType).orNull
+    case s: Seq[_]        => s.map(toNeoType).asJava
+    case s: Set[_]        => s.map(toNeoType).asJava
+    case m: Map[_, _]     => m.mapValues(toNeoType).asJava
+    case o: Option[_]     => o.map(toNeoType).orNull
+    case r: Refined[_, _] => toNeoType(r.value)
     // The following type cast is sound,
     // since AnyRef is equivalent to java.lang.Object
     // and all values coming from a class can be upcasted to it.
     // For value types (Subtypes of AnyVal),
     // this cast ends up boxing them to their objectual representation.
     // A such, this will never fail in runtime.
-    case v            => v.asInstanceOf[AnyRef]
+    case v                => v.asInstanceOf[AnyRef]
   }
 }
