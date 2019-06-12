@@ -3,6 +3,7 @@ package neotypes
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
 
+import eu.timepit.refined.api.{Refined, RefinedType}
 import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
 import neotypes.types.Path
@@ -151,6 +152,21 @@ object implicits {
             traverseAsSet(value.values.asScala.iterator) { value: Value =>
               mapper.to("", Option(value))
             }
+        }
+    }
+
+  implicit def refinedValueMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ValueMapper[Refined[T, P]] =
+    new ValueMapper[Refined[T, P]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Refined[T, P]] =
+        value match {
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+          case Some(value) =>
+            mapper
+              .to(fieldName, Some(value))
+              .right
+              .flatMap(t => rt.refine(t).left.map(msg => UncoercibleException(msg, None.orNull)))
         }
     }
 
@@ -311,6 +327,9 @@ object implicits {
     resultMapperFromValueMapper
 
   implicit def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
+    resultMapperFromValueMapper
+
+  implicit def refinedResultMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ResultMapper[Refined[T, P]] =
     resultMapperFromValueMapper
 
   implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
