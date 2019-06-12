@@ -22,9 +22,9 @@ object implicits {
         m.catchSome(f)
 
       override def failed[T](e: Throwable): Task[T] =
-        Task.die(e)
+        Task.fail(e)
 
       override def success[T](t: => T): Task[T] =
-        Task(t)
+        Task.succeedLazy(t)
     }
 }
