@@ -12,6 +12,7 @@ val catsEffectsVersion = "1.2.0"
 val monixVersion = "3.0.0-RC2"
 val akkaStreamVersion = "2.5.19"
 val fs2Version = "1.0.4"
+val refinedVersion = "0.9.8"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -82,7 +83,8 @@ lazy val core = (project in file("core"))
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       )
         ++ COMPILE(
-        "com.chuusai" %% "shapeless" % shapelessVersion
+        "com.chuusai" %% "shapeless" % shapelessVersion,
+        "eu.timepit" %% "refined" % refinedVersion
       )
         ++ TEST(
         "org.scalatest" %% "scalatest" % scalaTestVersion,
