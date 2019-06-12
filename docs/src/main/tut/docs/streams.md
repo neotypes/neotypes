@@ -6,10 +6,11 @@ title: "Streams"
 # Streams
 
 **neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream.
-Currently, there are three implementations of streaming supported out of the box _(one for each effect type)_ -
+Currently, there are four implementations of streaming supported out of the box _(one for each effect type)_ -
 [**Akka Streams**](https://doc.akka.io/docs/akka/current/stream/index.html) _(for `scala.concurrent.Future`)_,
-[**FS2**](https://fs2.io/) _(for `cats.effect.Async[F]`)_
-& [**Monix Observables**](https://monix.io/docs/3x/reactive/observable.html) _(for `monix.eval.Task`)_.
+[**FS2**](https://fs2.io/) _(for `cats.effect.Async[F]`)_,
+[**Monix Observables**](https://monix.io/docs/3x/reactive/observable.html) _(for `monix.eval.Task`)_ &
+[**ZIO ZStreams**](https://zio.dev/docs/datatypes/datatypes_stream) _(for `zio.Task`)_.
 
 ## Usage
 
@@ -76,7 +77,7 @@ val s = driver.session().asScala[F]
 
 ```scala
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.globa
+import monix.execution.Scheduler.Implicits.global
 import neotypes.monix.implicits._
 import neotypes.monix.stream.MonixStream
 import neotypes.monix.stream.implicits._
@@ -91,6 +92,28 @@ val s = driver.session().asScala[Task]
   .mapEval(n => Task(println(n)))
   .completedL
   .runSyncUnsafe(5 seconds)
+```
+
+### ZIO ZStreams
+
+```scala
+import zio.Task
+import zio.DefaultRuntime
+import neotypes.implicits._
+import neotypes.zio.implicits._
+import neotypes.zio.stream.ZioStream
+import neotypes.zio.stream.implicits._
+
+val runtime = new DefaultRuntime {}
+
+val s = driver.session().asScala[Task]
+
+runtime.unsafeRun(
+  "match (p:Person) return p.name"
+    .query[String]
+    .stream[ZioStream](s)
+    .foreach(n => Task(println(n)))
+)
 ```
 
 -----
