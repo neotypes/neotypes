@@ -139,9 +139,9 @@ object Transaction {
     // The following type cast is sound,
     // since AnyRef is equivalent to java.lang.Object
     // and all values coming from a class can be upcasted to it.
-    // For value types (Subtypes of AnyVal),
-    // this cast ends up boxing them to their objectual representation.
-    // A such, this will never fail in runtime.
+    // For value types (subtypes of AnyVal),
+    // this cast ends up boxing them into their objectual representation.
+    // Thus, this will never fail in runtime.
     case v                => v.asInstanceOf[AnyRef]
   }
 }
