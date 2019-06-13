@@ -1,11 +1,11 @@
 ---
 layout: docs
-title: "Side effect: Future/IO/Task"
+title: "Side effects"
 ---
 
-# Side effect: Future/IO/Task
+# Side effects: Future/IO/Task/ZIO
 
-**neotypes** comes with three effect implementations:
+**neotypes** comes with four effect implementations:
 
 ### scala.concurrent.Future
 
@@ -43,6 +43,21 @@ import scala.concurrent.duration._
 val s = driver.session().asScala[Task]
 
 "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s).runSyncUnsafe(5 seconds)
+```
+
+### zio.Task
+
+```scala
+import zio.Task
+import zio.DefaultRuntime
+import neotypes.implicits._
+import neotypes.zio.implicits._
+
+val runtime = new DefaultRuntime {
+
+val s = driver.session().asScala[Task]
+
+runtime.unsafeRun("match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s))
 ```
 
 ## Custom side effect type
