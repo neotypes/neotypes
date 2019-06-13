@@ -12,6 +12,7 @@ val catsEffectsVersion = "1.2.0"
 val monixVersion = "3.0.0-RC2"
 val akkaStreamVersion = "2.5.19"
 val fs2Version = "1.0.4"
+val zioVersion = "1.0.0-RC8-4"
 val refinedVersion = "0.9.8"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
@@ -38,7 +39,7 @@ val commonSettings = Seq(
   organization in ThisBuild := "com.dimafeng",
 
   parallelExecution in Global := false,
-  
+
   releaseCrossBuild := true
 )
 
@@ -51,9 +52,11 @@ lazy val root = (project in file("."))
     core,
     catsEffect,
     monix,
+    zio,
     akkaStream,
     fs2Stream,
-    monixStream
+    monixStream,
+    zioStream
   )
   .settings(noPublishSettings)
   .settings(
@@ -114,6 +117,16 @@ lazy val monix = (project in file("monix"))
     )
   )
 
+lazy val zio = (project in file("zio"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-zio",
+    libraryDependencies ++= PROVIDED(
+      "dev.zio" %% "zio" % zioVersion
+    )
+  )
+
 lazy val akkaStream = (project in file("akka-stream"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
   .settings(commonSettings: _*)
@@ -145,6 +158,18 @@ lazy val monixStream = (project in file("monix-stream"))
     libraryDependencies ++= PROVIDED(
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
+    )
+  )
+
+lazy val zioStream = (project in file("zio-stream"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .dependsOn(zio % "test->test")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-zio-stream",
+    libraryDependencies ++= PROVIDED(
+      "dev.zio" %% "zio"         % zioVersion,
+      "dev.zio" %% "zio-streams" % zioVersion
     )
   )
 
