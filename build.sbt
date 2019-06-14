@@ -2,23 +2,29 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "1.7.3"
+val neo4jDriverVersion = "1.7.5"
 val shapelessVersion = "2.3.3"
-val testcontainersScalaVersion = "0.23.0"
+val testcontainersScalaVersion = "0.26.0"
 val mockitoVersion = "1.10.19"
-val scalaTestVersion = "3.0.5"
-val slf4jVersion = "1.7.21"
-val catsEffectsVersion = "1.2.0"
+val scalaTestVersion = "3.0.8"
+val slf4jVersion = "1.7.26"
+val catsEffectsVersion = "2.0.0-M4"
 val monixVersion = "3.0.0-RC2"
-val akkaStreamVersion = "2.5.19"
-val fs2Version = "1.0.4"
+val akkaStreamVersion = "2.5.23"
+val fs2Version = "1.1.0-M1"
 val zioVersion = "1.0.0-RC8-4"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
   scalaVersion in ThisBuild := "2.11.12",
-  crossScalaVersions := Seq("2.12.8", "2.11.12"),
+  crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
+
+  scalacOptions ++= Seq(
+    "-deprecation",
+    "-feature",
+    "-Xlint"
+  ),
 
   /**
     * Publishing
