@@ -3,11 +3,12 @@ package neotypes
 import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
 
+import exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
+import mappers.{ExecutionMapper, ParameterMapper, ResultMapper, TypeHint, ValueMapper}
+import types.{NeoType, Path}
+import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet}
+
 import eu.timepit.refined.api.{Refined, RefinedType}
-import neotypes.exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
-import neotypes.mappers.{ExecutionMapper, ResultMapper, TypeHint, ValueMapper}
-import neotypes.types.Path
-import neotypes.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
@@ -419,23 +420,8 @@ object implicits {
     }
 
   /**
-    * Extras
+    * Cypher String Interpolator
     */
-
-  implicit class SessionExt(val session: NSession) extends AnyVal {
-    def asScala[F[_]: Async]: Session[F] =
-      new Session[F](session)
-  }
-
-  implicit class DriverExt(val driver: NDriver) extends AnyVal {
-    def asScala[F[_]: Async]: Driver[F] =
-      new Driver[F](driver)
-  }
-
-  implicit class StringOps(val s: String) extends AnyVal {
-    def query[T]: DeferredQuery[T] =
-      DeferredQuery(query = s)
-  }
 
   implicit class CypherString(val sc: StringContext) extends AnyVal {
     def c(args: Any*): DeferredQueryBuilder = {
@@ -460,19 +446,8 @@ object implicits {
   }
 
   /**
-    * Async
+    * Async instances
     */
-
-  implicit class AsyncExt[F[_], T](val m: F[T]) extends AnyVal {
-    def map[U](f: T => U)(implicit F: Async[F]): F[U] =
-      F.map(m)(f)
-
-    def flatMap[U](f: T => F[U])(implicit F: Async[F]): F[U] =
-      F.flatMap(m)(f)
-
-    def recoverWith[U >: T](f: PartialFunction[Throwable, F[U]])(implicit F: Async[F]): F[U] =
-      F.recoverWith[T, U](m)(f)
-  }
 
   implicit def futureAsync(implicit ec: ExecutionContext): Async[Future] =
     new Async[Future] {
@@ -500,4 +475,39 @@ object implicits {
       override def success[T](t: => T): Future[T] =
         Future.successful(t)
     }
+
+  /**
+    * Syntax
+    */
+
+  implicit class AsyncExt[F[_], T](private val m: F[T]) extends AnyVal {
+    def map[U](f: T => U)(implicit F: Async[F]): F[U] =
+      F.map(m)(f)
+
+    def flatMap[U](f: T => F[U])(implicit F: Async[F]): F[U] =
+      F.flatMap(m)(f)
+
+    def recoverWith[U >: T](f: PartialFunction[Throwable, F[U]])(implicit F: Async[F]): F[U] =
+      F.recoverWith[T, U](m)(f)
+  }
+
+  implicit class NeoTypeOps[T](private val underlying: T) extends AnyVal {
+    def asNeoType(implicit mapper: ParameterMapper[T]): NeoType =
+      mapper.toNeoType(underlying)
+  }
+
+  implicit class SessionExt(private val session: NSession) extends AnyVal {
+    def asScala[F[_]: Async]: Session[F] =
+      new Session[F](session)
+  }
+
+  implicit class DriverExt(private val driver: NDriver) extends AnyVal {
+    def asScala[F[_]: Async]: Driver[F] =
+      new Driver[F](driver)
+  }
+
+  implicit class StringOps(private val s: String) extends AnyVal {
+    def query[T]: DeferredQuery[T] =
+      DeferredQuery(query = s, params = Map.empty)
+  }
 }
