@@ -20,7 +20,9 @@ import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labell
 
 import scala.collection.JavaConverters._
 import scala.concurrent.{ExecutionContext, Future, Promise}
+import scala.language.experimental.macros
 import scala.reflect.ClassTag
+import scala.reflect.macros.blackbox
 import scala.util.{Failure, Success}
 
 object implicits {
@@ -423,12 +425,16 @@ object implicits {
     * Cypher String Interpolator
     */
 
-  implicit class CypherString(val sc: StringContext) extends AnyVal {
-    def c(args: Any*): DeferredQueryBuilder = {
-      val queries = sc.parts.iterator.map(DeferredQueryBuilder.Query)
-      val params = args.iterator.map(DeferredQueryBuilder.Param)
+  implicit class CypherStringInterpolator(val sc: StringContext) extends AnyVal {
+    def c(args: Any*): DeferredQueryBuilder = macro CypherStringInterpolator.macroImpl
+  }
 
-      val parts = new Iterator[DeferredQueryBuilder.Part] {
+  object CypherStringInterpolator {
+    def createQuery(parts: String*)(parameters: NeoType*): DeferredQueryBuilder = {
+      val queries = parts.iterator.map(DeferredQueryBuilder.Query)
+      val params = parameters.iterator.map(DeferredQueryBuilder.Param)
+
+      val queryParts = new Iterator[DeferredQueryBuilder.Part] {
         private var paramNext: Boolean = false
         override def hasNext: Boolean = queries.hasNext
         override def next(): DeferredQueryBuilder.Part =
@@ -441,7 +447,25 @@ object implicits {
           }
       }
 
-      new DeferredQueryBuilder(parts.toList)
+      new DeferredQueryBuilder(queryParts.toList)
+    }
+
+    def macroImpl(c: blackbox.Context)(args: c.Expr[Any]*): c.Expr[DeferredQueryBuilder] = {
+      import c.universe.Quasiquote
+
+      c.prefix.tree match {
+        case c.universe.Apply(_, List(c.universe.Apply(_, parts))) =>
+          val parameters = args.map { arg =>
+            val nextElement = arg.tree
+            val tpe = nextElement.tpe.widen
+
+            q"neotypes.mappers.ParameterMapper[${tpe}].toNeoType(${nextElement})"
+          }
+
+          c.Expr(
+            q"neotypes.implicits.CypherStringInterpolator.createQuery(..${parts})(..${parameters})"
+          )
+      }
     }
   }
 
