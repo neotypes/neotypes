@@ -8,7 +8,6 @@ import types.NeoType
 import utils.traverse.{traverseAsList, traverseAsSet}
 import utils.stage._
 
-import eu.timepit.refined.api.Refined
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}

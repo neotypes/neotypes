@@ -299,20 +299,35 @@ object mappers {
       * Summons an implicit [[ParameterMapper]] already in scope by result type.
       *
       * @param mapper A [[ParameterMapper]] in scope of the desired type.
-      * @tparam A The result type of the mapper.
+      * @tparam A The input type of the mapper.
       * @return A [[ParameterMapper]] for the given type currently in implicit scope.
       */
     def apply[A](implicit mapper: ParameterMapper[A]): ParameterMapper[A] = mapper
 
     /**
-      * Constructs a [[ParameterMapper]] that always returns a constant result value.
+      * Constructs a [[ParameterMapper]] that always returns a constant value.
       *
-      * @param a The value to always return.
-      * @tparam A The type of the result value.
+      * @param v The value to always return.
+      * @tparam A The type of the input value.
       * @return A [[ParameterMapper]] that always returns the supplied value.
       */
     def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
-      override def toNeoType(scalaValue: A): NeoType = new NeoType(v)
+      override def toNeoType(scalaValue: A): NeoType =
+        new NeoType(v)
+    }
+
+    /**
+      * Constructs a [[ParameterMapper]] that works like an identity function.
+      *
+      * Many values do not require any mapping to be used as parameters.
+      * For those cases, this private helper is useful to reduce boilerplate.
+      *
+      * @tparam A The type of the input value (must be a subtype of [[AnyRef]]).
+      * @return A [[ParameterMapper]] that always returns its input unchanged.
+      */
+    private[neotypes] def identity[A <: AnyRef] = new ParameterMapper[A] {
+      override def toNeoType(scalaValue: A): NeoType =
+        new NeoType(scalaValue)
     }
   }
 }

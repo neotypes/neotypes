@@ -1,6 +1,6 @@
 package neotypes
 
-import java.time.{LocalDate, LocalDateTime, LocalTime, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
 
 import exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
@@ -106,6 +106,27 @@ object implicits {
 
   implicit val ValueValueMapper: ValueMapper[Value] =
     valueMapperFromCast(identity)
+
+  implicit val DurationValueMapper: ValueMapper[Duration] =
+    valueMapperFromCast { v =>
+      val isoDuration = v.asIsoDuration
+
+      Duration
+        .ZERO
+        .plusDays(isoDuration.days)
+        .plusSeconds(isoDuration.seconds)
+        .plusNanos(isoDuration.nanoseconds)
+    }
+
+  implicit val PeriodValueMapper: ValueMapper[Period] =
+    valueMapperFromCast { v =>
+      val isoDuration = v.asIsoDuration
+
+      Period
+        .ZERO
+        .plusMonths(isoDuration.months)
+        .plusDays(isoDuration.days)
+    }
 
   implicit val HNilMapper: ValueMapper[HNil] =
     new ValueMapper[HNil] {
@@ -308,6 +329,12 @@ object implicits {
   implicit val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
     resultMapperFromValueMapper
 
+  implicit val DurationTimeResultMapper: ResultMapper[Duration] =
+    resultMapperFromValueMapper
+
+  implicit val PeriodTimeResultMapper: ResultMapper[Period] =
+    resultMapperFromValueMapper
+
   implicit val ValueResultMapper: ResultMapper[Value] =
     resultMapperFromValueMapper
 
@@ -420,6 +447,113 @@ object implicits {
       override def to(resultSummary: ResultSummary): Either[Throwable, Unit] =
         Right(())
     }
+
+  /**
+    * ParameterMappers
+    */
+
+  implicit val BooleanParameterMapper: ParameterMapper[Boolean] =
+    new ParameterMapper[Boolean] {
+      override def toNeoType(scalaValue: Boolean): NeoType =
+        new NeoType(new java.lang.Boolean(scalaValue))
+    }
+
+  implicit val IntParameterMapper: ParameterMapper[Int] =
+    new ParameterMapper[Int] {
+      override def toNeoType(scalaValue: Int): NeoType =
+        new NeoType(new java.lang.Integer(scalaValue))
+    }
+
+  implicit val LongParameterMapper: ParameterMapper[Long] =
+    new ParameterMapper[Long] {
+      override def toNeoType(scalaValue: Long): NeoType =
+        new NeoType(new java.lang.Long(scalaValue))
+    }
+
+  implicit val DoubleParameterMapper: ParameterMapper[Double] =
+    new ParameterMapper[Double] {
+      override def toNeoType(scalaValue: Double): NeoType =
+        new NeoType(new java.lang.Double(scalaValue))
+    }
+
+  implicit val FloatParameterMapper: ParameterMapper[Float] =
+    new ParameterMapper[Float] {
+      override def toNeoType(scalaValue: Float): NeoType =
+        new NeoType(new java.lang.Float(scalaValue))
+    }
+
+  implicit val StringParameterMapper: ParameterMapper[String] =
+    ParameterMapper.identity
+
+  implicit val ByteArrayParameterMapper: ParameterMapper[Array[Byte]] =
+    ParameterMapper.identity
+
+  implicit val LocalDateParameterMapper: ParameterMapper[LocalDate] =
+    ParameterMapper.identity
+
+  implicit val LocalDateTimeParameterMapper: ParameterMapper[LocalDateTime] =
+    ParameterMapper.identity
+
+  implicit val LocalTimeParameterMapper: ParameterMapper[LocalTime] =
+    ParameterMapper.identity
+
+  implicit val OffsetDateTimeParameterMapper: ParameterMapper[OffsetDateTime] =
+    ParameterMapper.identity
+
+  implicit val OffsetTimeParameterMapper: ParameterMapper[OffsetTime] =
+    ParameterMapper.identity
+
+  implicit val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
+    ParameterMapper.identity
+
+  implicit val IsoDurationParameterMapper: ParameterMapper[IsoDuration] =
+    ParameterMapper.identity
+
+  implicit val DurationParameterMapper: ParameterMapper[Duration] =
+    ParameterMapper.identity
+
+  implicit val PeriodParameterMapper: ParameterMapper[Period] =
+    ParameterMapper.identity
+
+  implicit val PointParameterMapper: ParameterMapper[Point] =
+    ParameterMapper.identity
+
+  implicit val ValueParameterMapper: ParameterMapper[Value] =
+    ParameterMapper.identity
+
+  implicit val UUIDParameterMapper: ParameterMapper[UUID] =
+    StringParameterMapper.contramap(_.toString)
+
+  implicit def OptionParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
+    new ParameterMapper[Option[T]] {
+      override def toNeoType(scalaValue: Option[T]): NeoType =
+        new NeoType(scalaValue.map(v => mapper.toNeoType(v).underlying).orNull)
+    }
+
+  implicit def ListParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[List[T]] =
+    new ParameterMapper[List[T]] {
+      override def toNeoType(scalaValue: List[T]): NeoType =
+        new NeoType(scalaValue.map(v => mapper.toNeoType(v).underlying).asJava)
+    }
+
+  implicit def SetParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Set[T]] =
+    new ParameterMapper[Set[T]] {
+      override def toNeoType(scalaValue: Set[T]): NeoType =
+        new NeoType(scalaValue.map(v => mapper.toNeoType(v).underlying).asJava)
+    }
+
+  implicit def MapParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Map[String, T]] =
+    new ParameterMapper[Map[String, T]] {
+      override def toNeoType(scalaValue: Map[String, T]): NeoType =
+        new NeoType(scalaValue.mapValues(v => mapper.toNeoType(v).underlying).asJava)
+    }
+
+  implicit def RefinedParameterMapper[T, P](implicit mapper: ParameterMapper[T]): ParameterMapper[Refined[T, P]] = {
+    new ParameterMapper[Refined[T, P]] {
+      override def toNeoType(scalaValue: Refined[T, P]): NeoType =
+        new NeoType(mapper.toNeoType(scalaValue.value).underlying)
+    }
+  }
 
   /**
     * Cypher String Interpolator
