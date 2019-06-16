@@ -57,7 +57,7 @@ class RefinedSpec extends AsyncFlatSpec with BaseIntegrationSpec {
 
     val L1: Level = 1
     val L2: Level = 2
-    val levels = Some(List(L1, L2))
+    val levels = Option(List(L1, L2))
 
     for {
       _ <- c"CREATE (levels: Levels { values: ${levels} })".query[Unit].execute(s)
