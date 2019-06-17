@@ -8,7 +8,6 @@ import mappers.{ExecutionMapper, ParameterMapper, ResultMapper, TypeHint, ValueM
 import types.{NeoType, Path}
 import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet}
 
-import eu.timepit.refined.api.{Refined, RefinedType}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{IntegerValue, MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.{Value, Session => NSession, Driver => NDriver}
@@ -179,21 +178,6 @@ object implicits {
         }
     }
 
-  implicit def refinedValueMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ValueMapper[Refined[T, P]] =
-    new ValueMapper[Refined[T, P]] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Refined[T, P]] =
-        value match {
-          case None =>
-            Left(PropertyNotFoundException(s"Property $fieldName not found"))
-
-          case Some(value) =>
-            mapper
-              .to(fieldName, Some(value))
-              .right
-              .flatMap(t => rt.refine(t).left.map(msg => UncoercibleException(msg, None.orNull)))
-        }
-    }
-
   implicit def optionValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Option[T]] =
     new ValueMapper[Option[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] =
@@ -357,9 +341,6 @@ object implicits {
     resultMapperFromValueMapper
 
   implicit def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
-    resultMapperFromValueMapper
-
-  implicit def refinedResultMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ResultMapper[Refined[T, P]] =
     resultMapperFromValueMapper
 
   implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
@@ -547,13 +528,6 @@ object implicits {
       override def toNeoType(scalaValue: Map[String, T]): NeoType =
         new NeoType(scalaValue.mapValues(v => mapper.toNeoType(v).underlying).asJava)
     }
-
-  implicit def RefinedParameterMapper[T, P](implicit mapper: ParameterMapper[T]): ParameterMapper[Refined[T, P]] = {
-    new ParameterMapper[Refined[T, P]] {
-      override def toNeoType(scalaValue: Refined[T, P]): NeoType =
-        new NeoType(mapper.toNeoType(scalaValue.value).underlying)
-    }
-  }
 
   /**
     * Cypher String Interpolator

@@ -1,7 +1,9 @@
-package neotypes
+package neotypes.refined
 
+import neotypes.BaseIntegrationSpec
 import neotypes.exceptions.UncoercibleException
 import neotypes.implicits._
+import neotypes.refined.implicits._
 
 import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
