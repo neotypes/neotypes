@@ -15,26 +15,47 @@ title: "Supported types"
 | `scala.Float                           `  | ✓              |✓                      |✓|
 | `java.lang.String                      `  | ✓              |✓                      |✓|
 | `scala.Array[Byte]                     `  | ✓              |✓                      |✓|
-| `scala.Option[T]                       `  | ✓              |✓                      |✓`*`|
-| `scala.List[T: ValueMapper]            `  | ✓              |✓                      |✓|
-| `scala.Set[T: ValueMapper]             `  | ✓              |✓                      |✓|
-| `scala.Map[String, T: ValueMapper]     `  | ✓              |✓                      |✓`**`|
+| `scala.Option[T] *                     `  | ✓              |✓                      |✓ `**`|
+| `scala.List[T] *                       `  | ✓              |✓                      |✓|
+| `scala.Set[T] *                        `  | ✓              |✓                      |✓|
+| `scala.Map[String, T] *                `  | ✓              |✓                      |✓|
+| `refined.Refined[T, P] * ***           `  | ✓              |✓                      |✓|
+| `java.time.Duration                    `  | ✓              |✓                      |✓|
 | `java.time.LocalDate                   `  | ✓              |✓                      |✓|
 | `java.time.LocalDateTime               `  | ✓              |✓                      |✓|
 | `java.time.LocalTime                   `  | ✓              |✓                      |✓|
+| `java.time.Period                      `  | ✓              |✓                      |✓|
 | `java.time.OffsetDateTime              `  | ✓              |✓                      |✓|
 | `java.time.OffsetTime                  `  | ✓              |✓                      |✓|
 | `java.time.ZonedDateTime               `  | ✓              |✓                      |✓|
 | `java.util.UUID                        `  | ✓              |✓                      |✓|
-| `org.neo4j.driver.v1.Value             `  | ✓              |✓                      ||
-| `org.neo4j.driver.v1.types.IsoDuration `  | ✓              |✓                      ||
+| `org.neo4j.driver.v1.Value             `  | ✓              |✓                      |✓|
+| `org.neo4j.driver.v1.types.IsoDuration `  | ✓              |✓                      |✓|
+| `org.neo4j.driver.v1.types.Point       `  | ✓              |✓                      |✓|
 | `org.neo4j.driver.v1.types.Node        `  | ✓              |✓                      ||
-| `org.neo4j.driver.v1.types.Point       `  | ✓              |✓                      ||
 | `org.neo4j.driver.v1.types.Relationship`  | ✓              |✓                      ||
 | `shapeless.HList                       `  | ✓              |                       ||
 | `neotypes.types.Path                   `  | ✓              |                       ||
 | `Tuple (1-22)                          `  | ✓              |                       ||
 | `User defined case class               `  | ✓              |                       ||
 
-* `*` - `None` is converted into `null`
-* `**` - `scala.Map[String, Any]`
+> `*` Generic types are supported as long as the the `T` is also supported.<br>
+> `**` `None` is converted into `null`.<br>
+> `***` Support is provided in the **neotypes-refined** _module_.
+
+## Additional types
+
+If you want to support your own types, then you would need to create your own _implicits_.
+
+* For **Field of a case class** you need an instance of `neotypes.mappers.ValueMapper[T]`. You can create a new instace:
+  + From scratch by instantiating it: `new ValueMapper[T] { ... }`.
+  + Using the helper methods on the companion object like `instace`.
+  + Casting an already existing mapper using `map` or `flatMap`.
+
+* For **Query result** you need an instance of `neotypes.mappers.ResultMapper[T]`. You can create a new instace:
+  + From scratch by instantiating it: `new ResultMapper[T] { ... }`.
+  + Using the helper methods on the companion object like `instace`.
+  + Casting an already existing mapper using `map` or `flatMap`.
+
+* For **query parameter** you need an instance of `neotypes.mappers.ParameterMapper[T]`. You can create a new instace:
+  + Casting an already existing mapper using `contramap`.
