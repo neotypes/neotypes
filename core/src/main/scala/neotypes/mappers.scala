@@ -136,6 +136,22 @@ object mappers {
     def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
     }
+
+    /**
+      * Constructs a [[ResultMapper]] from a [[ValueMapper]].
+      *
+      * @tparam A the type of both the [[ResultMapper]] and the [[ValueMapper]].
+      * @return A [[ResultMapper]] that delegates its behaviour to a [[ValueMapper]].
+      */
+    def fromValueMapper[A](implicit marshallable: ValueMapper[A]): ResultMapper[A] =
+      new ResultMapper[A] {
+        override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
+          fields
+            .headOption
+            .fold(ifEmpty = marshallable.to("", None)) {
+              case (name, value) => marshallable.to(name, Some(value))
+            }
+      }
   }
 
   @implicitNotFound("Could not find the ValueMapper for ${A}")
@@ -266,7 +282,7 @@ object mappers {
       * @tparam A The output type of the cast function.
       * @return a [[ValueMapper]] that will cast its outputs using the provided function.
       */
-    private[neotypes] def fromCast[A](f: Value => A): ValueMapper[A] = new ValueMapper[A] {
+    def fromCast[A](f: Value => A): ValueMapper[A] = new ValueMapper[A] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] =
         value match {
           case Some(v) =>
