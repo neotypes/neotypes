@@ -3,7 +3,7 @@ package neotypes
 import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
 
-import neotypes.implicits._
+import neotypes.implicits.mappers.parameters._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
 import org.scalatest.AsyncFlatSpec

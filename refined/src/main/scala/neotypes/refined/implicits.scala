@@ -34,10 +34,6 @@ object implicits {
           }
     }
 
-  implicit def RefinedParameterMapper[T, P](implicit mapper: ParameterMapper[T]): ParameterMapper[Refined[T, P]] = {
-    new ParameterMapper[Refined[T, P]] {
-      override def toQueryParam(scalaValue: Refined[T, P]): QueryParam =
-        new QueryParam(mapper.toQueryParam(scalaValue.value).underlying)
-    }
-  }
+  implicit def RefinedParameterMapper[T, P](implicit mapper: ParameterMapper[T]): ParameterMapper[Refined[T, P]] =
+    mapper.contramap(refinedValue => refinedValue.value)
 }

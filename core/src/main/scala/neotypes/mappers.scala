@@ -271,8 +271,9 @@ object mappers {
   }
 
   @implicitNotFound("Could not find the ParameterMapper for ${A}")
-  trait ParameterMapper[A] { self =>
-    /** Casts a Scala value of type A into a valid Neo4j parameter.
+  sealed trait ParameterMapper[A] { self =>
+    /**
+      * Casts a Scala value of type A into a valid Neo4j parameter.
       *
       * @param scalaValue The value to cast.
       * @tparam A The type of the scalaValue.
@@ -314,6 +315,18 @@ object mappers {
     def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
       override def toQueryParam(scalaValue: A): QueryParam =
         new QueryParam(v)
+    }
+
+    /**
+      * Constructs a [[ParameterMapper]] from a cast function.
+      *
+      * @param f The cast function.
+      * @tparam A The input type of the cast function.
+      * @return a [[ParameterMapper]] that will cast its inputs using the provided function.
+      */
+    private[neotypes] def fromCast[A](f: A => AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
+      override def toQueryParam(scalaValue: A): QueryParam =
+        new QueryParam(f(scalaValue))
     }
 
     /**
