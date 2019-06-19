@@ -1,8 +1,10 @@
 package neotypes
 
+import exceptions.{PropertyNotFoundException, UncoercibleException}
 import types.QueryParam
 
 import org.neo4j.driver.v1.Value
+import org.neo4j.driver.v1.exceptions.value.Uncoercible
 import org.neo4j.driver.v1.summary.ResultSummary
 
 import scala.annotation.implicitNotFound
@@ -255,6 +257,29 @@ object mappers {
       */
     def failed[A](failure: Throwable): ValueMapper[A] = new ValueMapper[A] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] = Left(failure)
+    }
+
+    /**
+      * Constructs a [[ValueMapper]] from a cast function.
+      *
+      * @param f The cast function.
+      * @tparam A The output type of the cast function.
+      * @return a [[ValueMapper]] that will cast its outputs using the provided function.
+      */
+    private[neotypes] def fromCast[A](f: Value => A): ValueMapper[A] = new ValueMapper[A] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] =
+        value match {
+          case Some(v) =>
+            try {
+              Right(f(v))
+            } catch {
+              case ex: Uncoercible => Left(UncoercibleException(ex.getLocalizedMessage, ex))
+              case ex: Throwable   => Left(ex)
+            }
+
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+        }
     }
   }
 
