@@ -50,7 +50,7 @@ class RefinedSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     for {
       _ <- c"CREATE (level: Level { value: ${L1} })".query[Unit].execute(s)
       _ <- c"CREATE (level: Level { value: ${L2} })".query[Unit].execute(s)
-      values <- "MATCH (level: Level) RETURN level.value".query[Level].list(s)
+      values <- "MATCH (level: Level) RETURN level.value ORDER BY level.value ASC".query[Level].list(s)
     } yield assert(values == List(L1, L2))
   }
 
