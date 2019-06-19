@@ -3,7 +3,7 @@ package neotypes
 import org.scalatest.FlatSpec
 
 import neotypes.implicits._
-import neotypes.types.NeoType
+import neotypes.types.QueryParam
 
 class CypherQueryInterpolationSpec extends FlatSpec {
   it should "interpolation with one param" in {
@@ -12,7 +12,7 @@ class CypherQueryInterpolationSpec extends FlatSpec {
 
     val expected = DeferredQuery(
       query  = "create (a:Test {name: $p1})",
-      params = Map("p1" -> NeoType("John"))
+      params = Map("p1" -> QueryParam("John"))
     )
 
     assert(query.query == expected)
@@ -39,15 +39,15 @@ class CypherQueryInterpolationSpec extends FlatSpec {
 
     val expected1 = DeferredQuery(
       query  = """create (a:Test {name: $p1, born: $p2})""",
-      params = Map("p1" -> NeoType("John"), "p2" -> NeoType(1980))
+      params = Map("p1" -> QueryParam("John"), "p2" -> QueryParam(1980))
     )
     val expected2 = DeferredQuery(
       query  = """create (a:Test {name: "John", born: $p1})""",
-      params = Map("p1" -> NeoType(1980))
+      params = Map("p1" -> QueryParam(1980))
     )
     val expected3 = DeferredQuery(
       query  = """create (a:Test {name: $p1, born: 1980})""",
-      params = Map("p1" -> NeoType("John"))
+      params = Map("p1" -> QueryParam("John"))
     )
 
     assert(query1.query == expected1)
@@ -61,7 +61,7 @@ class CypherQueryInterpolationSpec extends FlatSpec {
 
     val expected = DeferredQuery(
       query  = """create (a:Test {name: $p1, born: 1980})""",
-      params = Map("p1" -> NeoType("John"))
+      params = Map("p1" -> QueryParam("John"))
     )
 
     assert(query.query == expected)
@@ -82,7 +82,7 @@ class CypherQueryInterpolationSpec extends FlatSpec {
 
     val expected = DeferredQuery(
       query  = """create (a:Test { firstName: $p1, lastName: $p2, city: "Filadelfia", born: $p3 })""",
-      params = Map("p1" -> NeoType("John"), "p2" -> NeoType("Smith"), "p3" -> NeoType(1980))
+      params = Map("p1" -> QueryParam("John"), "p2" -> QueryParam("Smith"), "p3" -> QueryParam(1980))
     )
 
     assert(query.query == expected)

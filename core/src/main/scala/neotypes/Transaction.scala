@@ -4,7 +4,7 @@ import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
 import mappers.{ExecutionMapper, ResultMapper}
-import types.NeoType
+import types.QueryParam
 import utils.traverse.{traverseAsList, traverseAsSet}
 import utils.stage._
 
@@ -17,7 +17,7 @@ import scala.collection.JavaConverters._
 final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
   import Transaction.{convertParams, recordToSeq}
 
-  def execute[T](query: String, params: Map[String, NeoType] = Map.empty)
+  def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
                 (implicit executionMapper: ExecutionMapper[T]): F[T] =
     F.async { cb =>
       transaction
@@ -27,7 +27,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def list[T](query: String, params: Map[String, NeoType] = Map.empty)
+  def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
              (implicit resultMapper: ResultMapper[T]): F[List[T]] =
     F.async { cb =>
       transaction
@@ -42,7 +42,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def set[T](query: String, params: Map[String, NeoType] = Map.empty)
+  def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
             (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
     F.async { cb =>
       transaction
@@ -57,7 +57,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def single[T](query: String, params: Map[String, NeoType] = Map.empty)
+  def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit resultMapper: ResultMapper[T]): F[T] =
     F.async { cb =>
       transaction
@@ -89,7 +89,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
       }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, NeoType] = Map.empty)
+  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, QueryParam] = Map.empty)
                                    (implicit S: Stream.Aux[S, F]): S[T] =
     S.fToS(
       F.async { cb =>
@@ -128,6 +128,6 @@ object Transaction {
   private def recordToSeq(record: Record): Seq[(String, Value)] =
     record.fields.asScala.map(p => p.key -> p.value)
 
-  private def convertParams(params: Map[String, NeoType]): JMap[String, Object] =
+  private def convertParams(params: Map[String, QueryParam]): JMap[String, Object] =
     params.mapValues(_.underlying).asJava
 }

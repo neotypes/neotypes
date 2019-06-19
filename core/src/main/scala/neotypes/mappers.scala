@@ -1,6 +1,6 @@
 package neotypes
 
-import types.NeoType
+import types.QueryParam
 
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.summary.ResultSummary
@@ -278,7 +278,7 @@ object mappers {
       * @tparam A The type of the scalaValue.
       * @return The same value casted as a valid Neo4j parameter.
       */
-    def toNeoType(scalaValue: A): NeoType
+    def toQueryParam(scalaValue: A): QueryParam
 
     /**
       * Creates a new [[ParameterMapper]] by applying a function
@@ -289,8 +289,8 @@ object mappers {
       * @return A new [[ParameterMapper]] for values of type B.
       */
     final def contramap[B](f: B => A): ParameterMapper[B] = new ParameterMapper[B] {
-      override def toNeoType(scalaValue: B): NeoType =
-        self.toNeoType(f(scalaValue))
+      override def toQueryParam(scalaValue: B): QueryParam =
+        self.toQueryParam(f(scalaValue))
     }
   }
 
@@ -312,8 +312,8 @@ object mappers {
       * @return A [[ParameterMapper]] that always returns the supplied value.
       */
     def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
-      override def toNeoType(scalaValue: A): NeoType =
-        new NeoType(v)
+      override def toQueryParam(scalaValue: A): QueryParam =
+        new QueryParam(v)
     }
 
     /**
@@ -326,8 +326,8 @@ object mappers {
       * @return A [[ParameterMapper]] that always returns its input unchanged.
       */
     private[neotypes] def identity[A <: AnyRef] = new ParameterMapper[A] {
-      override def toNeoType(scalaValue: A): NeoType =
-        new NeoType(scalaValue)
+      override def toQueryParam(scalaValue: A): QueryParam =
+        new QueryParam(scalaValue)
     }
   }
 }

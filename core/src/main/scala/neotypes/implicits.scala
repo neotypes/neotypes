@@ -5,7 +5,7 @@ import java.util.UUID
 
 import exceptions.{ConversionException, PropertyNotFoundException, UncoercibleException}
 import mappers.{ExecutionMapper, ParameterMapper, ResultMapper, TypeHint, ValueMapper}
-import types.{NeoType, Path}
+import types.{Path, QueryParam}
 import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet}
 
 import org.neo4j.driver.internal.types.InternalTypeSystem
@@ -435,32 +435,32 @@ object implicits {
 
   implicit val BooleanParameterMapper: ParameterMapper[Boolean] =
     new ParameterMapper[Boolean] {
-      override def toNeoType(scalaValue: Boolean): NeoType =
-        new NeoType(new java.lang.Boolean(scalaValue))
+      override def toQueryParam(scalaValue: Boolean): QueryParam =
+        new QueryParam(new java.lang.Boolean(scalaValue))
     }
 
   implicit val IntParameterMapper: ParameterMapper[Int] =
     new ParameterMapper[Int] {
-      override def toNeoType(scalaValue: Int): NeoType =
-        new NeoType(new java.lang.Integer(scalaValue))
+      override def toQueryParam(scalaValue: Int): QueryParam =
+        new QueryParam(new java.lang.Integer(scalaValue))
     }
 
   implicit val LongParameterMapper: ParameterMapper[Long] =
     new ParameterMapper[Long] {
-      override def toNeoType(scalaValue: Long): NeoType =
-        new NeoType(new java.lang.Long(scalaValue))
+      override def toQueryParam(scalaValue: Long): QueryParam =
+        new QueryParam(new java.lang.Long(scalaValue))
     }
 
   implicit val DoubleParameterMapper: ParameterMapper[Double] =
     new ParameterMapper[Double] {
-      override def toNeoType(scalaValue: Double): NeoType =
-        new NeoType(new java.lang.Double(scalaValue))
+      override def toQueryParam(scalaValue: Double): QueryParam =
+        new QueryParam(new java.lang.Double(scalaValue))
     }
 
   implicit val FloatParameterMapper: ParameterMapper[Float] =
     new ParameterMapper[Float] {
-      override def toNeoType(scalaValue: Float): NeoType =
-        new NeoType(new java.lang.Float(scalaValue))
+      override def toQueryParam(scalaValue: Float): QueryParam =
+        new QueryParam(new java.lang.Float(scalaValue))
     }
 
   implicit val StringParameterMapper: ParameterMapper[String] =
@@ -507,26 +507,26 @@ object implicits {
 
   implicit def OptionParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     new ParameterMapper[Option[T]] {
-      override def toNeoType(scalaValue: Option[T]): NeoType =
-        new NeoType(scalaValue.map(v => mapper.toNeoType(v).underlying).orNull)
+      override def toQueryParam(scalaValue: Option[T]): QueryParam =
+        new QueryParam(scalaValue.map(v => mapper.toQueryParam(v).underlying).orNull)
     }
 
   implicit def ListParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[List[T]] =
     new ParameterMapper[List[T]] {
-      override def toNeoType(scalaValue: List[T]): NeoType =
-        new NeoType(scalaValue.map(v => mapper.toNeoType(v).underlying).asJava)
+      override def toQueryParam(scalaValue: List[T]): QueryParam =
+        new QueryParam(scalaValue.map(v => mapper.toQueryParam(v).underlying).asJava)
     }
 
   implicit def SetParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Set[T]] =
     new ParameterMapper[Set[T]] {
-      override def toNeoType(scalaValue: Set[T]): NeoType =
-        new NeoType(scalaValue.map(v => mapper.toNeoType(v).underlying).asJava)
+      override def toQueryParam(scalaValue: Set[T]): QueryParam =
+        new QueryParam(scalaValue.map(v => mapper.toQueryParam(v).underlying).asJava)
     }
 
   implicit def MapParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Map[String, T]] =
     new ParameterMapper[Map[String, T]] {
-      override def toNeoType(scalaValue: Map[String, T]): NeoType =
-        new NeoType(scalaValue.mapValues(v => mapper.toNeoType(v).underlying).asJava)
+      override def toQueryParam(scalaValue: Map[String, T]): QueryParam =
+        new QueryParam(scalaValue.mapValues(v => mapper.toQueryParam(v).underlying).asJava)
     }
 
   /**
@@ -538,7 +538,7 @@ object implicits {
   }
 
   object CypherStringInterpolator {
-    def createQuery(parts: String*)(parameters: NeoType*): DeferredQueryBuilder = {
+    def createQuery(parts: String*)(parameters: QueryParam*): DeferredQueryBuilder = {
       val queries = parts.iterator.map(DeferredQueryBuilder.Query)
       val params = parameters.iterator.map(DeferredQueryBuilder.Param)
 
@@ -567,7 +567,7 @@ object implicits {
             val nextElement = arg.tree
             val tpe = nextElement.tpe.widen
 
-            q"neotypes.mappers.ParameterMapper[${tpe}].toNeoType(${nextElement})"
+            q"neotypes.mappers.ParameterMapper[${tpe}].toQueryParam(${nextElement})"
           }
 
           c.Expr(
@@ -623,9 +623,9 @@ object implicits {
       F.recoverWith[T, U](m)(f)
   }
 
-  implicit class NeoTypeOps[T](private val underlying: T) extends AnyVal {
-    def asNeoType(implicit mapper: ParameterMapper[T]): NeoType =
-      mapper.toNeoType(underlying)
+  implicit class QueryParamOps[T](private val underlying: T) extends AnyVal {
+    def asQueryParam(implicit mapper: ParameterMapper[T]): QueryParam =
+      mapper.toQueryParam(underlying)
   }
 
   implicit class SessionExt(private val session: NSession) extends AnyVal {
