@@ -3,9 +3,11 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
-import neotypes.mappers.{ExecutionMapper, ResultMapper}
-import neotypes.utils.traverse.{traverseAsList, traverseAsSet}
-import neotypes.utils.stage._
+import mappers.{ExecutionMapper, ResultMapper}
+import types.QueryParam
+import utils.traverse.{traverseAsList, traverseAsSet}
+import utils.stage._
+
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}
@@ -15,7 +17,7 @@ import scala.collection.JavaConverters._
 final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
   import Transaction.{convertParams, recordToSeq}
 
-  def execute[T](query: String, params: Map[String, Any] = Map.empty)
+  def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
                 (implicit executionMapper: ExecutionMapper[T]): F[T] =
     F.async { cb =>
       transaction
@@ -25,7 +27,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def list[T](query: String, params: Map[String, Any] = Map.empty)
+  def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
              (implicit resultMapper: ResultMapper[T]): F[List[T]] =
     F.async { cb =>
       transaction
@@ -40,7 +42,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def set[T](query: String, params: Map[String, Any] = Map.empty)
+  def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
             (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
     F.async { cb =>
       transaction
@@ -55,7 +57,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def single[T](query: String, params: Map[String, Any] = Map.empty)
+  def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit resultMapper: ResultMapper[T]): F[T] =
     F.async { cb =>
       transaction
@@ -87,7 +89,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
       }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, Any] = Map.empty)
+  def stream[T: ResultMapper, S[_]](query: String, params: Map[String, QueryParam] = Map.empty)
                                    (implicit S: Stream.Aux[S, F]): S[T] =
     S.fToS(
       F.async { cb =>
@@ -126,20 +128,6 @@ object Transaction {
   private def recordToSeq(record: Record): Seq[(String, Value)] =
     record.fields.asScala.map(p => p.key -> p.value)
 
-  private def convertParams(params: Map[String, Any]): JMap[String, Object] =
-    params.mapValues(toNeoType).asJava
-
-  private def toNeoType(value: Any): AnyRef = value match {
-    case s: Seq[_]    => s.map(toNeoType).asJava
-    case s: Set[_]    => s.map(toNeoType).asJava
-    case m: Map[_, _] => m.mapValues(toNeoType).asJava
-    case o: Option[_] => o.map(toNeoType).orNull
-    // The following type cast is sound,
-    // since AnyRef is equivalent to java.lang.Object
-    // and all values coming from a class can be upcasted to it.
-    // For value types (Subtypes of AnyVal),
-    // this cast ends up boxing them to their objectual representation.
-    // A such, this will never fail in runtime.
-    case v            => v.asInstanceOf[AnyRef]
-  }
+  private def convertParams(params: Map[String, QueryParam]): JMap[String, Object] =
+    params.mapValues(_.underlying).asJava
 }

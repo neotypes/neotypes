@@ -13,6 +13,8 @@ val monixVersion = "3.0.0-RC2"
 val akkaStreamVersion = "2.5.19"
 val fs2Version = "1.0.4"
 val zioVersion = "1.0.0-RC8-4"
+val paradiseVersion = "2.1.1"
+val refinedVersion = "0.9.8"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -55,7 +57,8 @@ lazy val root = (project in file("."))
     akkaStream,
     fs2Stream,
     monixStream,
-    zioStream
+    zioStream,
+    refined
   )
   .settings(noPublishSettings)
   .settings(
@@ -80,12 +83,15 @@ lazy val core = (project in file("core"))
   .settings(
     name := "neotypes",
 
+    addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
+
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       )
         ++ COMPILE(
-        "com.chuusai" %% "shapeless" % shapelessVersion
+        "com.chuusai" %% "shapeless" % shapelessVersion,
+        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
       )
         ++ TEST(
         "org.scalatest" %% "scalatest" % scalaTestVersion,
@@ -168,6 +174,16 @@ lazy val zioStream = (project in file("zio-stream"))
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio"         % zioVersion,
       "dev.zio" %% "zio-streams" % zioVersion
+    )
+  )
+
+lazy val refined = (project in file("refined"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-refined",
+    libraryDependencies ++= PROVIDED(
+      "eu.timepit" %% "refined" % refinedVersion
     )
   )
 

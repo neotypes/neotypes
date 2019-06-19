@@ -1,5 +1,7 @@
 package neotypes
 
+import types.QueryParam
+
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.summary.ResultSummary
 
@@ -48,10 +50,11 @@ object mappers {
       * @return A new [[ResultMapper]] derived from the value your original [[ResultMapper]] outputs.
       */
     def flatMap[B](f: A => ResultMapper[B]): ResultMapper[B] = new ResultMapper[B] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] = self.to(value, typeHint) match {
-        case Right(a) => f(a).to(value, typeHint)
-        case l @ Left(_) => l.asInstanceOf[Either[Throwable, B]]
-      }
+      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
+        self.to(value, typeHint) match {
+          case Right(a) => f(a).to(value, typeHint)
+          case Left(e) => Left(e)
+        }
     }
 
     /**
@@ -80,14 +83,13 @@ object mappers {
           case Right(r) => Right(Left(r))
           case Left(_) => fa.to(value, typeHint) match {
             case Right(r) => Right(Right(r))
-            case l @ Left(_) => l.asInstanceOf[Either[Throwable, Either[A, B]]]
+            case Left(e) => Left(e)
           }
         }
     }
   }
 
   object ResultMapper {
-
     /**
       * Summons an implicit [[ResultMapper]] already in scope by result type.
       *
@@ -132,7 +134,6 @@ object mappers {
     def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
     }
-
   }
 
   @implicitNotFound("Could not find the ValueMapper for ${A}")
@@ -175,7 +176,7 @@ object mappers {
     def flatMap[B](f: A => ValueMapper[B]): ValueMapper[B] = new ValueMapper[B] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, B] = self.to(fieldName, value) match {
         case Right(a) => f(a).to(fieldName, value)
-        case l @ Left(_) => l.asInstanceOf[Either[Throwable, B]]
+        case Left(e) => Left(e)
       }
     }
 
@@ -205,14 +206,13 @@ object mappers {
           case Right(r) => Right(Left(r))
           case Left(_) => fa.to(fieldName, value) match {
             case Right(r) => Right(Right(r))
-            case l @ Left(_) => l.asInstanceOf[Either[Throwable, Either[A, B]]]
+            case Left(e) => Left(e)
           }
         }
     }
   }
 
   object ValueMapper {
-
     /**
       * Summons an implicit [[ValueMapper]] already in scope by result type.
       *
@@ -256,7 +256,6 @@ object mappers {
     def failed[A](failure: Throwable): ValueMapper[A] = new ValueMapper[A] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] = Left(failure)
     }
-
   }
 
   @implicitNotFound("Could not find the ExecutionMapper for ${A}")
@@ -269,5 +268,66 @@ object mappers {
   object TypeHint {
     def apply[A](classTag: ClassTag[A]): TypeHint =
       new TypeHint(classTag.runtimeClass.getName.startsWith("scala.Tuple"))
+  }
+
+  @implicitNotFound("Could not find the ParameterMapper for ${A}")
+  trait ParameterMapper[A] { self =>
+    /** Casts a Scala value of type A into a valid Neo4j parameter.
+      *
+      * @param scalaValue The value to cast.
+      * @tparam A The type of the scalaValue.
+      * @return The same value casted as a valid Neo4j parameter.
+      */
+    def toQueryParam(scalaValue: A): QueryParam
+
+    /**
+      * Creates a new [[ParameterMapper]] by applying a function
+      * to a Scala value of type B before casting it using this mapper.
+      *
+      * @param f The function to apply before the cast.
+      * @tparam B The input type of the supplied function.
+      * @return A new [[ParameterMapper]] for values of type B.
+      */
+    final def contramap[B](f: B => A): ParameterMapper[B] = new ParameterMapper[B] {
+      override def toQueryParam(scalaValue: B): QueryParam =
+        self.toQueryParam(f(scalaValue))
+    }
+  }
+
+  object ParameterMapper {
+    /**
+      * Summons an implicit [[ParameterMapper]] already in scope by result type.
+      *
+      * @param mapper A [[ParameterMapper]] in scope of the desired type.
+      * @tparam A The input type of the mapper.
+      * @return A [[ParameterMapper]] for the given type currently in implicit scope.
+      */
+    def apply[A](implicit mapper: ParameterMapper[A]): ParameterMapper[A] = mapper
+
+    /**
+      * Constructs a [[ParameterMapper]] that always returns a constant value.
+      *
+      * @param v The value to always return.
+      * @tparam A The type of the input value.
+      * @return A [[ParameterMapper]] that always returns the supplied value.
+      */
+    def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
+      override def toQueryParam(scalaValue: A): QueryParam =
+        new QueryParam(v)
+    }
+
+    /**
+      * Constructs a [[ParameterMapper]] that works like an identity function.
+      *
+      * Many values do not require any mapping to be used as parameters.
+      * For those cases, this private helper is useful to reduce boilerplate.
+      *
+      * @tparam A The type of the input value (must be a subtype of [[AnyRef]]).
+      * @return A [[ParameterMapper]] that always returns its input unchanged.
+      */
+    private[neotypes] def identity[A <: AnyRef] = new ParameterMapper[A] {
+      override def toQueryParam(scalaValue: A): QueryParam =
+        new QueryParam(scalaValue)
+    }
   }
 }

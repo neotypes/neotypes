@@ -42,3 +42,4 @@ The project aims to provide seamless integration with most popular scala infrast
 |`"com.dimafeng" %% "neotypes-fs2-stream" % version`|result streaming for FS2.|
 |`"com.dimafeng" %% "neotypes-monix-stream" % version`|result streaming for Monix Observables.|
 |`"com.dimafeng" %% "neotypes-zio-stream" % version`|result streaming for ZIO ZStreams.|
+|`"com.dimafeng" %% "neotypes-refined" % version`|support to insert and retrieve refined values.|

@@ -1,10 +1,11 @@
 package neotypes
 
-import neotypes.mappers.{ExecutionMapper, ResultMapper}
+import mappers.{ExecutionMapper, ResultMapper}
+import types.QueryParam
 
 import scala.collection.mutable.StringBuilder
 
-final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, Any] = Map.empty) {
+final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
   import DeferredQuery.StreamPartiallyApplied
 
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
@@ -28,7 +29,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def stream[S[_]]: StreamPartiallyApplied[S, T] =
     new StreamPartiallyApplied[S, T](this)
 
-  def withParams(params: Map[String, Any]): DeferredQuery[T] =
+  def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
     this.copy(params = this.params ++ params)
 }
 
@@ -53,7 +54,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
 
   def query[T]: DeferredQuery[T] = {
     @annotation.tailrec
-    def loop(remaining: List[Part], queryBuilder: StringBuilder, accParams: Map[String, Any], nextParamIdx: Int): DeferredQuery[T] =
+    def loop(remaining: List[Part], queryBuilder: StringBuilder, accParams: Map[String, QueryParam], nextParamIdx: Int): DeferredQuery[T] =
       remaining match {
         case Nil =>
           DeferredQuery(
@@ -83,6 +84,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             nextParamIdx + 1
           )
       }
+
       loop(
         remaining = this.parts,
         StringBuilder.newBuilder,
@@ -105,5 +107,5 @@ private[neotypes] object DeferredQueryBuilder {
 
   final case class Query(part: String) extends Part
 
-  final case class Param(value: Any) extends Part
+  final case class Param(value: QueryParam) extends Part
 }
