@@ -1,6 +1,9 @@
 package neotypes
 
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.driver._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import shapeless._
 
 import scala.concurrent.Future

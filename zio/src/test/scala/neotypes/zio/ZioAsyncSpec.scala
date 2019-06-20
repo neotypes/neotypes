@@ -2,7 +2,9 @@ package neotypes.zio
 
 import zio.Task
 import zio.DefaultRuntime
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import neotypes.zio.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException

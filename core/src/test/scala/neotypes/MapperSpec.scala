@@ -131,7 +131,7 @@ class MapperSpec extends FreeSpec {
     }
 
     "should derive an either mapper" in {
-      val eitherIntOrStringMapper = ValueMapper[Int].either(ValueMapper[Int])
+      val eitherIntOrStringMapper = ValueMapper[Int].either(ValueMapper[String])
       val resultInt = eitherIntOrStringMapper.to("value", Some(new IntegerValue(1)))
       val resultString = eitherIntOrStringMapper.to("value", Some(new StringValue("string")))
       assert(resultInt == Right(Left(1)))

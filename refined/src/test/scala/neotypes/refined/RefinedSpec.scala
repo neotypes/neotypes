@@ -2,7 +2,11 @@ package neotypes.refined
 
 import neotypes.BaseIntegrationSpec
 import neotypes.exceptions.UncoercibleException
-import neotypes.implicits._
+import neotypes.implicits.mappers.all._
+import neotypes.implicits.syntax.driver._
+import neotypes.implicits.syntax.cypher._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import neotypes.refined.implicits._
 
 import eu.timepit.refined.W

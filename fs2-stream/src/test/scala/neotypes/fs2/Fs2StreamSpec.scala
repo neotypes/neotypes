@@ -4,7 +4,9 @@ import cats.effect.IO
 import neotypes.BaseIntegrationSpec
 import neotypes.cats.implicits._
 import neotypes.fs2.implicits._
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import org.scalatest.AsyncFlatSpec
 
 class Fs2StreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {

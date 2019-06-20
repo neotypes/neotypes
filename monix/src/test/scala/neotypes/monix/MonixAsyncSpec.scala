@@ -2,8 +2,10 @@ package neotypes.monix
 
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import neotypes.monix.implicits._
-import neotypes.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
 import org.scalatest.AsyncFlatSpec
