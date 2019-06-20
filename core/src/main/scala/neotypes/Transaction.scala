@@ -13,6 +13,7 @@ import org.neo4j.driver.v1.summary.ResultSummary
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}
 
 import scala.collection.JavaConverters._
+import scala.language.higherKinds
 
 final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
   import Transaction.{convertParams, recordToSeq}

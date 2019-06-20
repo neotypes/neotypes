@@ -1,8 +1,10 @@
 package neotypes
 
-import neotypes.implicits._
+import neotypes.implicits.syntax.async._
 import neotypes.utils.stage._
 import org.neo4j.driver.v1.{AccessMode, Driver => NDriver, Session => NSession}
+
+import scala.language.higherKinds
 
 final class Driver[F[_]](driver: NDriver)(implicit F: Async[F]) {
   def readSession[T](sessionWork: Session[F] => F[T]): F[T] =

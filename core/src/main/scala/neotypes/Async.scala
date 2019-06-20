@@ -1,5 +1,7 @@
 package neotypes
 
+import scala.language.higherKinds
+
 trait Async[F[_]] {
   def async[T](cb: (Either[Throwable, T] => Unit) => Unit): F[T]
 
