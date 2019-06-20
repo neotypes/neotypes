@@ -47,15 +47,16 @@ title: "Supported types"
 
 If you want to support your own types, then you would need to create your own _implicits_.
 
-* For **Field of a case class** you need an instance of `neotypes.mappers.ValueMapper[T]`. You can create a new instace:
-  + From scratch by instantiating it: `new ValueMapper[T] { ... }`.
+* For **fields of a case class**, you need an instance of `neotypes.mappers.ValueMapper[T]`. You can create a new instace:
+  + From scratch by instantiating it `new ValueMapper[T] { ... }`.
+  + Using the helper methods on the companion object like `fromCast` or `instance`.
+  + Casting an already existing mapper using `map` or `flatMap`.
+
+* For **query results**, you need an instance of `neotypes.mappers.ResultMapper[T]`. You can create a new instace:
+  + From scratch by instantiating it `new ResultMapper[T] { ... }`.
+  + From a **ValueMapper** `ResultMapper.fromValueMapper[T]`.
   + Using the helper methods on the companion object like `instace`.
   + Casting an already existing mapper using `map` or `flatMap`.
 
-* For **Query result** you need an instance of `neotypes.mappers.ResultMapper[T]`. You can create a new instace:
-  + From scratch by instantiating it: `new ResultMapper[T] { ... }`.
-  + Using the helper methods on the companion object like `instace`.
-  + Casting an already existing mapper using `map` or `flatMap`.
-
-* For **query parameter** you need an instance of `neotypes.mappers.ParameterMapper[T]`. You can create a new instace:
+* For **query parameters**, you need an instance of `neotypes.mappers.ParameterMapper[T]`. You can create a new instace:
   + Casting an already existing mapper using `contramap`.
