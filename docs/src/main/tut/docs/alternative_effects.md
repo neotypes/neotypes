@@ -10,8 +10,9 @@ title: "Side effects"
 ### scala.concurrent.Future
 
 ```scala
-import neotypes.Async._
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.session._ // Provides the asScala[F[_]] extension method.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import scala.concurrent.Future
 
 val s = driver.session().asScala[Future]
@@ -23,8 +24,10 @@ Await.result("match (p:Person {name: 'Charlize Theron'}) return p.name".query[St
 
 ```scala
 import cats.effect.IO
-import neotypes.cats.implicits._
-import neotypes.implicits._
+import neotypes.cats.implicits._ // Brings the implicit Async[IO] instance into the scope.
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.session._ // Provides the asScala[F[_]] extension method.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
 val s = driver.session().asScala[IO]
 
@@ -36,8 +39,10 @@ val s = driver.session().asScala[IO]
 ```scala
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import neotypes.monix.implicits._
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.session._ // Provides the asScala[F[_]] extension method.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.monix.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import scala.concurrent.duration._
 
 val s = driver.session().asScala[Task]
@@ -50,8 +55,10 @@ val s = driver.session().asScala[Task]
 ```scala
 import zio.Task
 import zio.DefaultRuntime
-import neotypes.implicits._
-import neotypes.zio.implicits._
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.session._ // Provides the asScala[F[_]] extension method.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.zio.implicits._ // Brings the implicit Async[Task] instance into the scope.
 
 val runtime = new DefaultRuntime {
 

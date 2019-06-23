@@ -2,7 +2,8 @@ package neotypes
 
 import org.scalatest.FlatSpec
 
-import neotypes.implicits._
+import neotypes.implicits.mappers.parameters._
+import neotypes.implicits.syntax.cypher._
 import neotypes.types.QueryParam
 
 class CypherQueryInterpolationSpec extends FlatSpec {

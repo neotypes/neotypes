@@ -1,6 +1,8 @@
 package neotypes
 
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.types.{Node, Relationship}
 import shapeless._
 import PathSessionSpec._

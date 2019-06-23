@@ -3,9 +3,11 @@ package neotypes.monix.stream
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import neotypes.BaseIntegrationSpec
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import neotypes.monix.implicits._
 import neotypes.monix.stream.implicits._
-import neotypes.implicits._
 import org.scalatest.AsyncFlatSpec
 
 class MonixStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {

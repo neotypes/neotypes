@@ -1,8 +1,10 @@
 package neotypes
 
-import neotypes.implicits._
+import neotypes.implicits.syntax.async._
 import neotypes.utils.stage._
 import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
+
+import scala.language.higherKinds
 
 final class Session[F[_]](session: NSession)(implicit F: Async[F]) {
   def beginTransaction(): F[Transaction[F]] =

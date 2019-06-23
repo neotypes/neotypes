@@ -1,8 +1,10 @@
 package neotypes
 
+import exceptions.{PropertyNotFoundException, UncoercibleException}
 import types.QueryParam
 
 import org.neo4j.driver.v1.Value
+import org.neo4j.driver.v1.exceptions.value.Uncoercible
 import org.neo4j.driver.v1.summary.ResultSummary
 
 import scala.annotation.implicitNotFound
@@ -134,6 +136,22 @@ object mappers {
     def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
     }
+
+    /**
+      * Constructs a [[ResultMapper]] from a [[ValueMapper]].
+      *
+      * @tparam A the type of both the [[ResultMapper]] and the [[ValueMapper]].
+      * @return A [[ResultMapper]] that delegates its behaviour to a [[ValueMapper]].
+      */
+    def fromValueMapper[A](implicit marshallable: ValueMapper[A]): ResultMapper[A] =
+      new ResultMapper[A] {
+        override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
+          fields
+            .headOption
+            .fold(ifEmpty = marshallable.to("", None)) {
+              case (name, value) => marshallable.to(name, Some(value))
+            }
+      }
   }
 
   @implicitNotFound("Could not find the ValueMapper for ${A}")
@@ -256,6 +274,29 @@ object mappers {
     def failed[A](failure: Throwable): ValueMapper[A] = new ValueMapper[A] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] = Left(failure)
     }
+
+    /**
+      * Constructs a [[ValueMapper]] from a cast function.
+      *
+      * @param f The cast function.
+      * @tparam A The output type of the cast function.
+      * @return a [[ValueMapper]] that will cast its outputs using the provided function.
+      */
+    def fromCast[A](f: Value => A): ValueMapper[A] = new ValueMapper[A] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] =
+        value match {
+          case Some(v) =>
+            try {
+              Right(f(v))
+            } catch {
+              case ex: Uncoercible => Left(UncoercibleException(ex.getLocalizedMessage, ex))
+              case ex: Throwable   => Left(ex)
+            }
+
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+        }
+    }
   }
 
   @implicitNotFound("Could not find the ExecutionMapper for ${A}")
@@ -271,8 +312,9 @@ object mappers {
   }
 
   @implicitNotFound("Could not find the ParameterMapper for ${A}")
-  trait ParameterMapper[A] { self =>
-    /** Casts a Scala value of type A into a valid Neo4j parameter.
+  sealed trait ParameterMapper[A] { self =>
+    /**
+      * Casts a Scala value of type A into a valid Neo4j parameter.
       *
       * @param scalaValue The value to cast.
       * @tparam A The type of the scalaValue.
@@ -314,6 +356,18 @@ object mappers {
     def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
       override def toQueryParam(scalaValue: A): QueryParam =
         new QueryParam(v)
+    }
+
+    /**
+      * Constructs a [[ParameterMapper]] from a cast function.
+      *
+      * @param f The cast function.
+      * @tparam A The input type of the cast function.
+      * @return a [[ParameterMapper]] that will cast its inputs using the provided function.
+      */
+    private[neotypes] def fromCast[A](f: A => AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
+      override def toQueryParam(scalaValue: A): QueryParam =
+        new QueryParam(f(scalaValue))
     }
 
     /**

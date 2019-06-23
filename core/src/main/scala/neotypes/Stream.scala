@@ -1,5 +1,7 @@
 package neotypes
 
+import scala.language.higherKinds
+
 trait Stream[S[_]] {
   type F[T]
 

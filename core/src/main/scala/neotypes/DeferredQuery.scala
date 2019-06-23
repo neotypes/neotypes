@@ -4,6 +4,7 @@ import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
 import scala.collection.mutable.StringBuilder
+import scala.language.higherKinds
 
 final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
   import DeferredQuery.StreamPartiallyApplied

@@ -5,7 +5,9 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import neotypes.BaseIntegrationSpec
 import neotypes.akkastreams.implicits._
-import neotypes.implicits._
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.session._
+import neotypes.implicits.syntax.string._
 import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.Future
