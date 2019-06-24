@@ -39,7 +39,7 @@ implicit val materializer = ActorMaterializer()
 
 ```scala
 import cats.effect.IO
-import neotypes.cats.implicits._ // Brings the implicit Async[IO] instance into the scope.
+import neotypes.cats.effect.implicits._ // Brings the implicit Async[IO] instance into the scope.
 import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2IOStream] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
@@ -60,7 +60,7 @@ val s = driver.session().asScala[IO]
 #### With other effect type.
 
 ```scala
-import neotypes.cats.implicits._ // Brings the implicit Async[F[_]] instance into the scope.
+import neotypes.cats.effect.implicits._ // Brings the implicit Async[F[_]] instance into the scope.
 import neotypes.fs2.Fs2FStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2FStream] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.

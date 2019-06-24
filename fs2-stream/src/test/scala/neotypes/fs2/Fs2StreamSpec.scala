@@ -2,7 +2,7 @@ package neotypes.fs2
 
 import cats.effect.IO
 import neotypes.BaseIntegrationSpec
-import neotypes.cats.implicits._
+import neotypes.cats.effect.implicits._
 import neotypes.fs2.implicits._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.session._

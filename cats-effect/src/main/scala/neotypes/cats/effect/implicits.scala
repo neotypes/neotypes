@@ -1,4 +1,4 @@
-package neotypes.cats
+package neotypes.cats.effect
 
 object implicits {
   implicit def catsAsync[F[_]](implicit F: cats.effect.Async[F]): neotypes.Async[F] =

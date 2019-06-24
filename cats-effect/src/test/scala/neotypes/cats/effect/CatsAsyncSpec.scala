@@ -1,7 +1,7 @@
-package neotypes.cats
+package neotypes.cats.effect
 
 import cats.effect.IO
-import neotypes.cats.implicits._
+import neotypes.cats.effect.implicits._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
