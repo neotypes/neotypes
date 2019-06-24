@@ -12,6 +12,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
+  def map[F[_], K, V](session: Session[F])(implicit ev: T <:< (K, V),  rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+    session.transact(tx => map(tx))
+
   def set[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[Set[T]] =
     session.transact(tx => set(tx))
 
@@ -27,6 +30,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def list[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
 
+  def map[F[_], K, V](tx: Transaction[F])(implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+    tx.map(query, params)
+
   def set[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Set[T]] =
     tx.set(query, params)
 
@@ -40,14 +46,14 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     tx.execute(query, params)
 
   def stream[S[_]]: StreamPartiallyApplied[S, T] =
-    new StreamPartiallyApplied[S, T](this)
+    new StreamPartiallyApplied(this)
 
   def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
     this.copy(params = this.params ++ params)
 }
 
 private[neotypes] object DeferredQuery {
-  private[neotypes] final class StreamPartiallyApplied[S[_], T](val dq: DeferredQuery[T]) extends AnyVal {
+  private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
     def apply[F[_]](session: Session[F])(implicit rm: ResultMapper[T], S: Stream.Aux[S, F], F: Async[F]): S[T] =
       S.fToS(
         F.flatMap(session.beginTransaction()) { tx =>

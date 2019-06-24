@@ -152,7 +152,9 @@ private[implicits] trait ValueMappers {
 
           case Some(value) =>
             traverseAsMap(value.keys.asScala.iterator) { key: String =>
-              key -> mapper.to(key, Option(value.get(key)))
+              mapper.to(key, Option(value.get(key))).right.map { value =>
+                key -> value
+              }
             }
         }
     }

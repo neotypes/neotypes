@@ -41,6 +41,16 @@ class QueryExecutionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       }
   }
 
-  override def initQuery: String =
-    (0 to 10).map(n => s"CREATE (:Person {name: $n})").mkString("\n")
+  it should "retrieve multiple results as a Map" in {
+    val s = driver.session().asScala[Future]
+
+    "match (p:Person) return p.name, 1"
+      .query[(Int, Int)]
+      .map(s)
+      .map {
+        names => assert(names == (0 to 10).map(k => k -> 1).toMap)
+      }
+  }
+
+  override def initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
 }

@@ -59,7 +59,7 @@ val born = 1980
 c"create (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation.
 ```
 
-A query can be run in five different ways:
+A query can be run in six different ways:
 
 * `execute(s)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`.
 If you need to support your return types for this type of queries, you can provide an implementation of `ExecutionMapper` for any custom type.
@@ -67,6 +67,7 @@ If you need to support your return types for this type of queries, you can provi
 * `list(s)` - runs a query and returns a **List** of results.
 * `set(s)` - runs a query and returns a **Set** of results.
 * `vector(s)` - runs a query and returns a **Vector** of results.
+* `map(s)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
 * `stream(s)` - runs a query and returns a **Stream** of results
 _(please read more [streaming](docs/streams.html))_.
 
@@ -91,4 +92,7 @@ _(please read more [streaming](docs/streams.html))_.
 // Vector.
 "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].vector(s)
 "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].vector(s)
+
+// Map.
+"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].map(s)
 ```
