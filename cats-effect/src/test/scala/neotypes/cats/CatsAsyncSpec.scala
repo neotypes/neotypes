@@ -7,9 +7,8 @@ import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.scalatest.AsyncFlatSpec
 
-class CatsAsyncSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class CatsAsyncSpec extends BaseIntegrationSpec {
   it should "work with IO" in {
     val s = driver.session().asScala[IO]
 

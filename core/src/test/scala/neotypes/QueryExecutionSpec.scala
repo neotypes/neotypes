@@ -3,11 +3,10 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
-import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.Future
 
-class QueryExecutionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class QueryExecutionSpec extends BaseIntegrationSpec {
   it should "retrieve multiple results as a List" in {
     val s = driver.session().asScala[Future]
 

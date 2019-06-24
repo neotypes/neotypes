@@ -8,9 +8,8 @@ import neotypes.implicits.syntax.string._
 import neotypes.zio.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.scalatest.AsyncFlatSpec
 
-class ZioAsyncSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class ZioAsyncSpec extends BaseIntegrationSpec {
   it should "work with ZIO" in {
     val runtime = new DefaultRuntime {}
 

@@ -8,9 +8,8 @@ import neotypes.implicits.syntax.string._
 import neotypes.monix.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.scalatest.AsyncFlatSpec
 
-class MonixAsyncSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class MonixAsyncSpec extends BaseIntegrationSpec {
   it should "work with Task" in {
     val s = driver.session().asScala[Task]
 

@@ -8,9 +8,8 @@ import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import neotypes.monix.implicits._
 import neotypes.monix.stream.implicits._
-import org.scalatest.AsyncFlatSpec
 
-class MonixStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class MonixStreamSpec extends BaseIntegrationSpec {
   it should "work with monix.reactive.Observable" in {
     val s = driver.session().asScala[Task]
 
@@ -24,6 +23,5 @@ class MonixStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       }
   }
 
-  override val initQuery: String =
-    (0 to 10).map(n => s"CREATE (:Person {name: $n})").mkString("\n")
+  override val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
 }

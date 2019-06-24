@@ -9,12 +9,11 @@ import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
-import org.scalatest.AsyncFlatSpec
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
-class ParameterSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class ParameterSpec extends BaseIntegrationSpec {
   it should "convert parameters" in {
     val s = driver.session().asScala[Future]
 
@@ -88,5 +87,5 @@ class ParameterSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     }
   }
 
-  override val initQuery: String = null
+  override val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
 }

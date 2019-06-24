@@ -5,12 +5,11 @@ import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.types.{Node, Relationship}
 import shapeless._
-import PathSessionSpec._
-import org.scalatest.AsyncFlatSpec
 
 import scala.concurrent.Future
 
-class PathSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class PathSessionSpec extends BaseIntegrationSpec {
+  import PathSessionSpec.Person
 
   it should "map path to Seq" in {
     val s = driver.session().asScala[Future]
@@ -24,19 +23,10 @@ class PathSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       assert(pathHList.last.nodes.size == 2)
     }
   }
-  override val initQuery: String = PathSessionSpec.INIT_QUERY
+
+  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
 object PathSessionSpec {
-
-  case class Person(name: String)
-
-  val INIT_QUERY =
-    """
-      |CREATE (Charlize:Person {name:'Charlize Theron', born:1975})
-      |CREATE (ThatThingYouDo:Movie {title:'That Thing You Do', released:1996, tagline:'In every life there comes a time when that thing you dream becomes that thing you do'})
-      |CREATE (Charlize)-[:ACTED_IN {roles:['Tina']}]->(ThatThingYouDo)
-      |CREATE (t:Test {added: date('2018-11-26')})
-      |CREATE (ThatThingYouDo)-[:TEST_EDGE]->(t)
-    """.stripMargin
+  final case class Person(name: String)
 }

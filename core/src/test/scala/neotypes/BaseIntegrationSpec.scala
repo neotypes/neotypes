@@ -5,10 +5,11 @@ import java.time.Duration
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.neo4j.driver.v1
 import org.neo4j.driver.v1.{GraphDatabase, TransactionWork}
-import org.scalatest.Suite
+import org.scalatest.AsyncFlatSpec
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
-trait BaseIntegrationSpec extends Suite with ForAllTestContainer {
+/** Base class for simple integration specs. */
+abstract class BaseIntegrationSpec extends AsyncFlatSpec with ForAllTestContainer {
   def initQuery: String
 
   override val container = GenericContainer("neo4j:3.5.3",
@@ -42,4 +43,10 @@ object BaseIntegrationSpec {
       |CREATE (Charlize)-[:ACTED_IN {roles:['Tina']}]->(ThatThingYouDo)
       |CREATE (t:Test {added: date('2018-11-26')})
       |CREATE (ThatThingYouDo)-[:TEST_EDGE]->(t)""".stripMargin
+
+  final val MULTIPLE_VALUES_INIT_QUERY: String =
+    (0 to 10).map(n => s"CREATE (:Person {name: $n})").mkString("\n")
+
+  final val EMPTY_INIT_QUERY: String =
+    null
 }

@@ -1,9 +1,8 @@
 package neotypes.refined
 
-import neotypes.BaseIntegrationSpec
+import neotypes.CleaningIntegrationSpec
 import neotypes.exceptions.UncoercibleException
 import neotypes.implicits.mappers.all._
-import neotypes.implicits.syntax.driver._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
@@ -13,26 +12,11 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Interval
-import org.scalatest.FreeSpec
-import org.scalatest.{AsyncFlatSpec, FutureOutcome}
 
 import scala.concurrent.Future
 
-class RefinedSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class RefinedSpec extends CleaningIntegrationSpec {
   import RefinedSpec.{Level, User}
-
-  // Clean the graph after each test.
-  override def withFixture(test: NoArgAsyncTest): FutureOutcome = {
-    val f = for {
-      r <- super.withFixture(test).toFuture
-      _ <- driver.asScala[Future].writeSession { s =>
-             "MATCH (n) DETACH DELETE n".query[Unit].execute(s)
-           }
-    } yield r
-    new FutureOutcome(f)
-  }
-
-  override val initQuery: String = RefinedSpec.INIT_QUERY
 
   it should "insert and retrieve one refined value" in {
     val s = driver.session().asScala[Future]
@@ -131,6 +115,4 @@ object RefinedSpec {
   type Level = Int Refined Interval.Closed[W.`1`.T, W.`99`.T]
 
   final case class User(name: String, level: Level)
-
-  val INIT_QUERY: String = null
 }
