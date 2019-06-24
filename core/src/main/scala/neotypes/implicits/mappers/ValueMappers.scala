@@ -6,7 +6,7 @@ import java.util.UUID
 
 import exceptions.{ConversionException, PropertyNotFoundException}
 import mappers.{ResultMapper, TypeHint, ValueMapper}
-import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet}
+import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import types.Path
 
 import org.neo4j.driver.internal.types.InternalTypeSystem
@@ -210,6 +210,20 @@ private[implicits] trait ValueMappers {
 
           case Some(value) =>
             traverseAsSet(value.values.asScala.iterator) { value: Value =>
+              mapper.to("", Option(value))
+            }
+        }
+    }
+
+  implicit def vectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Vector[T]] =
+    new ValueMapper[Vector[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Vector[T]] =
+        value match {
+          case None =>
+            Right(Vector.empty)
+
+          case Some(value) =>
+            traverseAsVector(value.values.asScala.iterator) { value: Value =>
               mapper.to("", Option(value))
             }
         }

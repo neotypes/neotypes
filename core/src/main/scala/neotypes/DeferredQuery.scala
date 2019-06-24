@@ -12,6 +12,12 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
+  def set[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[Set[T]] =
+    session.transact(tx => set(tx))
+
+  def vector[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[Vector[T]] =
+    session.transact(tx => vector(tx))
+
   def single[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[T] =
     session.transact(tx => single(tx))
 
@@ -20,6 +26,12 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
 
   def list[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
+
+  def set[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Set[T]] =
+    tx.set(query, params)
+
+  def vector[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[Vector[T]] =
+    tx.vector(query, params)
 
   def single[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[T] =
     tx.single(query, params)

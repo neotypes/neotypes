@@ -5,7 +5,7 @@ import java.util.concurrent.CompletionStage
 
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
-import utils.traverse.{traverseAsList, traverseAsSet}
+import utils.traverse.{traverseAsList, traverseAsSet, traverseAsVector}
 import utils.stage._
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
@@ -52,6 +52,21 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .accept { result: java.util.List[Record] =>
           cb(
             traverseAsSet(result.asScala.iterator) { v: Record =>
+              resultMapper.to(recordToSeq(v), None)
+            }
+          )
+        }.recover { ex: Throwable => cb(Left(ex)) }
+    }
+
+  def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
+               (implicit resultMapper: ResultMapper[T]): F[Vector[T]] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .compose { x: StatementResultCursor => x.listAsync() }
+        .accept { result: java.util.List[Record] =>
+          cb(
+            traverseAsVector(result.asScala.iterator) { v: Record =>
               resultMapper.to(recordToSeq(v), None)
             }
           )

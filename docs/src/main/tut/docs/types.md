@@ -18,6 +18,7 @@ title: "Supported types"
 | `scala.Option[T] *                     `  | ✓              |✓                      |✓ `**`|
 | `scala.List[T] *                       `  | ✓              |✓                      |✓|
 | `scala.Set[T] *                        `  | ✓              |✓                      |✓|
+| `scala.Vector[T] *                     `  | ✓              |✓                      |✓|
 | `scala.Map[String, T] *                `  | ✓              |✓                      |✓|
 | `refined.Refined[T, P] * ***           `  | ✓              |✓                      |✓|
 | `java.time.Duration                    `  | ✓              |✓                      |✓|

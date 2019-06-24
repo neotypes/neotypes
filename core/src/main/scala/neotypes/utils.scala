@@ -67,6 +67,19 @@ private[neotypes] object utils {
       loop(acc = Set.empty)
     }
 
+    def traverseAsVector[A, B](iter: Iterator[A])
+                              (f: A => Either[Throwable, B]): Either[Throwable, Vector[B]] = {
+      @annotation.tailrec
+      def loop(acc: Vector[B]): Either[Throwable, Vector[B]] =
+        if (iter.hasNext) f(iter.next()) match {
+          case Right(value) => loop(acc = acc :+ value)
+          case Left(e)      => Left(e)
+        } else {
+          Right(acc)
+        }
+      loop(acc = Vector.empty)
+    }
+
     def traverseAsMap[A, B](iter: Iterator[A])
                            (f: A => (String, Either[Throwable, B])): Either[Throwable, Map[String, B]] = {
       @annotation.tailrec
