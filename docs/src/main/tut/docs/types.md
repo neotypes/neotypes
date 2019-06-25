@@ -8,41 +8,49 @@ title: "Supported types"
 {:.table}
 | Type                                      | Query result   | Field of a case class | Query parameter |
 | ----------------------------------------- |:--------------:|:---------------------:|:-----------------|
-| `scala.Boolean                         `  | ✓              |✓                      |✓|
-| `scala.Int                             `  | ✓              |✓                      |✓|
-| `scala.Long                            `  | ✓              |✓                      |✓|
-| `scala.Double                          `  | ✓              |✓                      |✓|
-| `scala.Float                           `  | ✓              |✓                      |✓|
-| `java.lang.String                      `  | ✓              |✓                      |✓|
-| `scala.Array[Byte]                     `  | ✓              |✓                      |✓|
-| `scala.Option[T] *                     `  | ✓              |✓                      |✓ `**`|
-| `scala.List[T] *                       `  | ✓              |✓                      |✓|
-| `scala.Set[T] *                        `  | ✓              |✓                      |✓|
-| `scala.Vector[T] *                     `  | ✓              |✓                      |✓|
-| `scala.Map[String, T] *                `  | ✓              |✓                      |✓|
-| `refined.Refined[T, P] * ***           `  | ✓              |✓                      |✓|
-| `java.time.Duration                    `  | ✓              |✓                      |✓|
-| `java.time.LocalDate                   `  | ✓              |✓                      |✓|
-| `java.time.LocalDateTime               `  | ✓              |✓                      |✓|
-| `java.time.LocalTime                   `  | ✓              |✓                      |✓|
-| `java.time.Period                      `  | ✓              |✓                      |✓|
-| `java.time.OffsetDateTime              `  | ✓              |✓                      |✓|
-| `java.time.OffsetTime                  `  | ✓              |✓                      |✓|
-| `java.time.ZonedDateTime               `  | ✓              |✓                      |✓|
-| `java.util.UUID                        `  | ✓              |✓                      |✓|
-| `org.neo4j.driver.v1.Value             `  | ✓              |✓                      |✓|
-| `org.neo4j.driver.v1.types.IsoDuration `  | ✓              |✓                      |✓|
-| `org.neo4j.driver.v1.types.Point       `  | ✓              |✓                      |✓|
-| `org.neo4j.driver.v1.types.Node        `  | ✓              |✓                      ||
-| `org.neo4j.driver.v1.types.Relationship`  | ✓              |✓                      ||
-| `shapeless.HList                       `  | ✓              |                       ||
-| `neotypes.types.Path                   `  | ✓              |                       ||
-| `Tuple (1-22)                          `  | ✓              |                       ||
-| `User defined case class               `  | ✓              |                       ||
+| `scala.Boolean                           `  | ✓              |✓                      |✓|
+| `scala.Int                               `  | ✓              |✓                      |✓|
+| `scala.Long                              `  | ✓              |✓                      |✓|
+| `scala.Double                            `  | ✓              |✓                      |✓|
+| `scala.Float                             `  | ✓              |✓                      |✓|
+| `java.lang.String                        `  | ✓              |✓                      |✓|
+| `scala.Array[Byte]                       `  | ✓              |✓                      |✓|
+| `scala.Option[T] *                       `  | ✓              |✓                      |✓ `**`|
+| `scala.List[T] *                         `  | ✓              |✓                      |✓|
+| `scala.Set[T] *                          `  | ✓              |✓                      |✓|
+| `scala.Vector[T] *                       `  | ✓              |✓                      |✓|
+| `scala.Map[String, T] *                  `  | ✓              |✓                      |✓|
+| `refined.Refined[T, P] * ***             `  | ✓              |✓                      |✓|
+| `cats.data.Chain[T] * ****               `  | ✓              |✓                      |✓|
+| `cats.data.Const[T, U] * ****            `  | ✓              |✓                      |✓|
+| `cats.data.NonEmptyChain[T] * ****       `  | ✓              |✓                      |✓|
+| `cats.data.NonEmptyList[T] * ****        `  | ✓              |✓                      |✓|
+| `cats.data.NonEmptyMap[String, T] * **** `  | ✓              |✓                      |✓|
+| `cats.data.NonEmptySet[T] * ****         `  | ✓              |✓                      |✓|
+| `cats.data.NonEmptyVector[T] * ****      `  | ✓              |✓                      |✓|
+| `java.time.Duration                      `  | ✓              |✓                      |✓|
+| `java.time.LocalDate                     `  | ✓              |✓                      |✓|
+| `java.time.LocalDateTime                 `  | ✓              |✓                      |✓|
+| `java.time.LocalTime                     `  | ✓              |✓                      |✓|
+| `java.time.Period                        `  | ✓              |✓                      |✓|
+| `java.time.OffsetDateTime                `  | ✓              |✓                      |✓|
+| `java.time.OffsetTime                    `  | ✓              |✓                      |✓|
+| `java.time.ZonedDateTime                 `  | ✓              |✓                      |✓|
+| `java.util.UUID                          `  | ✓              |✓                      |✓|
+| `org.neo4j.driver.v1.Value               `  | ✓              |✓                      |✓|
+| `org.neo4j.driver.v1.types.IsoDuration   `  | ✓              |✓                      |✓|
+| `org.neo4j.driver.v1.types.Point         `  | ✓              |✓                      |✓|
+| `org.neo4j.driver.v1.types.Node          `  | ✓              |✓                      ||
+| `org.neo4j.driver.v1.types.Relationship  `  | ✓              |✓                      ||
+| `shapeless.HList                         `  | ✓              |                       ||
+| `neotypes.types.Path                     `  | ✓              |                       ||
+| `Tuple (1-22)                            `  | ✓              |                       ||
+| `User defined case class                 `  | ✓              |                       ||
 
 > `*` Generic types are supported as long as the the `T` is also supported.<br>
 > `**` `None` is converted into `null`.<br>
-> `***` Support is provided in the **neotypes-refined** _module_.
+> `***` Support is provided in the **neotypes-refined** _module_.<br>
+> `****` Support is provided in the **neotypes-cats-data** _module_.<br>
 
 ## Additional types
 

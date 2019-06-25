@@ -8,6 +8,7 @@ val testcontainersScalaVersion = "0.23.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.5"
 val slf4jVersion = "1.7.21"
+val catsVersion = "1.6.1"
 val catsEffectsVersion = "1.2.0"
 val monixVersion = "3.0.0-RC2"
 val akkaStreamVersion = "2.5.19"
@@ -58,7 +59,8 @@ lazy val root = (project in file("."))
     fs2Stream,
     monixStream,
     zioStream,
-    refined
+    refined,
+    catsData
   )
   .settings(noPublishSettings)
   .settings(
@@ -184,6 +186,16 @@ lazy val refined = (project in file("refined"))
     name := "neotypes-refined",
     libraryDependencies ++= PROVIDED(
       "eu.timepit" %% "refined" % refinedVersion
+    )
+  )
+
+lazy val catsData = (project in file("cats-data"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-cats-data",
+    libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion
     )
   )
 

@@ -1,0 +1,222 @@
+package neotypes
+package cats.data
+
+import exceptions.{PropertyNotFoundException, UncoercibleException}
+import mappers.{ParameterMapper, ResultMapper, ValueMapper}
+import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import types.QueryParam
+
+import org.neo4j.driver.v1.Value
+import _root_.cats.Order
+import _root_.cats.data.{
+  Chain,
+  Const,
+  NonEmptyChain,
+  NonEmptyList,
+  NonEmptyMap,
+  NonEmptySet,
+  NonEmptyVector
+}
+import _root_.cats.instances.string._ // Brings the implicit Order[String] instance into the scope.
+
+import scala.collection.JavaConverters._
+import scala.collection.immutable.{SortedMap, SortedSet}
+
+object implicits {
+  // Chain.
+  private def traverseAsChain[A, B](iter: Iterator[A])
+                                   (f: A => Either[Throwable, B]): Either[Throwable, Chain[B]] = {
+    @annotation.tailrec
+    def loop(acc: Chain[B]): Either[Throwable, Chain[B]] =
+      if (iter.hasNext) f(iter.next()) match {
+        case Right(value) => loop(acc = acc :+ value)
+        case Left(e)      => Left(e)
+      } else {
+        Right(acc)
+      }
+    loop(acc = Chain.nil)
+  }
+
+  implicit def chainValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Chain[T]] =
+    new ValueMapper[Chain[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Chain[T]] =
+        value match {
+          case None =>
+            Right(Chain.nil)
+
+          case Some(value) =>
+            traverseAsChain(value.values.asScala.iterator) { v: Value =>
+              mapper.to("", Option(v))
+            }
+        }
+    }
+
+  implicit def chainResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[Chain[T]] =
+    ResultMapper.fromValueMapper
+
+  implicit def chainParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[Chain[T]] =
+    mapper.contramap(chain => chain.toList)
+
+
+  // Const.
+  implicit def constvalueMapper[A, B](implicit mapper: ValueMapper[A]): ValueMapper[Const[A, B]] =
+    mapper.map(a => Const(a))
+
+  implicit def constResultMapper[A, B](implicit mapper: ValueMapper[A]): ResultMapper[Const[A, B]] =
+    ResultMapper.fromValueMapper
+
+  implicit def constParameterMapper[A, B](implicit mapper: ParameterMapper[A]): ParameterMapper[Const[A, B]] =
+    mapper.contramap(const => const.getConst)
+
+
+  // NonEmptyChain.
+  implicit def nonEmptyChainValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyChain[T]] =
+    new ValueMapper[NonEmptyChain[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyChain[T]] =
+        value match {
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+          case Some(value) =>
+            traverseAsChain(value.values.asScala.iterator) { v: Value =>
+              mapper.to("", Option(v))
+            }.right.flatMap { chain =>
+              NonEmptyChain.fromChain(chain) match {
+                case None =>
+                  Left(UncoercibleException("NonEmptyChain from an empty list", None.orNull))
+
+                case Some(nonEmptyChain) =>
+                  Right(nonEmptyChain)
+              }
+            }
+        }
+    }
+
+  implicit def nonEmptyChainResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyChain[T]] =
+    ResultMapper.fromValueMapper
+
+  implicit def nonEmptyChainParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[NonEmptyChain[T]] =
+    mapper.contramap(nonEmptyChain => nonEmptyChain.toChain.toList)
+
+
+  // NonEmptyList.
+  implicit def nonEmptyListValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyList[T]] =
+    new ValueMapper[NonEmptyList[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyList[T]] =
+        value match {
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+          case Some(value) =>
+            traverseAsList(value.values.asScala.iterator) { v: Value =>
+              mapper.to("", Option(v))
+            }.right.flatMap { list =>
+              NonEmptyList.fromList(list) match {
+                case None =>
+                  Left(UncoercibleException("NonEmptyList from an empty list", None.orNull))
+
+                case Some(nonEmptyList) =>
+                  Right(nonEmptyList)
+              }
+            }
+        }
+    }
+
+  implicit def nonEmptyListResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyList[T]] =
+    ResultMapper.fromValueMapper
+
+  implicit def nonEmptyListParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[NonEmptyList[T]] =
+    mapper.contramap(nonEmptyList => nonEmptyList.toList)
+
+
+  // NonEmptyMap.
+  implicit def nonEmptyMapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyMap[String, T]] =
+    new ValueMapper[NonEmptyMap[String, T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyMap[String, T]] =
+        value match {
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+          case Some(value) =>
+            traverseAsMap(value.keys.asScala.iterator) { key: String =>
+              mapper.to(key, Option(value.get(key))).right.map { value =>
+                key -> value
+              }
+            }.right.flatMap { map =>
+              NonEmptyMap.fromMap(SortedMap.empty[String, T] ++ map) match {
+                case None =>
+                  Left(UncoercibleException("NonEmptyMap from an empty map", None.orNull))
+
+                case Some(nonEmptyMap) =>
+                  Right(nonEmptyMap)
+              }
+            }
+        }
+    }
+
+  implicit def nonEmptyMapResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyMap[String, T]] =
+    ResultMapper.fromValueMapper
+
+  implicit def nonEmptyMapParameterMapper[T](implicit mapper: ParameterMapper[Map[String, T]]): ParameterMapper[NonEmptyMap[String, T]] =
+    mapper.contramap(nonEmptyMap => nonEmptyMap.toSortedMap)
+
+
+  // NonEmptySet.
+  implicit def nonEmptySetValueMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ValueMapper[NonEmptySet[T]] =
+    new ValueMapper[NonEmptySet[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptySet[T]] =
+        value match {
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+          case Some(value) =>
+            traverseAsSet(value.values.asScala.iterator) { v: Value =>
+              mapper.to("", Option(v))
+            }.right.flatMap { set =>
+              NonEmptySet.fromSet(SortedSet.empty[T](order.toOrdering) | set) match {
+                case None =>
+                  Left(UncoercibleException("NonEmptySet from an empty list", None.orNull))
+
+                case Some(nonEmptySet) =>
+                  Right(nonEmptySet)
+              }
+            }
+        }
+    }
+
+  implicit def nonEmptySetResultMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ResultMapper[NonEmptySet[T]] =
+    ResultMapper.fromValueMapper
+
+  implicit def nonEmptySetParameterMapper[T](implicit mapper: ParameterMapper[Set[T]]): ParameterMapper[NonEmptySet[T]] =
+    mapper.contramap(nonEmptySet => nonEmptySet.toSortedSet)
+
+
+  // NonEmptyVector.
+  implicit def nonEmptyVectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyVector[T]] =
+    new ValueMapper[NonEmptyVector[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyVector[T]] =
+        value match {
+          case None =>
+            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+          case Some(value) =>
+            traverseAsVector(value.values.asScala.iterator) { v: Value =>
+              mapper.to("", Option(v))
+            }.right.flatMap { vector =>
+              NonEmptyVector.fromVector(vector) match {
+                case None =>
+                  Left(UncoercibleException("NonEmptyVector from an empty list", None.orNull))
+
+                case Some(nonEmptyVector) =>
+                  Right(nonEmptyVector)
+              }
+            }
+        }
+    }
+
+  implicit def nonEmptyVectorResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyVector[T]] =
+    ResultMapper.fromValueMapper
+
+  implicit def nonEmptyVectorParameterMapper[T](implicit mapper: ParameterMapper[Vector[T]]): ParameterMapper[NonEmptyVector[T]] =
+    mapper.contramap(nonEmptyVector => nonEmptyVector.toVector)
+}

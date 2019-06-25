@@ -55,7 +55,7 @@ class RefinedSpec extends CleaningIntegrationSpec {
     } yield assert(values == levels)
   }
 
-  it should "insert and retrieve refined values inside a case class" in {
+  it should "retrieve refined values inside a case class" in {
     val s = driver.session().asScala[Future]
 
     for {
