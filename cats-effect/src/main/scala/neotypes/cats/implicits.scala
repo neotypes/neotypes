@@ -1,7 +1,9 @@
 package neotypes.cats
 
-object implicits {
-  implicit def catsAsync[F[_]](implicit F: cats.effect.Async[F]): neotypes.Async[F] =
+object implicits extends CatsInstances
+
+private[cats] abstract class CatsInstances {
+ implicit def catsAsync[F[_]](implicit F: cats.effect.Async[F]): neotypes.Async[F] =
     new neotypes.Async[F] {
       override def async[T](cb: (Either[Throwable, T] => Unit) => Unit): F[T] =
         F.async(cb)
