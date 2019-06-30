@@ -9,9 +9,8 @@ import shapeless._
 import scala.concurrent.Future
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.Node
-import org.scalatest.AsyncFlatSpec
 
-class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class BasicSessionSpec extends BaseIntegrationSpec {
   import BasicSessionSpec._
 
   it should "map result to hlist and case classes" in {
@@ -109,13 +108,13 @@ class BasicSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
 }
 
 object BasicSessionSpec {
-  case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
+  final case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
 
-  case class Person2(born: Int, name: Option[String])
+  final case class Person2(born: Int, name: Option[String])
 
-  case class Movie(id: Long, released: Int, title: String)
+  final case class Movie(id: Long, released: Int, title: String)
 
-  case class Cast(name: String, job: String, role: String)
+  final case class Cast(name: String, job: String, role: String)
 
-  case class Movie2(title: String, cast: List[Cast])
+  final case class Movie2(title: String, cast: List[Cast])
 }

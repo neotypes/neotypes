@@ -67,13 +67,26 @@ private[neotypes] object utils {
       loop(acc = Set.empty)
     }
 
-    def traverseAsMap[A, B](iter: Iterator[A])
-                           (f: A => (String, Either[Throwable, B])): Either[Throwable, Map[String, B]] = {
+    def traverseAsVector[A, B](iter: Iterator[A])
+                              (f: A => Either[Throwable, B]): Either[Throwable, Vector[B]] = {
       @annotation.tailrec
-      def loop(acc: Map[String, B]): Either[Throwable, Map[String, B]] =
+      def loop(acc: Vector[B]): Either[Throwable, Vector[B]] =
         if (iter.hasNext) f(iter.next()) match {
-          case (key, Right(value)) => loop(acc = acc + (key -> value))
-          case (_,   Left(e))      => Left(e)
+          case Right(value) => loop(acc = acc :+ value)
+          case Left(e)      => Left(e)
+        } else {
+          Right(acc)
+        }
+      loop(acc = Vector.empty)
+    }
+
+    def traverseAsMap[A, K, V](iter: Iterator[A])
+                              (f: A => Either[Throwable, (K, V)]): Either[Throwable, Map[K, V]] = {
+      @annotation.tailrec
+      def loop(acc: Map[K, V]): Either[Throwable, Map[K, V]] =
+        if (iter.hasNext) f(iter.next()) match {
+          case Right((key, value)) => loop(acc = acc + (key -> value))
+          case Left(e)             => Left(e)
         } else {
           Right(acc)
         }

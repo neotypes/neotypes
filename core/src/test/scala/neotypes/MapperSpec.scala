@@ -7,8 +7,7 @@ import org.neo4j.driver.v1.Value
 import org.scalatest.FreeSpec
 
 class MapperSpec extends FreeSpec {
-
-  case class MyCaseClass(value: String)
+  import MapperSpec.MyCaseClass
 
   "ResultMapper" - {
     "constructors" - {
@@ -138,4 +137,8 @@ class MapperSpec extends FreeSpec {
       assert(resultString == Right(Right("string")))
     }
   }
+}
+
+object MapperSpec {
+  final case class MyCaseClass(value: String)
 }

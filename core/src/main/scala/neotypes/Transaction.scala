@@ -3,9 +3,9 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
-import mappers.{ExecutionMapper, ResultMapper}
+import mappers.{ExecutionMapper, ResultMapper, TypeHint}
 import types.QueryParam
-import utils.traverse.{traverseAsList, traverseAsSet}
+import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import utils.stage._
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
@@ -43,6 +43,21 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         }.recover { ex: Throwable => cb(Left(ex)) }
     }
 
+  def map[K, V](query: String, params: Map[String, QueryParam] = Map.empty)
+               (implicit resultMapper: ResultMapper[(K, V)]): F[Map[K, V]] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .compose { x: StatementResultCursor => x.listAsync() }
+        .accept { result: java.util.List[Record] =>
+          cb(
+            traverseAsMap(result.asScala.iterator) { v: Record =>
+              resultMapper.to(recordToSeq(v), Some(new TypeHint(true)))
+            }
+          )
+        }.recover { ex: Throwable => cb(Left(ex)) }
+    }
+
   def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
             (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
     F.async { cb =>
@@ -52,6 +67,21 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .accept { result: java.util.List[Record] =>
           cb(
             traverseAsSet(result.asScala.iterator) { v: Record =>
+              resultMapper.to(recordToSeq(v), None)
+            }
+          )
+        }.recover { ex: Throwable => cb(Left(ex)) }
+    }
+
+  def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
+               (implicit resultMapper: ResultMapper[T]): F[Vector[T]] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .compose { x: StatementResultCursor => x.listAsync() }
+        .accept { result: java.util.List[Record] =>
+          cb(
+            traverseAsVector(result.asScala.iterator) { v: Record =>
               resultMapper.to(recordToSeq(v), None)
             }
           )

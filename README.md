@@ -24,6 +24,7 @@ For early adopters:
 |`"com.dimafeng" %% "neotypes-monix-stream" % version`|result streaming for Monix Observables.|
 |`"com.dimafeng" %% "neotypes-zio-stream" % version`|result streaming for ZIO ZStreams.|
 |`"com.dimafeng" %% "neotypes-refined" % version`|support to insert and retrieve refined values.|
+|`"com.dimafeng" %% "neotypes-cats-data" % version`|support to insert and retrieve `cats.data` values.|
 
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 

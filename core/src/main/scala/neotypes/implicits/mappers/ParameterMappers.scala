@@ -69,23 +69,28 @@ private[implicits] trait ParameterMappers {
   implicit final val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
     ParameterMapper.identity
 
-  implicit def ListParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[List[T]] =
+  implicit def listParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[List[T]] =
     ParameterMapper.fromCast { list =>
       list.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 
-  implicit def MapParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Map[String, T]] =
+  implicit def mapParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Map[String, T]] =
     ParameterMapper.fromCast { map =>
       map.mapValues(v => mapper.toQueryParam(v).underlying).asJava
     }
 
-  implicit def OptionParameterMapper[T >: Null](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
+  implicit def optionParameterMapper[T >: Null](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     ParameterMapper.fromCast { optional =>
       optional.map(v => mapper.toQueryParam(v).underlying).orNull
     }
 
-  implicit def SetParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Set[T]] =
+  implicit def setParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Set[T]] =
     ParameterMapper.fromCast { set =>
       set.map(v => mapper.toQueryParam(v).underlying).asJava
+    }
+
+  implicit def vectorParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Vector[T]] =
+    ParameterMapper.fromCast { vector =>
+      vector.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 }

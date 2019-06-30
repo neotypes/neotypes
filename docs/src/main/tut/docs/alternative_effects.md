@@ -24,7 +24,7 @@ Await.result("match (p:Person {name: 'Charlize Theron'}) return p.name".query[St
 
 ```scala
 import cats.effect.IO
-import neotypes.cats.implicits._ // Brings the implicit Async[IO] instance into the scope.
+import neotypes.cats.effect.implicits._ // Brings the implicit Async[IO] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.session._ // Provides the asScala[F[_]] extension method.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.

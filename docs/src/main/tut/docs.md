@@ -9,13 +9,14 @@ title: "Documentation"
 
 * Scala 2.12/2.11
 * Java 8+
-* neo4j 3.*.*+
+* neo4j 3+
 
 ## Session creation
 
 **neotypes** adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` and `org.neo4j.driver.v1.Driver` that allows to build a `neotypes`'s session and driver wrappers.
 You can parametrize `asScala` by any type that you have a typeclass `neotypes.Async` implementation for.
-The typeclass implementation for `scala.concurrent.Future` is built-in (Please read more about [side effect implementations](docs/alternative_effects.html).
+The typeclass implementation for `scala.concurrent.Future` is built-in _(please read more about [side effect implementations](docs/alternative_effects.html))_.
+
 Please note that you have to make sure that the session is properly closed at the end of the application execution if you decide to manage session lifecycle manually.
 
 ```scala
@@ -58,13 +59,17 @@ val born = 1980
 c"create (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation.
 ```
 
-A query can be run in three different ways:
+A query can be run in six different ways:
 
 * `execute(s)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`.
 If you need to support your return types for this type of queries, you can provide an implementation of `ExecutionMapper` for any custom type.
-* `single(s)` - runs a query and return a single result.
-* `list(s)` - runs a query and returns a list of results.
-* `set(s)` - runs a query and returns a set of results.
+* `single(s)` - runs a query and return a **single** result.
+* `list(s)` - runs a query and returns a **List** of results.
+* `set(s)` - runs a query and returns a **Set** of results.
+* `vector(s)` - runs a query and returns a **Vector** of results.
+* `map(s)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
+* `stream(s)` - runs a query and returns a **Stream** of results
+_(please read more [streaming](docs/streams.html))_.
 
 ```scala
 // Execute.
@@ -83,4 +88,11 @@ If you need to support your return types for this type of queries, you can provi
 // Set.
 "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].set(s)
 "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].set(s)
+
+// Vector.
+"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].vector(s)
+"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].vector(s)
+
+// Map.
+"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].map(s)
 ```

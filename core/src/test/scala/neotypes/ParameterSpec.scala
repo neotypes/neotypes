@@ -9,12 +9,11 @@ import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
-import org.scalatest.AsyncFlatSpec
 
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
-class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class ParameterSpec extends BaseIntegrationSpec {
   it should "convert parameters" in {
     val s = driver.session().asScala[Future]
 
@@ -25,6 +24,7 @@ class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     val data: Array[Byte] = Array(0, 0, 1, 1)
     val list: List[Double] = List(5.0, 10.10)
     val set: Set[Long] = Set(100L)
+    val vector: Vector[Long] = Vector(333L)
     val map: Map[String, Float] = Map("f" -> -1.5f)
     val localDate: LocalDate = LocalDate.now()
     val localDateTime: LocalDateTime = LocalDateTime.now()
@@ -48,6 +48,7 @@ class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
                  data: $data,
                  list: $list,
                  set: $set,
+                 vector: $vector,
                  localDate: $localDate,
                  localDateTime: $localDateTime,
                  localTime: $localTime,
@@ -70,6 +71,7 @@ class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       assert(res.get("data").asByteArray.deep == data.deep)
       assert(res.get("list").asList.asScala.toList == list)
       assert(res.get("set").asList.asScala.toSet == set)
+      assert(res.get("vector").asList.asScala.toVector == vector)
       assert(res.get("localDate").asLocalDate == localDate)
       assert(res.get("localDateTime").asLocalDateTime == localDateTime)
       assert(res.get("localTime").asLocalTime == localTime)
@@ -85,5 +87,5 @@ class ParameterSessionSpec extends AsyncFlatSpec with BaseIntegrationSpec {
     }
   }
 
-  override val initQuery: String = null
+  override val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
 }

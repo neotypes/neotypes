@@ -168,4 +168,7 @@ private[neotypes] trait ResultMappers extends ValueMappers {
 
   implicit def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
     ResultMapper.fromValueMapper
+
+  implicit def vectorResultMapper[T: ValueMapper]: ResultMapper[Vector[T]] =
+    ResultMapper.fromValueMapper
 }

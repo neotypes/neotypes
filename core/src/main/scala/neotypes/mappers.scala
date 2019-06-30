@@ -53,10 +53,7 @@ object mappers {
       */
     def flatMap[B](f: A => ResultMapper[B]): ResultMapper[B] = new ResultMapper[B] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
-        self.to(value, typeHint) match {
-          case Right(a) => f(a).to(value, typeHint)
-          case Left(e) => Left(e)
-        }
+        self.to(value, typeHint).right.flatMap(a => f(a).to(value, typeHint))
     }
 
     /**
@@ -192,10 +189,8 @@ object mappers {
       * @return A new [[ValueMapper]] derived from the value your original [[ValueMapper]] outputs.
       */
     def flatMap[B](f: A => ValueMapper[B]): ValueMapper[B] = new ValueMapper[B] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, B] = self.to(fieldName, value) match {
-        case Right(a) => f(a).to(fieldName, value)
-        case Left(e) => Left(e)
-      }
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, B] =
+        self.to(fieldName, value).right.flatMap(a => f(a).to(fieldName, value))
     }
 
     /**

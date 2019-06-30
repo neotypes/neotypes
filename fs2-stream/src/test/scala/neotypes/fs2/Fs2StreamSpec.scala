@@ -2,14 +2,13 @@ package neotypes.fs2
 
 import cats.effect.IO
 import neotypes.BaseIntegrationSpec
-import neotypes.cats.implicits._
+import neotypes.cats.effect.implicits._
 import neotypes.fs2.implicits._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
-import org.scalatest.AsyncFlatSpec
 
-class Fs2StreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
+class Fs2StreamSpec extends BaseIntegrationSpec {
   it should "work with fs2 using cats.effect.IO" in {
     val s = driver.session().asScala[IO]
 
@@ -24,6 +23,5 @@ class Fs2StreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       }
   }
 
-  override val initQuery: String =
-    (0 to 10).map(n => s"CREATE (:Person {name: $n})").mkString("\n")
+  override val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
 }
