@@ -5,8 +5,8 @@ import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetD
 import java.util.UUID
 
 import exceptions.{ConversionException, PropertyNotFoundException}
+import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import mappers.{ResultMapper, TypeHint, ValueMapper}
-import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import types.Path
 
 import org.neo4j.driver.internal.types.InternalTypeSystem
@@ -18,7 +18,7 @@ import shapeless.HNil
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-private[implicits] trait ValueMappers {
+trait ValueMappers {
  implicit final val BooleanValueMapper: ValueMapper[Boolean] =
     ValueMapper.fromCast(v => v.asBoolean)
 
@@ -106,7 +106,7 @@ private[implicits] trait ValueMappers {
   implicit final val ZonedDateTimeValueMapper: ValueMapper[ZonedDateTime] =
     ValueMapper.fromCast(v => v.asZonedDateTime)
 
-  implicit def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] =
+  implicit final def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] =
     new ValueMapper[T] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] =
         value match {
@@ -129,7 +129,7 @@ private[implicits] trait ValueMappers {
         }
     }
 
-  implicit def listValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[List[T]] =
+  implicit final def listValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[List[T]] =
     new ValueMapper[List[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, List[T]] =
         value match {
@@ -143,7 +143,7 @@ private[implicits] trait ValueMappers {
         }
     }
 
-  implicit def mapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Map[String, T]] =
+  implicit final def mapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Map[String, T]] =
     new ValueMapper[Map[String, T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Map[String, T]] =
         value match {
@@ -159,7 +159,7 @@ private[implicits] trait ValueMappers {
         }
     }
 
-  implicit def optionValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Option[T]] =
+  implicit final def optionValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Option[T]] =
     new ValueMapper[Option[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] =
         value match {
@@ -174,7 +174,7 @@ private[implicits] trait ValueMappers {
         }
     }
 
-  implicit def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] =
+  implicit final def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] =
     new ValueMapper[Path[N, R]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Path[N, R]] =
         value match {
@@ -203,7 +203,7 @@ private[implicits] trait ValueMappers {
         }
     }
 
-  implicit def setValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Set[T]] =
+  implicit final def setValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Set[T]] =
     new ValueMapper[Set[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Set[T]] =
         value match {
@@ -217,7 +217,7 @@ private[implicits] trait ValueMappers {
         }
     }
 
-  implicit def vectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Vector[T]] =
+  implicit final def vectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Vector[T]] =
     new ValueMapper[Vector[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Vector[T]] =
         value match {

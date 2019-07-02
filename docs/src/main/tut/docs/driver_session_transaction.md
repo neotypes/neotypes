@@ -15,7 +15,7 @@ A transaction can be obtained in two ways:
 You can chain multiple distinct queries into one transaction by providing the same instance of `neotypes.Transaction` to query executors.
 
 ```scala
-val tx =  ???
+val tx = ???
 
 for {
  id <- "match (p:Person {name: 'Charlize Theron'}) return p.id".query[Long].single(tx)

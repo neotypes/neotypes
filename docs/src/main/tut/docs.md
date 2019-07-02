@@ -13,33 +13,41 @@ title: "Documentation"
 
 ## Session creation
 
-**neotypes** adds an extension method (`.asScala[F[_]: Async]`) to `org.neo4j.driver.v1.Session` and `org.neo4j.driver.v1.Driver` that allows to build a `neotypes`'s session and driver wrappers.
-You can parametrize `asScala` by any type that you have a typeclass `neotypes.Async` implementation for.
-The typeclass implementation for `scala.concurrent.Future` is built-in _(please read more about [side effect implementations](docs/alternative_effects.html))_.
+**neotypes** provides the `GraphDatabase` **factory** for **Neo4j** `Session` and `Driver` wrappers.
+You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass**.
+The implementation for `scala.concurrent.Future` is built-in _(for other types, please read [side effects](docs/alternative_effects.html))_.
 
-Please note that you have to make sure that the session is properly closed at the end of the application execution if you decide to manage session lifecycle manually.
-
-```scala
-val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-val session = driver.session().asScala[Future]
-```
-
-Please note that the session should be closed to make sure all resources (such as network connection) obtained by the session will always be cleaned up properly.
+Please note that you have to make sure that the driver and session is properly closed at the end of the application execution.
 
 ```scala
-session.close()
+import neotypes.GraphDatabase
+
+val program: F[Unit] = for {
+  driver <- GraphDatabase.driver[F]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+  session <- driver.session()
+  ...
+  _ <- session.close()
+  _ <- driver.close()
+yield ()
 ```
+
+Please note that the session should be closed to make sure all resources _(such as network connection)_ obtained by the session will always be cleaned up properly.
 
 Or you may decide to use `neotypes.Driver` to help you with it.
 
 ```scala
-val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "****")).asScala[Future]
+import neotypes.GraphDatabase
 
-val result: Future[Seq[Movie]] = driver.readSession { session =>
-    c"""MATCH (movie:Movie)
-        WHERE lower(movie.title) CONTAINS ${query.toLowerCase}
+val driverF: Future[Driver[Future]] =
+  GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+
+val result: Future[List[Movie]] = driverF.flatMap { driver =>
+  driver.readSession { session =>
+    """MATCH (movie:Movie)
+        WHERE lower(movie.title) CONTAINS "Thing"
         RETURN movie""".query[Movie].list(session)
   }
+}
 ```
 
 In this case, the session will be properly closed after query execution.
@@ -48,7 +56,7 @@ In this case, the session will be properly closed after query execution.
 
 Once you have a session constructed, you can start querying the database.
 The import `neotypes.implicits.all._` adds an extension method `query[T]` to each string literal in its scope, or you can use string interpolation.
-Type parameter `[T]` specifies a resulted return type.
+Type parameter `[T]` specifies the result type.
 
 ```scala
 "create (p:Person {name: $name, born: $born})".query[Unit].execute(s)

@@ -1,7 +1,8 @@
 package neotypes
 
-import neotypes.implicits.syntax.async._
-import neotypes.utils.stage._
+import internal.syntax.async._
+import internal.syntax.stage._
+
 import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
 
 import scala.language.higherKinds
@@ -30,11 +31,12 @@ final class Session[F[_]](session: NSession)(implicit F: Async[F]) {
         _ <- t.commit()
       } yield res
 
-      result.recoverWith { case ex =>
-        for {
-          _ <- t.rollback()
-          res <- F.failed[T](ex)
-        } yield res
+      result.recoverWith {
+        case ex =>
+          for {
+            _ <- t.rollback()
+            res <- F.failed[T](ex)
+          } yield res
       }
     }
 }

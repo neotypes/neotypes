@@ -3,10 +3,10 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
+import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.syntax.stage._
 import mappers.{ExecutionMapper, ResultMapper, TypeHint}
 import types.QueryParam
-import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
-import utils.stage._
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary

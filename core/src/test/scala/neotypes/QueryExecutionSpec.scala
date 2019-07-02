@@ -1,15 +1,12 @@
 package neotypes
 
 import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 
 import scala.concurrent.Future
 
-class QueryExecutionSpec extends BaseIntegrationSpec {
-  it should "retrieve multiple results as a List" in {
-    val s = driver.session().asScala[Future]
-
+class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
+  it should "retrieve multiple results as a List" in execute { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .list(s)
@@ -18,9 +15,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec {
       }
   }
 
-  it should "retrieve multiple results as a Set" in {
-    val s = driver.session().asScala[Future]
-
+  it should "retrieve multiple results as a Set" in execute { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .set(s)
@@ -29,9 +24,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec {
       }
   }
 
-  it should "retrieve multiple results as a Vector" in {
-    val s = driver.session().asScala[Future]
-
+  it should "retrieve multiple results as a Vector" in execute { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .vector(s)
@@ -40,9 +33,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec {
       }
   }
 
-  it should "retrieve multiple results as a Map" in {
-    val s = driver.session().asScala[Future]
-
+  it should "retrieve multiple results as a Map" in execute { s =>
     "match (p:Person) return p.name, 1"
       .query[(Int, Int)]
       .map(s)

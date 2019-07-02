@@ -3,7 +3,7 @@ package implicits.syntax
 
 import scala.language.implicitConversions
 
-private[neotypes] trait StringSyntax {
+trait StringSyntax {
   implicit final def neotypesSyntaxStringId(s: String): StringIdOps =
     new StringIdOps(s)
 }

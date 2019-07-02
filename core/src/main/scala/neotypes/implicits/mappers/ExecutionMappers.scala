@@ -5,7 +5,7 @@ import mappers.ExecutionMapper
 
 import org.neo4j.driver.v1.summary.ResultSummary
 
-private[neotypes] trait ExecutionMappers {
+trait ExecutionMappers {
   implicit final val ResultSummaryExecutionMapper: ExecutionMapper[ResultSummary] =
     new ExecutionMapper[ResultSummary] {
       override def to(resultSummary: ResultSummary): Either[Throwable, ResultSummary] =

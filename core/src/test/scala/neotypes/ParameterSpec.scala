@@ -5,7 +5,6 @@ import java.util.UUID
 
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
-import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
@@ -13,10 +12,8 @@ import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
 import scala.collection.JavaConverters._
 import scala.concurrent.Future
 
-class ParameterSpec extends BaseIntegrationSpec {
-  it should "convert parameters" in {
-    val s = driver.session().asScala[Future]
-
+class ParameterSpec extends BaseIntegrationSpec[Future] {
+  it should "convert parameters" in execute { s =>
     val name: String = "test"
     val born: Int = 123
     val lastName: Option[String] = None

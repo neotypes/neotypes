@@ -1,5 +1,6 @@
 package neotypes
 
+import internal.syntax.async._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
@@ -56,10 +57,8 @@ private[neotypes] object DeferredQuery {
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
     def apply[F[_]](session: Session[F])(implicit rm: ResultMapper[T], S: Stream.Aux[S, F], F: Async[F]): S[T] =
       S.fToS(
-        F.flatMap(session.beginTransaction()) { tx =>
-          F.success(
-            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback())
-          )
+        session.beginTransaction().map { tx =>
+          S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback())
         }
       )
 
@@ -80,6 +79,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             query  = queryBuilder.mkString,
             params = accParams
           )
+
         case Query(query1) :: Query(query2) :: xs =>
           loop(
             remaining = Query(query2) :: xs,
@@ -87,6 +87,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             accParams,
             nextParamIdx
           )
+
         case Query(query) :: xs =>
           loop(
             remaining = xs,
@@ -94,6 +95,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             accParams,
             nextParamIdx
           )
+
         case Param(param) :: xs =>
           val paramName = s"${PARAMETER_NAME_PREFIX}${nextParamIdx}"
           loop(

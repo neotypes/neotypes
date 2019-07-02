@@ -6,7 +6,7 @@ import types.QueryParam
 
 import scala.language.implicitConversions
 
-private[neotypes] trait QueryParamSyntax {
+trait QueryParamSyntax {
   implicit final def neotypesSyntaxQueryParamId[A](a: A): QueryParamIdOps[A] =
     new QueryParamIdOps(a)
 }

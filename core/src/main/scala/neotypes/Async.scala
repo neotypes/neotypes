@@ -7,6 +7,8 @@ import scala.util.{Failure, Success}
 trait Async[F[_]] {
   def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A]
 
+  def delay[A](t: => A): F[A]
+
   def flatMap[A, B](m: F[A])(f: A => F[B]): F[B]
 
   def map[A, B](m: F[A])(f: A => B): F[B]
@@ -15,7 +17,7 @@ trait Async[F[_]] {
 
   def failed[A](e: Throwable): F[A]
 
-  def success[A](t: => A): F[A]
+  def suspend[A](t: => F[A]): F[A]
 }
 
 object Async {
@@ -30,6 +32,9 @@ object Async {
         p.future
       }
 
+      override def delay[A](t: => A): Future[A] =
+        Future(t)
+
       override def flatMap[A, B](m: Future[A])(f: A => Future[B]): Future[B] =
         m.flatMap(f)
 
@@ -42,7 +47,7 @@ object Async {
       override def failed[A](e: Throwable): Future[A] =
         Future.failed(e)
 
-      override def success[A](t: => A): Future[A] =
-        Future.successful(t)
+      override def suspend[A](t: => Future[A]): Future[A] =
+        Future(t).flatMap(identity)
     }
 }

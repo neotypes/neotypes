@@ -1,21 +1,18 @@
 package neotypes
 
 import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.driver._
-import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import shapeless._
 
 import scala.concurrent.Future
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.Node
+import neotypes.implicits.mappers.`package`.executions
 
-class BasicSessionSpec extends BaseIntegrationSpec {
+class BasicSessionSpec extends BaseIntegrationSpec[Future] {
   import BasicSessionSpec._
 
-  it should "map result to hlist and case classes" in {
-    val s = driver.session().asScala[Future]
-
+  it should "map result to hlist and case classes" in execute { s =>
     for {
       string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
       int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int].single(s)
@@ -56,25 +53,19 @@ class BasicSessionSpec extends BaseIntegrationSpec {
     }
   }
 
-  it should "map result to tuples" in {
-    val d = driver.asScala[Future]
-
-    d.readSession(s =>
-      for {
-        tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
-        tuplePrimitives <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p.name,m.title".query[(String, String)].list(s)
-      } yield {
-        assert(tuple.head._1.name.contains("Charlize Theron"))
-        assert(tuple.head._2.title == "That Thing You Do")
-        assert(tuplePrimitives.head._1 == "Charlize Theron")
-        assert(tuplePrimitives.head._2 == "That Thing You Do")
-      }
-    )
+  it should "map result to tuples" in execute { s =>
+    for {
+      tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+      tuplePrimitives <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p.name,m.title".query[(String, String)].list(s)
+    } yield {
+      assert(tuple.head._1.name.contains("Charlize Theron"))
+      assert(tuple.head._2.title == "That Thing You Do")
+      assert(tuplePrimitives.head._1 == "Charlize Theron")
+      assert(tuplePrimitives.head._2 == "That Thing You Do")
+    }
   }
 
-  it should "map result to a case class with list" in {
-    val s = driver.session().asScala[Future]
-
+  it should "map result to a case class with list" in execute { s =>
     for {
       сс3 <-
         """

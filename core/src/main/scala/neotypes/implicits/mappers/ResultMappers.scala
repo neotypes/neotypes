@@ -17,7 +17,7 @@ import shapeless.labelled.FieldType
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-private[neotypes] trait ResultMappers extends ValueMappers {
+trait ResultMappers extends ValueMappers {
   implicit final val BooleanResultMapper: ResultMapper[Boolean] =
     ResultMapper.fromValueMapper
 
@@ -90,7 +90,7 @@ private[neotypes] trait ResultMappers extends ValueMappers {
   implicit final val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
     ResultMapper.fromValueMapper
 
-  implicit def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
+  implicit final def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
                                              reprDecoder: Lazy[ResultMapper[R]],
                                              ct: ClassTag[A]): ResultMapper[A] =
     new ResultMapper[A] {
@@ -98,7 +98,7 @@ private[neotypes] trait ResultMappers extends ValueMappers {
         reprDecoder.value.to(value, Some(TypeHint(ct))).right.map(gen.from)
     }
 
-  implicit def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
+  implicit final def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
                                                              tailDecoder: ResultMapper[T]): ResultMapper[H :!: T] =
     new ResultMapper[H :!: T] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :!: T] = {
@@ -110,7 +110,7 @@ private[neotypes] trait ResultMappers extends ValueMappers {
       }
     }
 
-  implicit def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
+  implicit final def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
                                                                   head: ValueMapper[H],
                                                                   tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :!: T] =
     new ResultMapper[FieldType[K, H] :!: T] {
@@ -145,13 +145,13 @@ private[neotypes] trait ResultMappers extends ValueMappers {
       }
     }
 
-  implicit def listResultMapper[T: ValueMapper]: ResultMapper[List[T]] =
+  implicit final def listResultMapper[T: ValueMapper]: ResultMapper[List[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] =
+  implicit final def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] =
     ResultMapper.fromValueMapper
 
-  implicit def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
+  implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
       override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
         if (fields.isEmpty)
@@ -163,12 +163,12 @@ private[neotypes] trait ResultMappers extends ValueMappers {
             .map(Option(_))
     }
 
-  implicit def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
+  implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
     ResultMapper.fromValueMapper
 
-  implicit def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
+  implicit final def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def vectorResultMapper[T: ValueMapper]: ResultMapper[Vector[T]] =
+  implicit final def vectorResultMapper[T: ValueMapper]: ResultMapper[Vector[T]] =
     ResultMapper.fromValueMapper
 }
