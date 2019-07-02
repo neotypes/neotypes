@@ -6,7 +6,6 @@ import neotypes.exceptions.UncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
-import neotypes.implicits.syntax.session._
 
 import cats.data.{
   Chain,
@@ -22,12 +21,10 @@ import _root_.cats.instances.int._ // Brings the implicit Order[Int] instance in
 
 import scala.concurrent.Future
 
-class CatsDataSpec extends CleaningIntegrationSpec {
+class CatsDataSpec extends CleaningIntegrationSpec[Future] {
   import CatsDataSpec._
 
-  it should "work with Chain" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with Chain" in execute { s =>
     val messages: Messages = Chain("a", "b")
 
     for {
@@ -40,9 +37,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "work with Const" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with Const" in execute { s =>
     val name: Name = Const("Balmung")
 
     for {
@@ -55,9 +50,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "work with NonEmptyChain" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with NonEmptyChain" in execute { s =>
     val errors: Errors = NonEmptyChain("a", "b")
 
     for {
@@ -70,9 +63,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyChain" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if retrieving an empty list as a NonEmptyChain" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (stackTrace: StackTrace { line: 1, errors: [] })".query[Unit].execute(s)
@@ -81,9 +72,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "work with NonEmptyList" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with NonEmptyList" in execute { s =>
     val items: Items = NonEmptyList.of("a", "b")
 
     for {
@@ -96,9 +85,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyList" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if retrieving an empty list as a NonEmptyList" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (player: Player { name: \"Luis\", items: [] })".query[Unit].execute(s)
@@ -107,9 +94,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "work with NonEmptyMap" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with NonEmptyMap" in execute { s =>
     val properties: Properties = NonEmptyMap.of("a" -> true, "b" -> false)
 
     for {
@@ -122,9 +107,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if retrieving an empty map a NonEmptyMap" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if retrieving an empty map a NonEmptyMap" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         properties <- "RETURN {}".query[Properties].single(s)
@@ -132,9 +115,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "work with NonEmptySet" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with NonEmptySet" in execute { s =>
     val numbers: Numbers = NonEmptySet.of(1, 3, 5)
 
     for {
@@ -147,9 +128,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptySet" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if retrieving an empty list as a NonEmptySet" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (set: Set { name: \"favourites\", numbers: [] })".query[Unit].execute(s)
@@ -158,9 +137,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "work with NonEmptyVector" in {
-    val s = driver.session().asScala[Future]
-
+  it should "work with NonEmptyVector" in execute { s =>
     val groceries: Groceries = NonEmptyVector.of("a", "b")
 
     for {
@@ -173,9 +150,7 @@ class CatsDataSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyVector" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if retrieving an empty list as a NonEmptyVector" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (purchase: Purchase { total: 12.5, groceries: [] })".query[Unit].execute(s)

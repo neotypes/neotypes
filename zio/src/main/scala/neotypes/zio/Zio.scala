@@ -1,12 +1,19 @@
-package neotypes.monix
+package neotypes.zio
 
-import monix.eval.Task
+import zio.Task
 
-object implicits {
-  implicit val monixAsync: neotypes.Async[Task] =
+trait Zio {
+  implicit final val zioAsync: neotypes.Async[Task] =
     new neotypes.Async[Task] {
       override def async[T](cb: (Either[Throwable, T] => Unit) => Unit): Task[T] =
-        Task.async(cb)
+        Task.effectAsync { zioCB =>
+          cb { e =>
+            zioCB(Task.fromEither(e))
+          }
+        }
+
+      override def delay[A](t: => A): zio.Task[A] =
+        Task.succeedLazy(t)
 
       override def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
@@ -15,12 +22,12 @@ object implicits {
         m.map(f)
 
       override def recoverWith[T, U >: T](m: Task[T])(f: PartialFunction[Throwable, Task[U]]): Task[U] =
-        m.onErrorRecoverWith(f)
+        m.catchSome(f)
 
       override def failed[T](e: Throwable): Task[T] =
-        Task.raiseError(e)
+        Task.fail(e)
 
-      override def success[T](t: => T): Task[T] =
-        Task(t)
+      override def suspend[A](t: => zio.Task[A]): zio.Task[A] =
+        Task.suspend(t)
     }
 }

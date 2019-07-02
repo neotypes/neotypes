@@ -3,8 +3,8 @@ package neotypes.monix.stream
 import monix.eval.Task
 import monix.reactive.Observable
 
-object implicits {
-  implicit val monixStream: neotypes.Stream.Aux[Observable, Task] =
+trait MonixStreams {
+  implicit final val monixStream: neotypes.Stream.Aux[Observable, Task] =
     new neotypes.Stream[Observable] {
       override type F[T] = Task[T]
 

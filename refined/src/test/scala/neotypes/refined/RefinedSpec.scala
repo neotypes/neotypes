@@ -4,7 +4,6 @@ import neotypes.CleaningIntegrationSpec
 import neotypes.exceptions.UncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
-import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import neotypes.refined.implicits._
 
@@ -15,12 +14,10 @@ import eu.timepit.refined.numeric.Interval
 
 import scala.concurrent.Future
 
-class RefinedSpec extends CleaningIntegrationSpec {
+class RefinedSpec extends CleaningIntegrationSpec[Future] {
   import RefinedSpec.{Level, User}
 
-  it should "insert and retrieve one refined value" in {
-    val s = driver.session().asScala[Future]
-
+  it should "insert and retrieve one refined value" in execute { s =>
     val L1: Level = 1
 
     for {
@@ -29,9 +26,7 @@ class RefinedSpec extends CleaningIntegrationSpec {
     } yield assert(value == L1)
   }
 
-  it should "insert and retrieve multiple refined values" in {
-    val s = driver.session().asScala[Future]
-
+  it should "insert and retrieve multiple refined values" in execute { s =>
     val L1: Level = 1
     val L2: Level = 2
 
@@ -42,9 +37,7 @@ class RefinedSpec extends CleaningIntegrationSpec {
     } yield assert(values == List(L1, L2))
   }
 
-  it should "insert and retrieve wrapped refined values" in {
-    val s = driver.session().asScala[Future]
-
+  it should "insert and retrieve wrapped refined values" in execute { s =>
     val L1: Level = 1
     val L2: Level = 2
     val levels = Option(List(L1, L2))
@@ -55,18 +48,14 @@ class RefinedSpec extends CleaningIntegrationSpec {
     } yield assert(values == levels)
   }
 
-  it should "retrieve refined values inside a case class" in {
-    val s = driver.session().asScala[Future]
-
+  it should "retrieve refined values inside a case class" in execute { s =>
     for {
       _ <- "CREATE (user: User { name: \"Balmung\",  level: 99 })".query[Unit].execute(s)
       user <- "MATCH (user: User { name: \"Balmung\" }) RETURN user".query[User].single(s)
     } yield assert(user == User(name = "Balmung", level = 99))
   }
 
-  it should "fail if a single value does not satisfy the refinement condition" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if a single value does not satisfy the refinement condition" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (level: Level { value: -1 })".query[Unit].execute(s)
@@ -75,9 +64,7 @@ class RefinedSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if at least one of multiple values does not satisfy the refinement condition" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if at least one of multiple values does not satisfy the refinement condition" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (level: Level { value: 3 })".query[Unit].execute(s)
@@ -88,9 +75,7 @@ class RefinedSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if at least one wrapped value does not satisfy the refinement condition" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if at least one wrapped value does not satisfy the refinement condition" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (levels: Levels { values: [3, -1, 5] })".query[Unit].execute(s)
@@ -99,9 +84,7 @@ class RefinedSpec extends CleaningIntegrationSpec {
     }
   }
 
-  it should "fail if at least one value inside a case class does not satisfy the refinement condition" in {
-    val s = driver.session().asScala[Future]
-
+  it should "fail if at least one value inside a case class does not satisfy the refinement condition" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (user: User { name: \"???\", level: -1 })".query[Unit].execute(s)

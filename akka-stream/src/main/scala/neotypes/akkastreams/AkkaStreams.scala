@@ -4,8 +4,8 @@ import akka.stream.scaladsl.{Flow, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-object implicits {
-  implicit def akkaStream(implicit ec: ExecutionContext): neotypes.Stream.Aux[AkkaStream, Future] =
+trait AkkaStreams {
+  implicit final def akkaStream(implicit ec: ExecutionContext): neotypes.Stream.Aux[AkkaStream, Future] =
     new neotypes.Stream[AkkaStream] {
       override type F[T] = Future[T]
 

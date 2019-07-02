@@ -3,8 +3,8 @@ package neotypes.zio.stream
 import zio.Task
 import zio.stream.ZStream
 
-object implicits {
-  implicit val zioStream: neotypes.Stream.Aux[ZioStream, Task] =
+trait ZioStreams {
+  implicit final val zioStream: neotypes.Stream.Aux[ZioStream, Task] =
     new neotypes.Stream[ZioStream] {
       override type F[T] = Task[T]
 
