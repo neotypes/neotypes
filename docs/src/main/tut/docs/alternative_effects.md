@@ -29,7 +29,7 @@ val data: String = Await.result(program, 1 second)
 ### cats.effect.neotypes.Async[F]
 
 ```scala
-import cats.effect.{Resource, IO}
+import cats.effect.{IO, Resource}
 import neotypes.Session
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
