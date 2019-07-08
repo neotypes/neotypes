@@ -8,11 +8,16 @@ import org.neo4j.driver.v1.{AccessMode, Driver => NDriver, Session => NSession}
 import scala.collection.JavaConverters._
 import scala.language.higherKinds
 
-final class Driver[F[_]](driver: NDriver)(implicit F: Async[F]) {
-  def session(): F[Session[F]] =
-    session(accessMode = AccessMode.READ)
+final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
+  def session[R[_]](implicit F: Async.Aux[F, R]): R[Session[F]] =
+    session[R](accessMode = AccessMode.READ)
 
-  def session(accessMode: AccessMode, bookmarks: String*): F[Session[F]] =
+  def session[R[_]](accessMode: AccessMode, bookmarks: String*)
+                   (implicit F: Async.Aux[F, R]): R[Session[F]] =
+    F.resource(createSession(accessMode, bookmarks)) { session => session.close }
+
+  private def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty)
+                           (implicit F: Async[F]): F[Session[F]] =
     F.delay(
       new Session(
         bookmarks match {
@@ -23,23 +28,29 @@ final class Driver[F[_]](driver: NDriver)(implicit F: Async[F]) {
       )
     )
 
-  def readSession[T](sessionWork: Session[F] => F[T]): F[T] =
+  def readSession[T](sessionWork: Session[F] => F[T])
+                    (implicit F: Async[F]): F[T] =
     withSession(AccessMode.READ)(sessionWork)
 
-  def writeSession[T](sessionWork: Session[F] => F[T]): F[T] =
+  def writeSession[T](sessionWork: Session[F] => F[T])
+                     (implicit F: Async[F]): F[T] =
     withSession(AccessMode.WRITE)(sessionWork)
 
-  private[this] def withSession[T](accessMode: AccessMode)(sessionWork: Session[F] => F[T]): F[T] =
-    session(accessMode).flatMap { s =>
-      sessionWork(s).flatMap { v =>
-        s.close().map(_ => v)
+  private[this] def withSession[T](accessMode: AccessMode)
+                                  (sessionWork: Session[F] => F[T])
+                                  (implicit F: Async[F]): F[T] =
+    createSession(accessMode).flatMap { session =>
+      sessionWork(session).flatMap { v =>
+        session.close.map(_ => v)
       } recoverWith {
         case ex: Throwable =>
-          s.close().flatMap(_ => F.failed(ex))
+          session.close.flatMap(_ => F.failed[T](ex)).recoverWith {
+            case _ => F.failed(ex)
+          }
       }
     }
 
-  def close(): F[Unit] =
+  def close(implicit F: Async[F]): F[Unit] =
     F.async { cb =>
       driver
         .closeAsync()

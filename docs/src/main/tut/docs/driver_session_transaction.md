@@ -9,16 +9,16 @@ title: "Driver -> Session -> Transaction"
 
 A transaction can be obtained in two ways:
 
-1. `val tx = session.beginTransaction()`. In this case, transaction lifecycle (commit/rollback) should be managed by your application code.
+1. `val tx = session.transaction`. If using **Future**, then the transaction lifecycle (commit/rollback) should be managed by your application code. With other effect types, it will be a managed by the resource implementation.
 2. `session.transact(tx => ...)` commit/rollback will be managed by **neotypes**.
 
 You can chain multiple distinct queries into one transaction by providing the same instance of `neotypes.Transaction` to query executors.
 
 ```scala
-val tx = ???
+val tx: Transaction[F] = ???
 
 for {
- id <- "match (p:Person {name: 'Charlize Theron'}) return p.id".query[Long].single(tx)
- _ <- c"create (p:Record {personId: $id)".query[Unit].execute(tx)
+  id <- "match (p:Person {name: 'Charlize Theron'}) return p.id".query[Long].single(tx)
+  _ <- c"create (p:Record {personId: $id)".query[Unit].execute(tx)
 } yield ()
 ```

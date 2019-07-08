@@ -15,15 +15,17 @@ title: "Documentation"
 
 **neotypes** provides the `GraphDatabase` **factory** for **Neo4j** `Session` and `Driver` wrappers.
 You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass**.
-The implementation for `scala.concurrent.Future` is built-in _(for other types, please read [side effects](docs/alternative_effects.html))_.
+The implementation for `scala.concurrent.Future` is built-in _(for other types, please read [alternative effects](docs/alternative_effects.html))_.
 
 Please note that you have to make sure that the driver and session is properly closed at the end of the application execution.
 
 ```scala
 import neotypes.GraphDatabase
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContex.Implicits.global
 
-val program: F[Unit] = for {
-  driver <- GraphDatabase.driver[F]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val program: Future[Unit] = for {
+  driver <- GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
   session <- driver.session()
   ...
   _ <- session.close()
@@ -31,26 +33,25 @@ val program: F[Unit] = for {
 yield ()
 ```
 
-Please note that the session should be closed to make sure all resources _(such as network connection)_ obtained by the session will always be cleaned up properly.
+Please note that the driver & the session should be closed to make sure all resources _(such as network connection)_ obtained are cleaned up properly.
 
-Or you may decide to use `neotypes.Driver` to help you with it.
+> Note: The previous example does not handle failures. Thus, it may leak resources.
+
+You may use the `readSession` & `writeSession` helpers which will ensure the session is properly closed after query execution.<br>
+Or, you can also use other effect _(e.g. `cats.effect.IO`)_ which will use managed resources instead.
 
 ```scala
 import neotypes.GraphDatabase
 
-val driverF: Future[Driver[Future]] =
-  GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver: Driver[Future] = ???
 
-val result: Future[List[Movie]] = driverF.flatMap { driver =>
+val result: Future[List[Movie]] =
   driver.readSession { session =>
     """MATCH (movie:Movie)
         WHERE lower(movie.title) CONTAINS "Thing"
         RETURN movie""".query[Movie].list(session)
   }
-}
 ```
-
-In this case, the session will be properly closed after query execution.
 
 ## Query execution
 
@@ -77,7 +78,7 @@ If you need to support your return types for this type of queries, you can provi
 * `vector(s)` - runs a query and returns a **Vector** of results.
 * `map(s)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
 * `stream(s)` - runs a query and returns a **Stream** of results
-_(please read more [streaming](docs/streams.html))_.
+_(for more information, please read [streaming](docs/streams.html))_.
 
 ```scala
 // Execute.

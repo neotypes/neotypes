@@ -25,9 +25,7 @@ abstract class BaseIntegrationSpec[F[_]] extends AsyncFlatSpec with ForAllTestCo
 
   def execute[T](work: Session[F] => F[T])
                 (implicit F: Async[F]): F[T] =
-    (new Driver(driver)).session().flatMap { s =>
-      work(s)
-    }
+    (new Driver[F](driver)).writeSession(work)
 
   override def afterStart(): Unit = {
     if (initQuery != null) {
