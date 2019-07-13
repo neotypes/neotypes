@@ -4,22 +4,20 @@ import zio.Task
 import zio.DefaultRuntime
 import neotypes.BaseIntegrationSpec
 import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 import neotypes.zio.implicits._
 import neotypes.zio.stream.implicits._
 
-class ZioStreamSpec extends BaseIntegrationSpec {
+class ZioStreamSpec extends BaseIntegrationSpec[Task] {
   it should "work with zio.ZStream" in {
     val runtime = new DefaultRuntime {}
 
-    val s = driver.session().asScala[Task]
-
-    val program =
+    val program = execute { s =>
       "match (p:Person) return p.name"
         .query[Int]
         .stream[ZioStream](s)
         .runCollect
+    }
 
     runtime
       .unsafeRunToFuture(program)

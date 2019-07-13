@@ -34,7 +34,7 @@ The project aims to provide seamless integration with most popular scala infrast
 
 {:.table}
 | ----------------------------------------- |:--------------|
-|`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
+|`"com.dimafeng" %% "neotypes" % version`|core functionality. Supports `scala.concurrent.Future`.|
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`|`cats.effect.Async[F]` implementation.|
 |`"com.dimafeng" %% "neotypes-monix" % version`|`monix.eval.Task` implementation.|
 |`"com.dimafeng" %% "neotypes-zio" % version`|`zio.Task` implementation.|

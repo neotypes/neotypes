@@ -6,14 +6,12 @@ import akka.stream.scaladsl.Sink
 import neotypes.BaseIntegrationSpec
 import neotypes.akkastreams.implicits._
 import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.session._
 import neotypes.implicits.syntax.string._
 
 import scala.concurrent.Future
 
-class AkkaStreamSpec extends BaseIntegrationSpec {
-  it should "work with Akka streams" in {
-    val s = driver.session().asScala[Future]
+class AkkaStreamSpec extends BaseIntegrationSpec[Future] {
+  it should "work with Akka streams" in execute { s =>
     implicit val system = ActorSystem("QuickStart")
     implicit val materializer = ActorMaterializer()
 

@@ -1,9 +1,9 @@
 package neotypes
 package cats.data
 
+import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import exceptions.{PropertyNotFoundException, UncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, ValueMapper}
-import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import types.QueryParam
 
 import org.neo4j.driver.v1.Value
@@ -22,9 +22,9 @@ import _root_.cats.instances.string._ // Brings the implicit Order[String] insta
 import scala.collection.JavaConverters._
 import scala.collection.immutable.{SortedMap, SortedSet}
 
-object implicits {
+trait CatsData {
   // Chain.
-  private def traverseAsChain[A, B](iter: Iterator[A])
+  private final def traverseAsChain[A, B](iter: Iterator[A])
                                    (f: A => Either[Throwable, B]): Either[Throwable, Chain[B]] = {
     @annotation.tailrec
     def loop(acc: Chain[B]): Either[Throwable, Chain[B]] =
@@ -37,7 +37,7 @@ object implicits {
     loop(acc = Chain.nil)
   }
 
-  implicit def chainValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Chain[T]] =
+  implicit final def chainValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Chain[T]] =
     new ValueMapper[Chain[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Chain[T]] =
         value match {
@@ -51,26 +51,26 @@ object implicits {
         }
     }
 
-  implicit def chainResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[Chain[T]] =
+  implicit final def chainResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[Chain[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def chainParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[Chain[T]] =
+  implicit final def chainParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[Chain[T]] =
     mapper.contramap(chain => chain.toList)
 
 
   // Const.
-  implicit def constvalueMapper[A, B](implicit mapper: ValueMapper[A]): ValueMapper[Const[A, B]] =
+  implicit final def constvalueMapper[A, B](implicit mapper: ValueMapper[A]): ValueMapper[Const[A, B]] =
     mapper.map(a => Const(a))
 
-  implicit def constResultMapper[A, B](implicit mapper: ValueMapper[A]): ResultMapper[Const[A, B]] =
+  implicit final def constResultMapper[A, B](implicit mapper: ValueMapper[A]): ResultMapper[Const[A, B]] =
     ResultMapper.fromValueMapper
 
-  implicit def constParameterMapper[A, B](implicit mapper: ParameterMapper[A]): ParameterMapper[Const[A, B]] =
+  implicit final def constParameterMapper[A, B](implicit mapper: ParameterMapper[A]): ParameterMapper[Const[A, B]] =
     mapper.contramap(const => const.getConst)
 
 
   // NonEmptyChain.
-  implicit def nonEmptyChainValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyChain[T]] =
+  implicit final def nonEmptyChainValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyChain[T]] =
     new ValueMapper[NonEmptyChain[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyChain[T]] =
         value match {
@@ -92,15 +92,15 @@ object implicits {
         }
     }
 
-  implicit def nonEmptyChainResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyChain[T]] =
+  implicit final def nonEmptyChainResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyChain[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def nonEmptyChainParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[NonEmptyChain[T]] =
+  implicit final def nonEmptyChainParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[NonEmptyChain[T]] =
     mapper.contramap(nonEmptyChain => nonEmptyChain.toChain.toList)
 
 
   // NonEmptyList.
-  implicit def nonEmptyListValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyList[T]] =
+  implicit final def nonEmptyListValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyList[T]] =
     new ValueMapper[NonEmptyList[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyList[T]] =
         value match {
@@ -122,15 +122,15 @@ object implicits {
         }
     }
 
-  implicit def nonEmptyListResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyList[T]] =
+  implicit final def nonEmptyListResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyList[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def nonEmptyListParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[NonEmptyList[T]] =
+  implicit final def nonEmptyListParameterMapper[T](implicit mapper: ParameterMapper[List[T]]): ParameterMapper[NonEmptyList[T]] =
     mapper.contramap(nonEmptyList => nonEmptyList.toList)
 
 
   // NonEmptyMap.
-  implicit def nonEmptyMapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyMap[String, T]] =
+  implicit final def nonEmptyMapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyMap[String, T]] =
     new ValueMapper[NonEmptyMap[String, T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyMap[String, T]] =
         value match {
@@ -154,15 +154,15 @@ object implicits {
         }
     }
 
-  implicit def nonEmptyMapResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyMap[String, T]] =
+  implicit final def nonEmptyMapResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyMap[String, T]] =
     ResultMapper.fromValueMapper
 
-  implicit def nonEmptyMapParameterMapper[T](implicit mapper: ParameterMapper[Map[String, T]]): ParameterMapper[NonEmptyMap[String, T]] =
+  implicit final def nonEmptyMapParameterMapper[T](implicit mapper: ParameterMapper[Map[String, T]]): ParameterMapper[NonEmptyMap[String, T]] =
     mapper.contramap(nonEmptyMap => nonEmptyMap.toSortedMap)
 
 
   // NonEmptySet.
-  implicit def nonEmptySetValueMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ValueMapper[NonEmptySet[T]] =
+  implicit final def nonEmptySetValueMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ValueMapper[NonEmptySet[T]] =
     new ValueMapper[NonEmptySet[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptySet[T]] =
         value match {
@@ -184,15 +184,15 @@ object implicits {
         }
     }
 
-  implicit def nonEmptySetResultMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ResultMapper[NonEmptySet[T]] =
+  implicit final def nonEmptySetResultMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ResultMapper[NonEmptySet[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def nonEmptySetParameterMapper[T](implicit mapper: ParameterMapper[Set[T]]): ParameterMapper[NonEmptySet[T]] =
+  implicit final def nonEmptySetParameterMapper[T](implicit mapper: ParameterMapper[Set[T]]): ParameterMapper[NonEmptySet[T]] =
     mapper.contramap(nonEmptySet => nonEmptySet.toSortedSet)
 
 
   // NonEmptyVector.
-  implicit def nonEmptyVectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyVector[T]] =
+  implicit final def nonEmptyVectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyVector[T]] =
     new ValueMapper[NonEmptyVector[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyVector[T]] =
         value match {
@@ -214,9 +214,9 @@ object implicits {
         }
     }
 
-  implicit def nonEmptyVectorResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyVector[T]] =
+  implicit final def nonEmptyVectorResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyVector[T]] =
     ResultMapper.fromValueMapper
 
-  implicit def nonEmptyVectorParameterMapper[T](implicit mapper: ParameterMapper[Vector[T]]): ParameterMapper[NonEmptyVector[T]] =
+  implicit final def nonEmptyVectorParameterMapper[T](implicit mapper: ParameterMapper[Vector[T]]): ParameterMapper[NonEmptyVector[T]] =
     mapper.contramap(nonEmptyVector => nonEmptyVector.toVector)
 }

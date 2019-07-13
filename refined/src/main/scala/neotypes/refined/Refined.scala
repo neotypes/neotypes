@@ -8,8 +8,8 @@ import types.QueryParam
 import eu.timepit.refined.api.{Refined, RefinedType}
 import org.neo4j.driver.v1.Value
 
-object implicits {
-  implicit def refinedValueMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ValueMapper[Refined[T, P]] =
+trait RefinedMappers {
+  implicit final def refinedValueMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ValueMapper[Refined[T, P]] =
     new ValueMapper[Refined[T, P]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Refined[T, P]] =
         value match {
@@ -24,7 +24,7 @@ object implicits {
         }
     }
 
-  implicit def refinedResultMapper[T, P](implicit marshallable: ValueMapper[Refined[T, P]]): ResultMapper[Refined[T, P]] =
+  implicit final def refinedResultMapper[T, P](implicit marshallable: ValueMapper[Refined[T, P]]): ResultMapper[Refined[T, P]] =
     new ResultMapper[Refined[T, P]] {
       override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Refined[T, P]] =
         fields
@@ -34,6 +34,6 @@ object implicits {
           }
     }
 
-  implicit def RefinedParameterMapper[T, P](implicit mapper: ParameterMapper[T]): ParameterMapper[Refined[T, P]] =
+  implicit final def RefinedParameterMapper[T, P](implicit mapper: ParameterMapper[T]): ParameterMapper[Refined[T, P]] =
     mapper.contramap(refinedValue => refinedValue.value)
 }

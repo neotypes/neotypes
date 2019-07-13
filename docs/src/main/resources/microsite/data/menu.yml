@@ -13,8 +13,8 @@ options:
   - title: Driver -> Session -> Transaction
     url: docs/driver_session_transaction.html
 
-  - title: "Side effects"
+  - title: Alternative effects
     url: docs/alternative_effects.html
 
-  - title: "Streams"
+  - title: Streams
     url: docs/streams.html

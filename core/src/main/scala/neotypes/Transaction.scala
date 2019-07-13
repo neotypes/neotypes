@@ -3,10 +3,10 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
+import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.syntax.stage._
 import mappers.{ExecutionMapper, ResultMapper, TypeHint}
 import types.QueryParam
-import utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
-import utils.stage._
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.summary.ResultSummary
@@ -15,11 +15,11 @@ import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction =>
 import scala.collection.JavaConverters._
 import scala.language.higherKinds
 
-final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
+final class Transaction[F[_]](private val transaction: NTransaction) extends AnyVal {
   import Transaction.{convertParams, recordToSeq}
 
   def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
-                (implicit executionMapper: ExecutionMapper[T]): F[T] =
+                (implicit F: Async[F], executionMapper: ExecutionMapper[T]): F[T] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
@@ -29,7 +29,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
-             (implicit resultMapper: ResultMapper[T]): F[List[T]] =
+             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[List[T]] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
@@ -44,7 +44,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def map[K, V](query: String, params: Map[String, QueryParam] = Map.empty)
-               (implicit resultMapper: ResultMapper[(K, V)]): F[Map[K, V]] =
+               (implicit F: Async[F], resultMapper: ResultMapper[(K, V)]): F[Map[K, V]] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
@@ -59,7 +59,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
-            (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
+            (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Set[T]] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
@@ -74,7 +74,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
-               (implicit resultMapper: ResultMapper[T]): F[Vector[T]] =
+               (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Vector[T]] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
@@ -89,7 +89,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
-               (implicit resultMapper: ResultMapper[T]): F[T] =
+               (implicit F: Async[F], resultMapper: ResultMapper[T]): F[T] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
@@ -101,8 +101,8 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         }
     }
 
-  private[this] def nextAsyncToF[T](cs: CompletionStage[Record])
-                                   (implicit resultMapper: ResultMapper[T]): F[Option[T]] =
+  private def nextAsyncToF[T](cs: CompletionStage[Record])
+                             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Option[T]] =
     F.async { cb =>
       cs.accept { res: Record =>
         cb(
@@ -121,7 +121,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
     }
 
   def stream[T: ResultMapper, S[_]](query: String, params: Map[String, QueryParam] = Map.empty)
-                                   (implicit S: Stream.Aux[S, F]): S[T] =
+                                   (implicit F: Async[F], S: Stream.Aux[S, F]): S[T] =
     S.fToS(
       F.async { cb =>
         transaction
@@ -138,7 +138,7 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
       }
     )
 
-  def commit(): F[Unit] =
+  def commit(implicit F: Async[F]): F[Unit] =
     F.async{ cb =>
       transaction
         .commitAsync()
@@ -146,12 +146,25 @@ final class Transaction[F[_]](transaction: NTransaction)(implicit F: Async[F]) {
         .recover { ex: Throwable => cb(Left(ex)) }
     }
 
-  def rollback(): F[Unit] =
+  def rollback(implicit F: Async[F]): F[Unit] =
     F.async { cb =>
       transaction
         .rollbackAsync()
         .accept { _: Void => cb(Right(())) }
-        .recover { ex => cb(Left(ex)) }
+        .recover { ex: Throwable => cb(Left(ex)) }
+    }
+
+  def close(implicit F: Async[F]): F[Unit] =
+    F.async{ cb =>
+      transaction
+        .commitAsync()
+        .accept { _: Void => cb(Right(())) }
+        .recover { ex: Throwable =>
+          transaction
+            .rollbackAsync()
+            .accept { _: Void => cb(Left(ex)) }
+            .recover { _: Throwable => cb(Left(ex)) }
+        }
     }
 }
 
