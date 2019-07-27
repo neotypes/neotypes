@@ -10,7 +10,7 @@ import types.Path
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{IsoDuration, Node, Path => NPath, Point, Relationship}
+import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Path => NPath, Point, Relationship}
 import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 import shapeless.labelled.FieldType
 
@@ -114,6 +114,12 @@ trait ResultMappers extends ValueMappers {
                                                                   head: ValueMapper[H],
                                                                   tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :!: T] =
     new ResultMapper[FieldType[K, H] :!: T] {
+
+      private def collectEntityFields(entity: Entity): List[(String, Value)] = {
+        val entityFields = entity.keys.asScala.iterator.map(key => key -> entity.get(key)).toList
+        (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: entityFields
+      }
+
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
 
@@ -127,14 +133,10 @@ trait ResultMappers extends ValueMappers {
             val convertedValue =
               if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.NODE) {
                 val node = value.head._2.asNode
-                val nodes =
-                  node
-                    .keys
-                    .asScala
-                    .iterator
-                    .map(key => key -> node.get(key))
-                    .toList
-                (Constants.ID_FIELD_NAME -> new IntegerValue(node.id)) :: nodes
+                collectEntityFields(node)
+              } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP) {
+                val relationship = value.head._2.asRelationship
+                collectEntityFields(relationship)
               } else {
                 value
               }
