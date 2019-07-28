@@ -95,6 +95,28 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
+  it should "map result with relationship to a case class" in execute { s =>
+    for {
+      hlist <-
+        """
+        MATCH (p:Person)-[r:ACTED_IN]->(:Movie)
+               RETURN p, r
+               LIMIT 1
+        """.query[Person :: Roles :: HNil].single(s)
+      cc <-
+        """
+        MATCH (p:Person)-[r:ACTED_IN]->(:Movie)
+               RETURN p as person, r as roles
+               LIMIT 1
+        """.query[PersonWithRoles].single(s)
+    } yield {
+      assert(hlist.head.name.get == "Charlize Theron")
+      assert(hlist.tail.head.roles == List("Tina"))
+      assert(cc.person.name.get == "Charlize Theron")
+      assert(cc.roles.roles == List("Tina"))
+    }
+  }
+
   override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
@@ -108,4 +130,8 @@ object BasicSessionSpec {
   final case class Cast(name: String, job: String, role: String)
 
   final case class Movie2(title: String, cast: List[Cast])
+
+  final case class Roles(roles: List[String])
+
+  final case class PersonWithRoles(person: Person, roles: Roles)
 }
