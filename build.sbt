@@ -108,7 +108,7 @@ lazy val catsEffect = (project in file("cats-effect"))
   .settings(commonSettings: _*)
   .settings(
     name := "neotypes-cats-effect",
-    scalacOptions in Test ++= Seq("-Ypartial-unification"),
+    scalacOptions in Test += "-Ypartial-unification",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )

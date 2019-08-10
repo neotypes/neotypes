@@ -8,10 +8,7 @@ import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
 import scala.language.higherKinds
 
 final class Session[F[_]](private val session: NSession) extends AnyVal {
-  def transaction[R[_]](implicit F: Async.Aux[F, R]): R[Transaction[F]] =
-    F.resource(createTransaction) { transaction => transaction.close }
-
-  private[neotypes] def createTransaction(implicit F: Async[F]): F[Transaction[F]] =
+  def transaction(implicit F: Async[F]): F[Transaction[F]] =
     F.async { cb =>
       session
         .beginTransactionAsync()
@@ -20,17 +17,19 @@ final class Session[F[_]](private val session: NSession) extends AnyVal {
     }
 
   def transact[T](txF: Transaction[F] => F[T])(implicit F: Async[F]): F[T] =
-    createTransaction.flatMap { t =>
+    transaction.flatMap { tx =>
       val result = for {
-        res <- txF(t)
-        _ <- t.commit
-      } yield res
+        r <- txF(tx)
+        _ <- tx.commit
+      } yield r
 
       result.recoverWith {
-        case ex =>
-          t.rollback.flatMap {
-            _ => F.failed[T](ex)
-          }
+        case ex: Throwable =>
+          tx.rollback
+            .flatMap(_ => F.failed[T](ex))
+            .recoverWith {
+              case _ => F.failed[T](ex)
+            }
       }
     }
 

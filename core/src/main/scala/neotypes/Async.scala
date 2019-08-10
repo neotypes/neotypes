@@ -21,15 +21,17 @@ trait Async[F[_]] {
 
   def recoverWith[A, B >: A](fa: F[A])(f: PartialFunction[Throwable, F[B]]): F[B]
 
-  def resource[A](input: F[A])(close: A => F[Unit]): R[A]
+  def resource[A](input: => A)(close: A => F[Unit]): R[A]
 }
 
 object Async {
   type Aux[F[_], _R[_]] = Async[F] { type R[A] = _R[A] }
 
-  implicit def futureAsync(implicit ec: ExecutionContext): Async.Aux[Future, Future] =
+  private[neotypes] type Id[A] = A
+
+  implicit def futureAsync(implicit ec: ExecutionContext): Async.Aux[Future, Id] =
     new Async[Future] {
-      override final type R[A] = Future[A]
+      override final type R[A] = A
 
       override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
         val p = Promise[A]()
@@ -55,6 +57,7 @@ object Async {
       override final def recoverWith[A, B >: A](fa: Future[A])(f: PartialFunction[Throwable, Future[B]]): Future[B] =
         fa.recoverWith(f)
 
-      override final def resource[A](input: Future[A])(close: A => Future[Unit]): Future[A] = input
+      override final def resource[A](input: => A)(close: A => Future[Unit]): A =
+        input
     }
 }

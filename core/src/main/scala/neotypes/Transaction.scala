@@ -139,7 +139,7 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
     )
 
   def commit(implicit F: Async[F]): F[Unit] =
-    F.async{ cb =>
+    F.async { cb =>
       transaction
         .commitAsync()
         .accept { _: Void => cb(Right(())) }
@@ -152,19 +152,6 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
         .rollbackAsync()
         .accept { _: Void => cb(Right(())) }
         .recover { ex: Throwable => cb(Left(ex)) }
-    }
-
-  def close(implicit F: Async[F]): F[Unit] =
-    F.async{ cb =>
-      transaction
-        .commitAsync()
-        .accept { _: Void => cb(Right(())) }
-        .recover { ex: Throwable =>
-          transaction
-            .rollbackAsync()
-            .accept { _: Void => cb(Left(ex)) }
-            .recover { _: Throwable => cb(Left(ex)) }
-        }
     }
 }
 
