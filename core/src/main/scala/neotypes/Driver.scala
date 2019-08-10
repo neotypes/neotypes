@@ -16,8 +16,8 @@ final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
                    (implicit F: Async.Aux[F, R]): R[Session[F]] =
     F.resource(createSession(accessMode, bookmarks))(session => session.close)
 
-  private def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty)
-                           (implicit F: Async[F]): Session[F] =
+  private[this] def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty)
+                                 (implicit F: Async[F]): Session[F] =
     new Session(
       bookmarks match {
         case Seq()         => driver.session(accessMode)

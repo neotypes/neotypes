@@ -1,4 +1,4 @@
-package neotypes.cats
+package neotypes.cats.effect
 
 import cats.{Applicative, Monad}
 import cats.effect.{Async, IO, Resource}
@@ -20,7 +20,7 @@ class CatsImplicitsSpec extends BaseIntegrationSpec[IO] {
         .make(Async[F].delay(new Driver[F](driver)))(_.close)
         .flatMap(_.session)
 
-    def useSession[F[_]: Async] = makeSession[F].use { s =>
+    def useSession[F[_]: Async]: F[String] = makeSession[F].use { s =>
       (test1[F] *> test2[F]).flatMap { _=>
         """match (p:Person {name: "Charlize Theron"}) return p.name"""
           .query[String]
