@@ -13,11 +13,11 @@ trait Monix {
       override final def async[T](cb: (Either[Throwable, T] => Unit) => Unit): Task[T] =
         Task.async(cb)
 
-      override final def failed[T](e: Throwable): Task[T] =
-        Task.raiseError(e)
-
       override final def delay[A](t: => A): Task[A] =
         Task.delay(t)
+
+      override final def failed[T](e: Throwable): Task[T] =
+        Task.raiseError(e)
 
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
@@ -28,7 +28,7 @@ trait Monix {
       override final def recoverWith[T, U >: T](m: Task[T])(f: PartialFunction[Throwable, Task[U]]): Task[U] =
         m.onErrorRecoverWith(f)
 
-      override final def resource[A](input: Task[A])(close: A => Task[Unit]): Resource[Task, A] =
-        Resource.make(input)(close)
+      override final def resource[A](input: => A)(close: A => Task[Unit]): Resource[Task, A] =
+        Resource.make(Task.delay(input))(close)
     }
 }

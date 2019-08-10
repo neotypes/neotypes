@@ -31,7 +31,7 @@ trait Zio {
       override final def failed[T](e: Throwable): Task[T] =
         Task.fail(e)
 
-      override def resource[A](input: Task[A])(close: A => Task[Unit]): Managed[Throwable, A] =
-        Managed.make(input)(a => close(a).orDie)
+      override def resource[A](input: => A)(close: A => Task[Unit]): Managed[Throwable, A] =
+        Managed.make(Task.succeedLazy(input))(a => close(a).orDie)
     }
 }
