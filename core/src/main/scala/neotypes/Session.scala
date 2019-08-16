@@ -17,21 +17,7 @@ final class Session[F[_]](private val session: NSession) extends AnyVal {
     }
 
   def transact[T](txF: Transaction[F] => F[T])(implicit F: Async[F]): F[T] =
-    transaction.flatMap { tx =>
-      val result = for {
-        r <- txF(tx)
-        _ <- tx.commit
-      } yield r
-
-      result.recoverWith {
-        case ex: Throwable =>
-          tx.rollback
-            .flatMap(_ => F.failed[T](ex))
-            .recoverWith {
-              case _ => F.failed[T](ex)
-            }
-      }
-    }
+    transaction.guarantee(txF)(_.commit)
 
   def close(implicit F: Async[F]): F[Unit] =
     F.async { cb =>

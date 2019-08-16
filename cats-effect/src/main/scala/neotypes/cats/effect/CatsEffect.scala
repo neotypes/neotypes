@@ -19,6 +19,9 @@ trait CatsEffect {
       override final def failed[T](e: Throwable): F[T] =
         F.raiseError(e)
 
+      override final def guarantee[A, B](fa: F[A])(f: A => F[B])(finalizer: A => F[Unit]): F[B] =
+        Resource.make(fa)(finalizer).use(f)
+
       override final def flatMap[T, U](m: F[T])(f: T => F[U]): F[U] =
         F.flatMap(m)(f)
 

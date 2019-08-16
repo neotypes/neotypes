@@ -22,6 +22,9 @@ trait Monix {
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
 
+      override final def guarantee[A, B](fa: Task[A])(f: A => Task[B])(finalizer: A => Task[Unit]): Task[B] =
+        Resource.make(fa)(finalizer).use(f)
+
       override final def map[T, U](m: Task[T])(f: T => U): Task[U] =
         m.map(f)
 
