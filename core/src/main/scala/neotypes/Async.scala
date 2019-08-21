@@ -17,7 +17,9 @@ trait Async[F[_]] {
 
   def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
 
-  def guarantee[A, B](fa: F[A])(f: A => F[B])(finalizer: A => F[Unit]): F[B]
+  def guarantee[A, B](fa: F[A])
+                     (f: A => F[B])
+                     (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
 
   def map[A, B](fa: F[A])(f: A => B): F[B]
 
@@ -53,16 +55,19 @@ object Async {
       override final def flatMap[A, B](fa: Future[A])(f: A => Future[B]): Future[B] =
         fa.flatMap(f)
 
-      override final def guarantee[A, B](fa: Future[A])(f: A => Future[B])(finalizer: A => Future[Unit]): Future[B] =
+      override final def guarantee[A, B](fa: Future[A])
+                                        (f: A => Future[B])
+                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): Future[B] =
         fa.flatMap { a =>
           val result = for {
             r <- f(a)
-            _ <- finalizer(a)
+            _ <- finalizer(a, None)
           } yield r
 
           result.recoverWith {
             case ex: Throwable =>
-              finalizer(a).flatMap(_ => failed[B](ex))
+              finalizer(a, Some(ex))
+                .flatMap(_ => failed[B](ex))
                 .recoverWith {
                   case _ => failed[B](ex)
                 }

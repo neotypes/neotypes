@@ -1,6 +1,6 @@
 package neotypes.monix
 
-import cats.effect.Resource
+import cats.effect.{ExitCase, Resource}
 import monix.eval.Task
 
 trait Monix {
@@ -22,8 +22,13 @@ trait Monix {
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
 
-      override final def guarantee[A, B](fa: Task[A])(f: A => Task[B])(finalizer: A => Task[Unit]): Task[B] =
-        Resource.make(fa)(finalizer).use(f)
+      override final def guarantee[A, B](fa: Task[A])
+                                        (f: A => Task[B])
+                                        (finalizer: (A, Option[Throwable]) => Task[Unit]): Task[B] =
+        Resource.makeCase(fa) {
+          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
+          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+        }.use(f)
 
       override final def map[T, U](m: Task[T])(f: T => U): Task[U] =
         m.map(f)

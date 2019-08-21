@@ -37,7 +37,9 @@ final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
   private[this] def withSession[T](accessMode: AccessMode)
                                   (sessionWork: Session[F] => F[T])
                                   (implicit F: Async[F]): F[T] =
-    F.delay(createSession(accessMode)).guarantee(sessionWork)(_.close)
+    F.delay(createSession(accessMode)).guarantee(sessionWork) {
+      case (session, _) => session.close
+    }
 
   def close(implicit F: Async[F]): F[Unit] =
     F.async { cb =>

@@ -17,7 +17,10 @@ final class Session[F[_]](private val session: NSession) extends AnyVal {
     }
 
   def transact[T](txF: Transaction[F] => F[T])(implicit F: Async[F]): F[T] =
-    transaction.guarantee(txF)(_.commit)
+    transaction.guarantee(txF) {
+      case (tx, None)    => tx.commit
+      case (tx, Some(_)) => tx.rollback
+    }
 
   def close(implicit F: Async[F]): F[Unit] =
     F.async { cb =>
