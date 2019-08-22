@@ -1,10 +1,10 @@
 package neotypes.cats.effect
 
 import cats.effect.IO
+import neotypes.BaseIntegrationSpec
 import neotypes.cats.effect.implicits._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
-import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
 
 class CatsAsyncSpec extends BaseIntegrationSpec[IO] {

@@ -7,7 +7,6 @@ import shapeless._
 import scala.concurrent.Future
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.Node
-import neotypes.implicits.mappers.`package`.executions
 
 class BasicSessionSpec extends BaseIntegrationSpec[Future] {
   import BasicSessionSpec._
