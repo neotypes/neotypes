@@ -13,32 +13,26 @@ title: "Documentation"
 
 ## Session creation
 
-**neotypes** provides the `GraphDatabase` **factory** for **Neo4j** `Session` and `Driver` wrappers.
-You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass**.
-The implementation for `scala.concurrent.Future` is built-in _(for other types, please read [alternative effects](docs/alternative_effects.html))_.
+**neotypes** provides the `GraphDatabase` **factory** for creating a **Neo4j** `Driver`, which represents a connection with the Database.
+You can use this `Driver`, to create a `Session`, which can be used to perform operations _(`Transactions`)_ over the Database.<br>
+This **Scala** classes, are nothing more than simple wrappers over their **Java** counterparts. Which provide a more _"Scala-friendly"_ and functional API.
 
-Please note that you have to make sure that the driver and session is properly closed at the end of the application execution.
+You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass** in scope.
+The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](docs/alternative_effects.html))_.
 
 ```scala
 import neotypes.GraphDatabase
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContex.Implicits.global
 
-val program: Future[Unit] = for {
-  driver <- GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-  session <- driver.session()
-  ...
-  _ <- session.close()
-  _ <- driver.close()
-yield ()
+val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val session = driver.session
 ```
 
-Please note that the driver & the session should be closed to make sure all resources _(such as network connection)_ obtained are cleaned up properly.
+Please note that, you have to make sure that the driver and session are properly closed at the end of the application execution, to make sure all resources _(such as network connection)_ obtained are cleaned up properly.
 
-> Note: The previous example does not handle failures. Thus, it may leak resources.
-
-You may use the `readSession` & `writeSession` helpers which will ensure the session is properly closed after query execution.<br>
-Or, you can also use other effect _(e.g. `cats.effect.IO`)_ which will use managed resources instead.
+You can also use the `readSession` & `writeSession` helpers which will ensure that the session is properly closed after you use it.<br>
+Or, if you use other effect type instead of `Future`, for example `IO`. Then, the creation of both the `Driver` & the `Session` will be wrapped over some kind of **Resource**.
 
 ```scala
 import neotypes.GraphDatabase
@@ -60,12 +54,12 @@ The import `neotypes.implicits.all._` adds an extension method `query[T]` to eac
 Type parameter `[T]` specifies the result type.
 
 ```scala
-"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)
-"create (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "John", "born" -> 1980)).execute(s)
+"CREATE (p:Person {name: $name, born: $born})".query[Unit].execute(s)
+"CREATE (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "John", "born" -> 1980)).execute(s)
 
 val name = "John"
 val born = 1980
-c"create (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation.
+c"CREATE (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation.
 ```
 
 A query can be run in six different ways:
@@ -82,26 +76,26 @@ _(for more information, please read [streaming](docs/streams.html))_.
 
 ```scala
 // Execute.
-"create (p:Person {name: $name, born: $born})".query[Unit].execute(s)
+"CREATE (p:Person {name: $name, born: $born})".query[Unit].execute(s)
 
 // Single.
-"match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
-"match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
-"match (p:Person {name: 'Charlize Theron'}) return p".query[Map[String, Value]].single(s)
-"match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
+"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
+"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p".query[Person].single(s)
+"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p".query[Map[String, Value]].single(s)
+"MATCH (p:Person {name: '1243'}) RETURN p.born".query[Option[Int]].single(s)
 
 // List.
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].list(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].list(s)
 
 // Set.
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].set(s)
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].set(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].set(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].set(s)
 
 // Vector.
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].vector(s)
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].vector(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].vector(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].vector(s)
 
 // Map.
-"match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].map(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].map(s)
 ```
