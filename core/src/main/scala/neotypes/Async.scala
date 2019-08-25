@@ -17,19 +17,25 @@ trait Async[F[_]] {
 
   def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
 
+  def guarantee[A, B](fa: F[A])
+                     (f: A => F[B])
+                     (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
+
   def map[A, B](fa: F[A])(f: A => B): F[B]
 
   def recoverWith[A, B >: A](fa: F[A])(f: PartialFunction[Throwable, F[B]]): F[B]
 
-  def resource[A](input: F[A])(close: A => F[Unit]): R[A]
+  def resource[A](input: => A)(close: A => F[Unit]): R[A]
 }
 
 object Async {
   type Aux[F[_], _R[_]] = Async[F] { type R[A] = _R[A] }
 
-  implicit def futureAsync(implicit ec: ExecutionContext): Async.Aux[Future, Future] =
+  private[neotypes] type Id[A] = A
+
+  implicit def futureAsync(implicit ec: ExecutionContext): Async.Aux[Future, Id] =
     new Async[Future] {
-      override final type R[A] = Future[A]
+      override final type R[A] = A
 
       override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
         val p = Promise[A]()
@@ -49,12 +55,32 @@ object Async {
       override final def flatMap[A, B](fa: Future[A])(f: A => Future[B]): Future[B] =
         fa.flatMap(f)
 
+      override final def guarantee[A, B](fa: Future[A])
+                                        (f: A => Future[B])
+                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): Future[B] =
+        fa.flatMap { a =>
+          val result = for {
+            r <- f(a)
+            _ <- finalizer(a, None)
+          } yield r
+
+          result.recoverWith {
+            case ex: Throwable =>
+              finalizer(a, Some(ex))
+                .flatMap(_ => failed[B](ex))
+                .recoverWith {
+                  case _ => failed[B](ex)
+                }
+          }
+        }
+
       override final def map[A, B](fa: Future[A])(f: A => B): Future[B] =
         fa.map(f)
 
       override final def recoverWith[A, B >: A](fa: Future[A])(f: PartialFunction[Throwable, Future[B]]): Future[B] =
         fa.recoverWith(f)
 
-      override final def resource[A](input: Future[A])(close: A => Future[Unit]): Future[A] = input
+      override final def resource[A](input: => A)(close: A => Future[Unit]): A =
+        input
     }
 }

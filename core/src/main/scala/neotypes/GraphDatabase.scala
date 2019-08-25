@@ -87,6 +87,6 @@ object GraphDatabase {
 
     private def create[R[_]](neoDriver: => NDriver)
                             (implicit F: Async.Aux[F, R]): R[Driver[F]] =
-      F.resource(F.delay(new Driver[F](neoDriver))) { driver => driver.close }
+      F.resource(new Driver[F](neoDriver))(driver => driver.close)
   }
 }

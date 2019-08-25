@@ -33,7 +33,7 @@ implicit val materializer = ActorMaterializer()
 val program: Source[String, Future[Unit]] = for {
   driver <- Source.fromFuture(GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****")))
   session <- Source.fromFuture(driver.session())
-  data <- "match (p:Person) return p.name".query[String].stream[AkkaStream](session)
+  data <- "MATCH (p:Person) RETURN p.name".query[String].stream[AkkaStream](session)
   _ <- Source.fromFuture(session.close())
   _ <- Source.fromFuture(driver.close())
 } yield data
@@ -61,7 +61,7 @@ val session: Resource[IO, Session[IO]] = for {
 
 val program: Stream[IO, Unit] =
   Stream.resource(sesssion).flatMap { s =>
-    "match (p:Person) return p.name"
+    "MATCH (p:Person) RETURN p.name"
       .query[String]
       .stream[Fs2IoStream](s)
       .evalMap(n => IO(println(n)))
@@ -99,7 +99,7 @@ val session: Resource[IO, Session[IO]] = for {
 
 val program: Observable[String] =
   Observable.fromResource(session).flatMap { s =>
-    "match (p:Person) return p.name"
+    "MATCH (p:Person) RETURN p.name"
       .query[String]
       .stream[MonixStream](s)
       .mapEval(n => Task(println(n)))
@@ -129,7 +129,7 @@ val session: Managed[Throwable, Session] = for {
 
 val program: ZStream[Any, Throwable, String] =
   ZStream.managed(session).flatMap { s =>
-    "match (p:Person) return p.name"
+    "MATCH (p:Person) RETURN p.name"
       .query[String]
       .stream[ZioStream](s)
   }
@@ -165,7 +165,7 @@ query.stream[fs2.Stream[F, ?]](s)
 -----
 
 The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and rolls back the transaction once all elements are read.
-This approach aims to improve performance and memory footprint with large volumes of returning data.
+This approach aims to improve performance and memory footprint with large volumes of returned data.
 
 ## Transaction management
 

@@ -14,18 +14,16 @@ final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
 
   def session[R[_]](accessMode: AccessMode, bookmarks: String*)
                    (implicit F: Async.Aux[F, R]): R[Session[F]] =
-    F.resource(createSession(accessMode, bookmarks)) { session => session.close }
+    F.resource(createSession(accessMode, bookmarks))(session => session.close)
 
-  private def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty)
-                           (implicit F: Async[F]): F[Session[F]] =
-    F.delay(
-      new Session(
-        bookmarks match {
-          case Seq()         => driver.session(accessMode)
-          case Seq(bookmark) => driver.session(accessMode, bookmark)
-          case _             => driver.session(accessMode, bookmarks.asJava)
-        }
-      )
+  private[this] def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty)
+                                 (implicit F: Async[F]): Session[F] =
+    new Session(
+      bookmarks match {
+        case Seq()         => driver.session(accessMode)
+        case Seq(bookmark) => driver.session(accessMode, bookmark)
+        case _             => driver.session(accessMode, bookmarks.asJava)
+      }
     )
 
   def readSession[T](sessionWork: Session[F] => F[T])
@@ -39,15 +37,8 @@ final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
   private[this] def withSession[T](accessMode: AccessMode)
                                   (sessionWork: Session[F] => F[T])
                                   (implicit F: Async[F]): F[T] =
-    createSession(accessMode).flatMap { session =>
-      sessionWork(session).flatMap { v =>
-        session.close.map(_ => v)
-      } recoverWith {
-        case ex: Throwable =>
-          session.close.flatMap(_ => F.failed[T](ex)).recoverWith {
-            case _ => F.failed(ex)
-          }
-      }
+    F.delay(createSession(accessMode)).guarantee(sessionWork) {
+      case (session, _) => session.close
     }
 
   def close(implicit F: Async[F]): F[Unit] =

@@ -57,9 +57,9 @@ private[neotypes] object DeferredQuery {
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
     def apply[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
       S.fToS(
-        session.createTransaction.flatMap { tx =>
+        session.transaction.flatMap { tx =>
           F.delay(
-            S.onComplete(tx.stream(dq.query, dq.params))(tx.close)
+            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
           )
         }
       )

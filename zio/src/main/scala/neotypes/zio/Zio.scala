@@ -1,6 +1,6 @@
 package neotypes.zio
 
-import zio.{Task, Managed}
+import zio.{Cause, Exit, Managed, Task}
 
 trait Zio {
   private[neotypes] final type ZioResource[A] = Managed[Throwable, A]
@@ -25,13 +25,24 @@ trait Zio {
       override final def map[T, U](m: Task[T])(f: T => U): Task[U] =
         m.map(f)
 
+      override def guarantee[A, B](fa: zio.Task[A])
+                                  (f: A => zio.Task[B])
+                                  (finalizer: (A, Option[Throwable]) => zio.Task[Unit]): zio.Task[B] =
+        Managed.makeExit(fa) {
+          case (a, Exit.Failure(cause)) => cause.failureOrCause match {
+            case Left(ex: Throwable)    => finalizer(a, Some(ex)).orDie
+            case _                      => finalizer(a, None).orDie
+          }
+          case (a, _)                   => finalizer(a, None).orDie
+        }.use(f)
+
       override def recoverWith[T, U >: T](m: Task[T])(f: PartialFunction[Throwable, Task[U]]): Task[U] =
         m.catchSome(f)
 
       override final def failed[T](e: Throwable): Task[T] =
         Task.fail(e)
 
-      override def resource[A](input: Task[A])(close: A => Task[Unit]): Managed[Throwable, A] =
-        Managed.make(input)(a => close(a).orDie)
+      override def resource[A](input: => A)(close: A => Task[Unit]): Managed[Throwable, A] =
+        Managed.make(Task.succeedLazy(input))(a => close(a).orDie)
     }
 }

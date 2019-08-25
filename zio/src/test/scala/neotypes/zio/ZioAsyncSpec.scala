@@ -1,14 +1,18 @@
 package neotypes.zio
 
-import zio.Task
-import zio.DefaultRuntime
+import zio.{DefaultRuntime, Task}
+import zio.internal.PlatformLive
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.zio.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
 
-class ZioAsyncSpec extends BaseIntegrationSpec[Task] {
+import scala.concurrent.ExecutionContext
+
+class ZioAsyncSpec extends BaseIntegrationSpec[Task] { self =>
+  val runtime = new DefaultRuntime { override val Platform = PlatformLive.fromExecutionContext(self.executionContext) }
+
   it should "work with zio.Task" in {
     val runtime = new DefaultRuntime {}
 

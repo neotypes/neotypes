@@ -16,16 +16,19 @@ import neotypes.implicits.syntax.string._ // Provides the query[T] extension met
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 
+val driver: Driver[Future] = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val session: Session[Future] = driver.session
+
 val program: Future[String] = for {
-  driver <- GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-  session <- driver.session()
-  data <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(session)
+  data <- "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(session)
   _ <- session.close()
   _ <- driver.close()
 } yield data
 
 val data: String = Await.result(program, 1 second)
 ```
+
+> Note: The previous example does not handle failures. Thus, it may leak resources.
 
 ### cats.effect.neotypes.Async[F] _(neotypes-cats-effect)_
 
@@ -42,7 +45,7 @@ val session: Resource[IO, Session[IO]] = for {
 } yield session
 
 val program: IO[String] = session.use { s =>
-  "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
 }
 
 val data: String = program.unsafeRunSync()
@@ -66,7 +69,7 @@ val session: Resource[Task, Session[Task]] = for {
 } yield session
 
 val program: Task[String] = session.use { s =>
-  "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
 }
 
 val data: String = program.runSyncUnsafe(5 seconds)
@@ -90,7 +93,7 @@ val session: Managed[Throwable, Session] = for {
 } yield session
 
 val program: Task[String] = session.use { s =>
-  "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
 }
 
 val data: String = runtime.unsafeRun(program)
@@ -104,4 +107,4 @@ And add them to the implicit scope.
 The type parameters in the signature indicate:
 
 * `F[_]` - the effect type.
-* `R[_]` - the resource used to wrap the creation of the Driver & Session.
+* `R[_]` - the resource used to wrap the creation of Drivers & Sessions.
