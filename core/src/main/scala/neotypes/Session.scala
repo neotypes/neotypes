@@ -1,38 +1,28 @@
 package neotypes
 
-import neotypes.implicits._
-import neotypes.utils.stage._
-import org.neo4j.driver.v1.{Session => NSession, Transaction => NTransaction}
+import internal.syntax.async._
+import internal.syntax.stage._
 
-final class Session[F[_]](session: NSession)(implicit F: Async[F]) {
-  def beginTransaction(): F[Transaction[F]] =
+import org.neo4j.driver.v1.{Session => NSession}
+
+import scala.language.higherKinds
+
+final class Session[F[_]](private val session: NSession) extends AnyVal {
+  def transaction(implicit F: Async[F]): F[Transaction[F]] =
     F.async { cb =>
-      session
-        .beginTransactionAsync()
-        .accept { tx: NTransaction => cb(Right(new Transaction(tx)(F))) }
-        .recover { ex: Throwable => cb(Left(ex)) }
-    }
-
-  def close(): F[Unit] =
-    F.async { cb =>
-      session
-        .closeAsync()
-        .accept { _: Void => cb(Right(())) }
-        .recover { ex: Throwable => cb(Left(ex)) }
-    }
-
-  def transact[T](txF: Transaction[F] => F[T]): F[T] =
-    beginTransaction().flatMap { t =>
-      val result = for {
-        res <- txF(t)
-        _ <- t.commit()
-      } yield res
-
-      result.recoverWith { case ex =>
-        for {
-          _ <- t.rollback()
-          res <- F.failed[T](ex)
-        } yield res
+      session.beginTransactionAsync().accept(cb) { tx =>
+        Right(new Transaction(tx))
       }
+    }
+
+  def transact[T](txF: Transaction[F] => F[T])(implicit F: Async[F]): F[T] =
+    transaction.guarantee(txF) {
+      case (tx, None)    => tx.commit
+      case (tx, Some(_)) => tx.rollback
+    }
+
+  def close(implicit F: Async[F]): F[Unit] =
+    F.async { cb =>
+      session.closeAsync().acceptVoid(cb)
     }
 }

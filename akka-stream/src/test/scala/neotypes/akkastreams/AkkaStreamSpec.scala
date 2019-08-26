@@ -5,14 +5,13 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import neotypes.BaseIntegrationSpec
 import neotypes.akkastreams.implicits._
-import neotypes.implicits._
-import org.scalatest.AsyncFlatSpec
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.string._
 
 import scala.concurrent.Future
 
-class AkkaStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
-  it should "work with Akka streams" in {
-    val s = driver.session().asScala[Future]
+class AkkaStreamSpec extends BaseIntegrationSpec[Future] {
+  it should "work with Akka streams" in execute { s =>
     implicit val system = ActorSystem("QuickStart")
     implicit val materializer = ActorMaterializer()
 
@@ -25,6 +24,5 @@ class AkkaStreamSpec extends AsyncFlatSpec with BaseIntegrationSpec {
       }
   }
 
-  override val initQuery: String =
-    (0 to 10).map(n => s"CREATE (:Person {name: $n})").mkString("\n") //+ "\n CREATE (:Person {name: 'asd'})"
+  override val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
 }

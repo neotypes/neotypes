@@ -4,21 +4,24 @@ import ReleaseTransformations._
 
 val neo4jDriverVersion = "1.7.5"
 val shapelessVersion = "2.3.3"
-val testcontainersScalaVersion = "0.26.0"
+val testcontainersScalaVersion = "0.29.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.8"
-val slf4jVersion = "1.7.26"
-val catsEffectsVersion = "2.0.0-M4"
-val monixVersion = "3.0.0-RC2"
-val akkaStreamVersion = "2.5.23"
-val fs2Version = "1.1.0-M1"
-val zioVersion = "1.0.0-RC8-4"
+val slf4jVersion = "1.7.27"
+val catsVersion = "1.6.1"
+val catsEffectsVersion = "1.4.0"
+val monixVersion = "3.0.0-RC3"
+val akkaStreamVersion = "2.5.24"
+val fs2Version = "1.0.5"
+val zioVersion = "1.0.0-RC11-1"
+val paradiseVersion = "2.1.1"
+val refinedVersion = "0.9.9"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  scalaVersion in ThisBuild := "2.11.12",
-  crossScalaVersions := Seq("2.13.0", "2.12.8", "2.11.12"),
+  scalaVersion in ThisBuild := "2.13.0",
+  crossScalaVersions := Seq("2.13.0", "2.12.9"),
 
   scalacOptions ++= Seq(
     "-deprecation",
@@ -61,7 +64,9 @@ lazy val root = (project in file("."))
     akkaStream,
     fs2Stream,
     monixStream,
-    zioStream
+    zioStream,
+    refined,
+    catsData
   )
   .settings(noPublishSettings)
   .settings(
@@ -69,7 +74,7 @@ lazy val root = (project in file("."))
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      runTest,
+      //runTest,
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
@@ -86,12 +91,15 @@ lazy val core = (project in file("core"))
   .settings(
     name := "neotypes",
 
+    //addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
+
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       )
         ++ COMPILE(
-        "com.chuusai" %% "shapeless" % shapelessVersion
+        "com.chuusai" %% "shapeless" % shapelessVersion,
+        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
       )
         ++ TEST(
         "org.scalatest" %% "scalatest" % scalaTestVersion,
@@ -106,6 +114,7 @@ lazy val catsEffect = (project in file("cats-effect"))
   .settings(commonSettings: _*)
   .settings(
     name := "neotypes-cats-effect",
+    scalacOptions in Test += "-Ypartial-unification",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )
@@ -174,6 +183,26 @@ lazy val zioStream = (project in file("zio-stream"))
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio"         % zioVersion,
       "dev.zio" %% "zio-streams" % zioVersion
+    )
+  )
+
+lazy val refined = (project in file("refined"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-refined",
+    libraryDependencies ++= PROVIDED(
+      "eu.timepit" %% "refined" % refinedVersion
+    )
+  )
+
+lazy val catsData = (project in file("cats-data"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings: _*)
+  .settings(
+    name := "neotypes-cats-data",
+    libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion
     )
   )
 

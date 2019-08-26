@@ -34,7 +34,7 @@ The project aims to provide seamless integration with most popular scala infrast
 
 {:.table}
 | ----------------------------------------- |:--------------|
-|`"com.dimafeng" %% "neotypes" % version`|Core functionality. Supports `scala.concurrent.Future`.|
+|`"com.dimafeng" %% "neotypes" % version`|core functionality. Supports `scala.concurrent.Future`.|
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`|`cats.effect.Async[F]` implementation.|
 |`"com.dimafeng" %% "neotypes-monix" % version`|`monix.eval.Task` implementation.|
 |`"com.dimafeng" %% "neotypes-zio" % version`|`zio.Task` implementation.|
@@ -42,3 +42,5 @@ The project aims to provide seamless integration with most popular scala infrast
 |`"com.dimafeng" %% "neotypes-fs2-stream" % version`|result streaming for FS2.|
 |`"com.dimafeng" %% "neotypes-monix-stream" % version`|result streaming for Monix Observables.|
 |`"com.dimafeng" %% "neotypes-zio-stream" % version`|result streaming for ZIO ZStreams.|
+|`"com.dimafeng" %% "neotypes-refined" % version`|support to insert and retrieve refined values.|
+|`"com.dimafeng" %% "neotypes-cats-data" % version`|support to insert and retrieve `cats.data` values.|

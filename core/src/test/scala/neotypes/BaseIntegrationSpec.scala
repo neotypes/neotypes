@@ -2,13 +2,17 @@ package neotypes
 
 import java.time.Duration
 
+import internal.syntax.async._
+
+import neotypes.implicits.syntax.string._
+import neotypes.implicits.mappers.executions._
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
-import org.neo4j.driver.v1
-import org.neo4j.driver.v1.{GraphDatabase, TransactionWork}
-import org.scalatest.Suite
+import org.neo4j.driver.{v1 => neo4j}
+import org.scalatest.AsyncFlatSpec
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 
-trait BaseIntegrationSpec extends Suite with ForAllTestContainer {
+/** Base class for simple integration specs. */
+abstract class BaseIntegrationSpec[F[_]] extends AsyncFlatSpec with ForAllTestContainer {
   def initQuery: String
 
   override val container = GenericContainer("neo4j:3.5.3",
@@ -17,15 +21,20 @@ trait BaseIntegrationSpec extends Suite with ForAllTestContainer {
     waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(30))
   )
 
-  lazy val driver = GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
+  lazy val driver = neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
+
+  def execute[T](work: Session[F] => F[T])
+                (implicit F: Async[F]): F[T] =
+    (new Driver[F](driver)).writeSession(work)
 
   override def afterStart(): Unit = {
     if (initQuery != null) {
       val session = driver.session()
       try {
         session.writeTransaction(
-          new TransactionWork[Unit] {
-            override def execute(tx: v1.Transaction): Unit = tx.run(initQuery)
+          new neo4j.TransactionWork[Unit] {
+            override def execute(tx: neo4j.Transaction): Unit =
+              tx.run(initQuery)
           }
         )
       } finally {
@@ -42,4 +51,10 @@ object BaseIntegrationSpec {
       |CREATE (Charlize)-[:ACTED_IN {roles:['Tina']}]->(ThatThingYouDo)
       |CREATE (t:Test {added: date('2018-11-26')})
       |CREATE (ThatThingYouDo)-[:TEST_EDGE]->(t)""".stripMargin
+
+  final val MULTIPLE_VALUES_INIT_QUERY: String =
+    (0 to 10).map(n => s"CREATE (:Person {name: $n})").mkString("\n")
+
+  final val EMPTY_INIT_QUERY: String =
+    null
 }

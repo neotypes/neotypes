@@ -1,49 +1,70 @@
 package neotypes
 
-import neotypes.mappers.{ExecutionMapper, ResultMapper}
+import internal.syntax.async._
+import mappers.{ExecutionMapper, ResultMapper}
+import types.QueryParam
 
 import scala.collection.mutable.StringBuilder
+import scala.language.higherKinds
 
-final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, Any] = Map.empty) {
+final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
   import DeferredQuery.StreamPartiallyApplied
 
-  def list[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[List[T]] =
+  def list[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
-  def single[F[_]](session: Session[F])(implicit rm: ResultMapper[T]): F[T] =
+  def map[F[_], K, V](session: Session[F])(implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+    session.transact(tx => map(tx))
+
+  def set[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
+    session.transact(tx => set(tx))
+
+  def vector[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
+    session.transact(tx => vector(tx))
+
+  def single[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[T] =
     session.transact(tx => single(tx))
 
-  def execute[F[_]](session: Session[F])(implicit rm: ExecutionMapper[T]): F[T] =
+  def execute[F[_]](session: Session[F])(implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
     session.transact(tx => execute(tx))
 
-  def list[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[List[T]] =
+  def list[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
 
-  def single[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T]): F[T] =
+  def map[F[_], K, V](tx: Transaction[F])(implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+    tx.map(query, params)
+
+  def set[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
+    tx.set(query, params)
+
+  def vector[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
+    tx.vector(query, params)
+
+  def single[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
 
-  def execute[F[_]](tx: Transaction[F])(implicit rm: ExecutionMapper[T]): F[T] =
+  def execute[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
   def stream[S[_]]: StreamPartiallyApplied[S, T] =
-    new StreamPartiallyApplied[S, T](this)
+    new StreamPartiallyApplied(this)
 
-  def withParams(params: Map[String, Any]): DeferredQuery[T] =
+  def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
     this.copy(params = this.params ++ params)
 }
 
 private[neotypes] object DeferredQuery {
-  private[neotypes] final class StreamPartiallyApplied[S[_], T](val dq: DeferredQuery[T]) extends AnyVal {
-    def apply[F[_]](session: Session[F])(implicit rm: ResultMapper[T], S: Stream.Aux[S, F], F: Async[F]): S[T] =
+  private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
+    def apply[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
       S.fToS(
-        F.flatMap(session.beginTransaction()) { tx =>
-          F.success(
-            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback())
+        session.transaction.flatMap { tx =>
+          F.delay(
+            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
           )
         }
       )
 
-    def apply[F[_]](tx: Transaction[F])(implicit rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
+    def apply[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
       tx.stream(dq.query, dq.params)
   }
 }
@@ -53,13 +74,14 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
 
   def query[T]: DeferredQuery[T] = {
     @annotation.tailrec
-    def loop(remaining: List[Part], queryBuilder: StringBuilder, accParams: Map[String, Any], nextParamIdx: Int): DeferredQuery[T] =
+    def loop(remaining: List[Part], queryBuilder: StringBuilder, accParams: Map[String, QueryParam], nextParamIdx: Int): DeferredQuery[T] =
       remaining match {
         case Nil =>
           DeferredQuery(
             query  = queryBuilder.mkString,
             params = accParams
           )
+
         case Query(query1) :: Query(query2) :: xs =>
           loop(
             remaining = Query(query2) :: xs,
@@ -67,6 +89,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             accParams,
             nextParamIdx
           )
+
         case Query(query) :: xs =>
           loop(
             remaining = xs,
@@ -74,6 +97,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             accParams,
             nextParamIdx
           )
+
         case Param(param) :: xs =>
           val paramName = s"${PARAMETER_NAME_PREFIX}${nextParamIdx}"
           loop(
@@ -83,9 +107,10 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             nextParamIdx + 1
           )
       }
+
       loop(
         remaining = this.parts,
-        StringBuilder.newBuilder,
+        new StringBuilder(),
         accParams = Map.empty,
         nextParamIdx = 1
       )
@@ -105,5 +130,5 @@ private[neotypes] object DeferredQueryBuilder {
 
   final case class Query(part: String) extends Part
 
-  final case class Param(value: Any) extends Part
+  final case class Param(value: QueryParam) extends Part
 }

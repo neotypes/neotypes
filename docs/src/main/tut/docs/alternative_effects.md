@@ -3,63 +3,108 @@ layout: docs
 title: "Side effects"
 ---
 
-# Side effects: Future/IO/Task/ZIO
+# Alternative effects: Future/IO/Task/ZIO
 
 **neotypes** comes with four effect implementations:
 
-### scala.concurrent.Future
+### scala.concurrent.Future _(neotypes)_
 
 ```scala
-import neotypes.Async._
-import neotypes.implicits._
-import scala.concurrent.Future
+import neotypes.GraphDatabase
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
 
-val s = driver.session().asScala[Future]
+val driver: Driver[Future] = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val session: Session[Future] = driver.session
 
-Await.result("match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s), 1 second)
+val program: Future[String] = for {
+  data <- "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(session)
+  _ <- session.close()
+  _ <- driver.close()
+} yield data
+
+val data: String = Await.result(program, 1 second)
 ```
 
-### cats.effect.Async[F]
+> Note: The previous example does not handle failures. Thus, it may leak resources.
+
+### cats.effect.neotypes.Async[F] _(neotypes-cats-effect)_
 
 ```scala
-import cats.effect.IO
-import neotypes.cats.implicits._
-import neotypes.implicits._
+import cats.effect.{IO, Resource}
+import neotypes.{GraphDatabase, Session}
+import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
-val s = driver.session().asScala[IO]
+val session: Resource[IO, Session[IO]] = for {
+  driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+  session <- driver.session
+} yield session
 
-"match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s).unsafeRunSync()
+val program: IO[String] = session.use { s =>
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
+}
+
+val data: String = program.unsafeRunSync()
 ```
 
-### monix.eval.Task
+### monix.eval.Task _(neotypes-monix)_
 
 ```scala
+import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import neotypes.monix.implicits._
-import neotypes.implicits._
+import neotypes.{GraphDatabase, Session}
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.monix.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import scala.concurrent.duration._
 
-val s = driver.session().asScala[Task]
+val session: Resource[Task, Session[Task]] = for {
+  driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+  session <- driver.session
+} yield session
 
-"match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s).runSyncUnsafe(5 seconds)
+val program: Task[String] = session.use { s =>
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
+}
+
+val data: String = program.runSyncUnsafe(5 seconds)
 ```
 
-### zio.Task
+### zio.Task _(neotypes-zio)_
 
 ```scala
-import zio.Task
-import zio.DefaultRuntime
-import neotypes.implicits._
-import neotypes.zio.implicits._
+import zio.{DefaultRuntime, Managed, Task}
+import neotypes.{GraphDatabase, Session}
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.session._ // Provides the asScala[F[_]] extension method.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 
-val runtime = new DefaultRuntime {
+val runtime = new DefaultRuntime {}
 
-val s = driver.session().asScala[Task]
+val session: Managed[Throwable, Session] = for {
+  driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+  session <- driver.session
+} yield session
 
-runtime.unsafeRun("match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s))
+val program: Task[String] = session.use { s =>
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
+}
+
+val data: String = runtime.unsafeRun(program)
 ```
 
-## Custom side effect type
-In order to support your implementation of side-effects,
-you need to implement `neotypes.Async[YourIO]` and add it to the implicit scope.
+## Custom effect type
+In order to support your any other effect yupe,
+you need to implement the `neotypes.Async.Aux[F[_], R[_]]` **typeclasses**.
+And add them to the implicit scope.
+
+The type parameters in the signature indicate:
+
+* `F[_]` - the effect type.
+* `R[_]` - the resource used to wrap the creation of Drivers & Sessions.

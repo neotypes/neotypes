@@ -1,30 +1,33 @@
 package neotypes.monix
 
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
+import monix.execution.Scheduler
+import neotypes.implicits.mappers.results._
+import neotypes.implicits.syntax.string._
 import neotypes.monix.implicits._
-import neotypes.implicits._
 import neotypes.BaseIntegrationSpec
 import org.neo4j.driver.v1.exceptions.ClientException
-import org.scalatest.AsyncFlatSpec
 
-class MonixAsyncSpec extends AsyncFlatSpec with BaseIntegrationSpec {
-  it should "work with Task" in {
-    val s = driver.session().asScala[Task]
+import scala.concurrent.ExecutionContext
 
+class MonixAsyncSpec extends BaseIntegrationSpec[Task] { self =>
+  implicit val scheduler: Scheduler = Scheduler(self.executionContext)
+
+  it should "work with monix.eval.Task" in execute { s =>
     "match (p:Person {name: 'Charlize Theron'}) return p.name"
       .query[String]
       .single(s)
-      .runToFuture
-      .map {
-        name => assert(name == "Charlize Theron")
-      }
+  }.runToFuture.map {
+    name => assert(name == "Charlize Theron")
+  }
 
+  it should "catch exceptions inside monix.eval.Task" in {
     recoverToSucceededIf[ClientException] {
-      "match test return p.name"
-        .query[String]
-        .single(s)
-        .runToFuture
+      execute { s =>
+        "match test return p.name"
+          .query[String]
+          .single(s)
+      }.runToFuture
     }
   }
 

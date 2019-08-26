@@ -1,31 +1,47 @@
 package neotypes
 
-import neotypes.implicits._
-import neotypes.utils.stage._
-import org.neo4j.driver.v1.{AccessMode, Driver => NDriver, Session => NSession}
+import internal.syntax.async._
+import internal.syntax.stage._
 
-final class Driver[F[_]](driver: NDriver)(implicit F: Async[F]) {
-  def readSession[T](sessionWork: Session[F] => F[T]): F[T] =
-    session(driver.session(AccessMode.READ))(sessionWork)
+import org.neo4j.driver.v1.{AccessMode, Driver => NDriver}
 
-  def writeSession[T](sessionWork: Session[F] => F[T]): F[T] =
-    session(driver.session(AccessMode.WRITE))(sessionWork)
+import scala.jdk.CollectionConverters._
+import scala.language.higherKinds
 
-  private[this] def session[T](session: NSession)(sessionWork: Session[F] => F[T]): F[T] = {
-    val s = new Session[F](session)
-    sessionWork(s).flatMap { v =>
-      s.close().map(_ => v)
-    }.recoverWith {
-      case ex: Throwable =>
-        s.close().flatMap(_ => F.failed(ex))
+final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
+  def session[R[_]](implicit F: Async.Aux[F, R]): R[Session[F]] =
+    session[R](accessMode = AccessMode.READ)
+
+  def session[R[_]](accessMode: AccessMode, bookmarks: String*)
+                   (implicit F: Async.Aux[F, R]): R[Session[F]] =
+    F.resource(createSession(accessMode, bookmarks))(session => session.close)
+
+  private[this] def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty): Session[F] =
+    new Session(
+      bookmarks match {
+        case Seq()         => driver.session(accessMode)
+        case Seq(bookmark) => driver.session(accessMode, bookmark)
+        case _             => driver.session(accessMode, bookmarks.asJava)
+      }
+    )
+
+  def readSession[T](sessionWork: Session[F] => F[T])
+                    (implicit F: Async[F]): F[T] =
+    withSession(AccessMode.READ)(sessionWork)
+
+  def writeSession[T](sessionWork: Session[F] => F[T])
+                     (implicit F: Async[F]): F[T] =
+    withSession(AccessMode.WRITE)(sessionWork)
+
+  private[this] def withSession[T](accessMode: AccessMode)
+                                  (sessionWork: Session[F] => F[T])
+                                  (implicit F: Async[F]): F[T] =
+    F.delay(createSession(accessMode)).guarantee(sessionWork) {
+      case (session, _) => session.close
     }
-  }
 
-  def close(): F[Unit] =
+  def close(implicit F: Async[F]): F[Unit] =
     F.async { cb =>
-      driver
-        .closeAsync()
-        .accept { _: Void => cb(Right(())) }
-        .recover { ex: Throwable => cb(Left(ex)) }
+      driver.closeAsync().acceptVoid(cb)
     }
 }
