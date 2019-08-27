@@ -2,7 +2,6 @@ package neotypes
 
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
-import org.neo4j.driver.v1.exceptions.ClientException
 
 import scala.concurrent.Future
 

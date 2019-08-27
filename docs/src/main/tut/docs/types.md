@@ -19,7 +19,7 @@ title: "Supported types"
 | `scala.List[T] *                         `  | ✓              |✓                      |✓|
 | `scala.Set[T] *                          `  | ✓              |✓                      |✓|
 | `scala.Vector[T] *                       `  | ✓              |✓                      |✓|
-| `scala.Map[String, T] *                  `  | ✓              |✓                      |✓|
+| `scala.Map[String, T] *                  `  | ✓              |✓                      ||
 | `refined.Refined[T, P] * ***             `  | ✓              |✓                      |✓|
 | `cats.data.Chain[T] * ****               `  | ✓              |✓                      |✓|
 | `cats.data.Const[T, U] * ****            `  | ✓              |✓                      |✓|

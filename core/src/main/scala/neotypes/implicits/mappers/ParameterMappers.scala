@@ -74,11 +74,6 @@ trait ParameterMappers {
       list.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 
-  implicit final def mapParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Map[String, T]] =
-    ParameterMapper.fromCast { map =>
-      map.view.mapValues(v => mapper.toQueryParam(v).underlying).toMap.asJava
-    }
-
   implicit final def optionParameterMapper[T >: Null](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     ParameterMapper.fromCast { optional =>
       optional.map(v => mapper.toQueryParam(v).underlying).orNull

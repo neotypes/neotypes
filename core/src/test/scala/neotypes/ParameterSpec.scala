@@ -9,7 +9,7 @@ import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
 class ParameterSpec extends BaseIntegrationSpec[Future] {
@@ -22,7 +22,6 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
     val list: List[Double] = List(5.0, 10.10)
     val set: Set[Long] = Set(100L)
     val vector: Vector[Long] = Vector(333L)
-    val map: Map[String, Float] = Map("f" -> -1.5f)
     val localDate: LocalDate = LocalDate.now()
     val localDateTime: LocalDateTime = LocalDateTime.now()
     val localTime: LocalTime = LocalTime.now()
@@ -65,7 +64,7 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
       assert(res.get("born").asInt == born)
       assert(res.get("lastName").isNull)
       assert(res.get("middleName").asString == middleName.get)
-      assert(res.get("data").asByteArray.deep == data.deep)
+      assert(res.get("data").asByteArray.toList == data.toList)
       assert(res.get("list").asList.asScala.toList == list)
       assert(res.get("set").asList.asScala.toSet == set)
       assert(res.get("vector").asList.asScala.toVector == vector)
