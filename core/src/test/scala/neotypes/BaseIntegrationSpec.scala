@@ -1,11 +1,11 @@
 package neotypes
 
+import java.time.Duration
+
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.neo4j.driver.{v1 => neo4j}
 import org.scalatest.AsyncFlatSpec
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
-
-import java.time.Duration
 
 /** Base class for simple integration specs. */
 abstract class BaseIntegrationSpec[F[_]] extends AsyncFlatSpec with ForAllTestContainer {

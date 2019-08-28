@@ -4,46 +4,62 @@ import internal.syntax.async._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
+import scala.collection.Factory
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds
 
 final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
-  import DeferredQuery.StreamPartiallyApplied
+  import DeferredQuery.{CollectAsPartiallyApplied, StreamPartiallyApplied}
 
-  def list[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
+  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
+    new CollectAsPartiallyApplied(factory, this)
+
+  def list[F[_]](session: Session[F])
+                (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
     session.transact(tx => list(tx))
 
-  def map[F[_], K, V](session: Session[F])(implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+  def map[F[_], K, V](session: Session[F])
+                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
     session.transact(tx => map(tx))
 
-  def set[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
+  def set[F[_]](session: Session[F])
+               (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
     session.transact(tx => set(tx))
 
-  def vector[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
+  def vector[F[_]](session: Session[F])
+                  (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
     session.transact(tx => vector(tx))
 
-  def single[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T]): F[T] =
+  def single[F[_]](session: Session[F])
+                  (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
     session.transact(tx => single(tx))
 
-  def execute[F[_]](session: Session[F])(implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
+  def execute[F[_]](session: Session[F])
+                   (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
     session.transact(tx => execute(tx))
 
-  def list[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
+  def list[F[_]](tx: Transaction[F])
+                (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
 
-  def map[F[_], K, V](tx: Transaction[F])(implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+  def map[F[_], K, V](tx: Transaction[F])
+                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
     tx.map(query, params)
 
-  def set[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
+  def set[F[_]](tx: Transaction[F])
+               (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
     tx.set(query, params)
 
-  def vector[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
+  def vector[F[_]](tx: Transaction[F])
+                  (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
     tx.vector(query, params)
 
-  def single[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T]): F[T] =
+  def single[F[_]](tx: Transaction[F])
+                  (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
 
-  def execute[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
+  def execute[F[_]](tx: Transaction[F])
+                   (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
   def stream[S[_]]: StreamPartiallyApplied[S, T] =
@@ -54,6 +70,16 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
 }
 
 private[neotypes] object DeferredQuery {
+  private[neotypes] final class CollectAsPartiallyApplied[T, C](private val factory: Factory[T, C], private val dq: DeferredQuery[T]) {
+    def apply[F[_]](session: Session[F])
+                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] =
+      session.transact(tx => tx.collectAs(factory)(dq.query, dq.params))
+
+    def apply[F[_]](tx: Transaction[F])
+                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] =
+      tx.collectAs(factory)(dq.query, dq.params)
+  }
+
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
     def apply[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
       S.fToS(

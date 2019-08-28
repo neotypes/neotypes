@@ -9,6 +9,7 @@ import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
 
+import scala.collection.immutable.SortedSet
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
@@ -21,6 +22,7 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
     val data: Array[Byte] = Array(0, 0, 1, 1)
     val list: List[Double] = List(5.0, 10.10)
     val set: Set[Long] = Set(100L)
+    val sortedSet: SortedSet[Long] = SortedSet(200L, 404L)
     val vector: Vector[Long] = Vector(333L)
     val localDate: LocalDate = LocalDate.now()
     val localDateTime: LocalDateTime = LocalDateTime.now()
@@ -44,6 +46,7 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
                  data: $data,
                  list: $list,
                  set: $set,
+                 sortedSet: $sortedSet,
                  vector: $vector,
                  localDate: $localDate,
                  localDateTime: $localDateTime,
@@ -67,6 +70,7 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
       assert(res.get("data").asByteArray.toList == data.toList)
       assert(res.get("list").asList.asScala.toList == list)
       assert(res.get("set").asList.asScala.toSet == set)
+      assert(SortedSet.from(res.get("sortedSet").asList(_.asLong).asScala) == sortedSet)
       assert(res.get("vector").asList.asScala.toVector == vector)
       assert(res.get("localDate").asLocalDate == localDate)
       assert(res.get("localDateTime").asLocalDateTime == localDateTime)

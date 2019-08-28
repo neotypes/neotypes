@@ -10,6 +10,7 @@ import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Point}
 
 import scala.jdk.CollectionConverters._
+import scala.language.higherKinds
 
 trait ParameterMappers {
   implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
@@ -69,23 +70,16 @@ trait ParameterMappers {
   implicit final val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
     ParameterMapper.identity
 
-  implicit final def listParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[List[T]] =
-    ParameterMapper.fromCast { list =>
-      list.map(v => mapper.toQueryParam(v).underlying).asJava
+  private final def iterableOnceParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[IterableOnce[T]] =
+    ParameterMapper.fromCast { col =>
+      col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
     }
+
+  implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< IterableOnce[T]): ParameterMapper[C[T]] =
+    iterableOnceParameterMapper(mapper).contramap(ev)
 
   implicit final def optionParameterMapper[T >: Null](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     ParameterMapper.fromCast { optional =>
       optional.map(v => mapper.toQueryParam(v).underlying).orNull
-    }
-
-  implicit final def setParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Set[T]] =
-    ParameterMapper.fromCast { set =>
-      set.map(v => mapper.toQueryParam(v).underlying).asJava
-    }
-
-  implicit final def vectorParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Vector[T]] =
-    ParameterMapper.fromCast { vector =>
-      vector.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 }

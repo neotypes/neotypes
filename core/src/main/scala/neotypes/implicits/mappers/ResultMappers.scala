@@ -147,12 +147,6 @@ trait ResultMappers extends ValueMappers {
       }
     }
 
-  implicit final def listResultMapper[T: ValueMapper]: ResultMapper[List[T]] =
-    ResultMapper.fromValueMapper
-
-  implicit final def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] =
-    ResultMapper.fromValueMapper
-
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
       override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
@@ -163,11 +157,5 @@ trait ResultMappers extends ValueMappers {
     }
 
   implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
-    ResultMapper.fromValueMapper
-
-  implicit final def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
-    ResultMapper.fromValueMapper
-
-  implicit final def vectorResultMapper[T: ValueMapper]: ResultMapper[Vector[T]] =
     ResultMapper.fromValueMapper
 }

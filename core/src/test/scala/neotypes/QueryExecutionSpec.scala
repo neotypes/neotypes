@@ -3,6 +3,7 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 
+import scala.collection.immutable.ListMap
 import scala.concurrent.Future
 
 class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
@@ -39,6 +40,15 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       .map(s)
       .map {
         names => assert(names == (0 to 10).map(k => k -> 1).toMap)
+      }
+  }
+
+  it should "retrieve multiple results as a ListMap" in execute { s =>
+    "match (p:Person) return p.name, 1"
+      .query[(Int, Int)]
+      .collectAs(ListMap)(s)
+      .map {
+        names => assert(names == (0 to 10).map(k => k -> 1).to(ListMap))
       }
   }
 

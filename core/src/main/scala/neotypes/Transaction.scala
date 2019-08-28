@@ -3,14 +3,15 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
-import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.utils.traverse.traverseAs
 import internal.syntax.stage._
-import mappers.{ExecutionMapper, ResultMapper, TypeHint}
+import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
-import org.neo4j.driver.v1.{Record, StatementResultCursor, Value, Transaction => NTransaction}
+import org.neo4j.driver.v1.{Record, StatementResultCursor, Transaction => NTransaction, Value}
 
+import scala.collection.Factory
 import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 
@@ -26,57 +27,35 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
         .accept(cb)(executionMapper.to)
     }
 
-  def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
-             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[List[T]] =
+  def collectAs[C, T](factory: Factory[T, C])
+                     (query: String, params: Map[String, QueryParam] = Map.empty)
+                     (implicit F: Async[F], resultMapper: ResultMapper[T]): F[C] =
     F.async { cb =>
       transaction
         .runAsync(query, convertParams(params))
         .thenCompose(_.listAsync())
         .accept(cb) { result: java.util.List[Record] =>
-          traverseAsList(result.asScala.iterator) { v: Record =>
+          traverseAs(factory)(result.asScala.iterator) { v: Record =>
             resultMapper.to(recordToSeq(v), None)
           }
         }
     }
+
+  def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
+             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[List[T]] =
+    collectAs(List.iterableFactory[T])(query, params)
 
   def map[K, V](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[(K, V)]): F[Map[K, V]] =
-    F.async { cb =>
-      transaction
-        .runAsync(query, convertParams(params))
-        .thenCompose(_.listAsync())
-        .accept(cb) { result: java.util.List[Record] =>
-          traverseAsMap(result.asScala.iterator) { v: Record =>
-            resultMapper.to(recordToSeq(v), Some(new TypeHint(true)))
-          }
-        }
-    }
+    collectAs(Map.mapFactory[K, V])(query, params)
 
   def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Set[T]] =
-    F.async { cb =>
-      transaction
-        .runAsync(query, convertParams(params))
-        .thenCompose(_.listAsync())
-        .accept(cb) { result: java.util.List[Record] =>
-          traverseAsSet(result.asScala.iterator) { v: Record =>
-            resultMapper.to(recordToSeq(v), None)
-          }
-        }
-    }
+    collectAs(Set.iterableFactory[T])(query, params)
 
   def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Vector[T]] =
-    F.async { cb =>
-      transaction
-        .runAsync(query, convertParams(params))
-        .thenCompose(_.listAsync())
-        .accept(cb) { result: java.util.List[Record] =>
-          traverseAsVector(result.asScala.iterator) { v: Record =>
-            resultMapper.to(recordToSeq(v), None)
-          }
-        }
-    }
+    collectAs(Vector.iterableFactory[T])(query, params)
 
   def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[T] =
