@@ -5,9 +5,13 @@ import java.util.concurrent.{CompletionException, CompletionStage}
 
 private[neotypes] object stage {
   implicit class CompletionStageOps[A](private val underlying: CompletionStage[A]) extends AnyVal {
-    private def acceptImpl[B](cb: Either[Throwable, B] => Unit)
-                             (f: A => Either[Throwable, B])
-                             (g: Throwable => Either[Throwable, B]): CompletionStage[Void] =
+    private final def defaultExHandler[B]: PartialFunction[Throwable, Either[Throwable, B]] = {
+      case ex: Throwable => Left(ex)
+    }
+
+    private final def acceptImpl[B](cb: Either[Throwable, B] => Unit)
+                                   (f: A => Either[Throwable, B])
+                                   (g: Throwable => Either[Throwable, B]): CompletionStage[Void] =
       underlying.thenAccept(a => cb(f(a))).exceptionally { ex: Throwable =>
         // Execute the function.
         ex match {
@@ -21,15 +25,15 @@ private[neotypes] object stage {
 
     def accept[B](cb: Either[Throwable, B] => Unit)
                  (f: A => Either[Throwable, B]): CompletionStage[Void] =
-      acceptImpl(cb)(f)(ex => Left(ex))
+      acceptImpl(cb)(f)(defaultExHandler)
 
     def acceptExceptionally[B](cb: Either[Throwable, B] => Unit)
                               (f: A => Either[Throwable, B])
                               (g: PartialFunction[Throwable, Either[Throwable, B]]): CompletionStage[Void] =
-      acceptImpl(cb)(f)(g.orElse(PartialFunction.fromFunction(ex => Left(ex))))
+      acceptImpl(cb)(f)(g.orElse(defaultExHandler))
 
     def acceptVoid(cb: Either[Throwable, Unit] => Unit)
                   (implicit ev: A =:= Void): CompletionStage[Void] =
-      acceptImpl(cb)(_ => Right(()))(ex => Left(ex))
+      acceptImpl(cb)(_ => Right(()))(defaultExHandler)
   }
 }

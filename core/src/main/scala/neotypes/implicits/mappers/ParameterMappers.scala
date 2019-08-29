@@ -9,6 +9,8 @@ import mappers.ParameterMapper
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Point}
 
+import scala.collection.compat._
+import scala.collection.compat.IterableOnce
 import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 

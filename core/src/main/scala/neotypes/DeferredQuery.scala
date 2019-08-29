@@ -4,7 +4,7 @@ import internal.syntax.async._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
-import scala.collection.Factory
+import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
 import scala.language.higherKinds
 

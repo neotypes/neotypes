@@ -3,6 +3,7 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "1.7.5"
+val scalaCollectionCompatVersion = "2.1.2"
 val shapelessVersion = "2.3.3"
 val testcontainersScalaVersion = "0.29.0"
 val mockitoVersion = "1.10.19"
@@ -20,14 +21,8 @@ val refinedVersion = "0.9.9"
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  scalaVersion in ThisBuild := "2.13.0",
+  scalaVersion in ThisBuild := "2.12.9",
   crossScalaVersions := Seq("2.13.0", "2.12.9"),
-
-  scalacOptions ++= Seq(
-    "-deprecation",
-    "-feature",
-    "-Xlint"
-  ),
 
   /**
     * Publishing
@@ -91,7 +86,6 @@ lazy val core = (project in file("core"))
   .settings(
     name := "neotypes",
 
-    //addCompilerPlugin("org.scalamacros" % "paradise" % paradiseVersion cross CrossVersion.full),
 
     libraryDependencies ++=
       PROVIDED(
@@ -99,6 +93,7 @@ lazy val core = (project in file("core"))
       )
         ++ COMPILE(
         "com.chuusai" %% "shapeless" % shapelessVersion,
+        "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
         scalaVersion("org.scala-lang" % "scala-reflect" % _).value
       )
         ++ TEST(

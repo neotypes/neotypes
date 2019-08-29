@@ -70,7 +70,7 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
       assert(res.get("data").asByteArray.toList == data.toList)
       assert(res.get("list").asList.asScala.toList == list)
       assert(res.get("set").asList.asScala.toSet == set)
-      assert(SortedSet.from(res.get("sortedSet").asList(_.asLong).asScala) == sortedSet)
+      assert(SortedSet(res.get("sortedSet").asList(_.asLong).asScala.toSeq : _*) == sortedSet)
       assert(res.get("vector").asList.asScala.toVector == vector)
       assert(res.get("localDate").asLocalDate == localDate)
       assert(res.get("localDateTime").asLocalDateTime == localDateTime)

@@ -11,7 +11,8 @@ import types.QueryParam
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Transaction => NTransaction, Value}
 
-import scala.collection.Factory
+import scala.collection.compat._
+import scala.collection.compat.Factory
 import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 
@@ -43,19 +44,19 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
 
   def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
              (implicit F: Async[F], resultMapper: ResultMapper[T]): F[List[T]] =
-    collectAs(List.iterableFactory[T])(query, params)
+    collectAs[List[T], T](List)(query, params)
 
   def map[K, V](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[(K, V)]): F[Map[K, V]] =
-    collectAs(Map.mapFactory[K, V])(query, params)
+    collectAs[Map[K, V], (K, V)](Map)(query, params)
 
   def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Set[T]] =
-    collectAs(Set.iterableFactory[T])(query, params)
+    collectAs[Set[T], T](Set)(query, params)
 
   def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Vector[T]] =
-    collectAs(Vector.iterableFactory[T])(query, params)
+    collectAs[Vector[T], T](Vector)(query, params)
 
   def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[T] =

@@ -5,3 +5,4 @@ trait AllMappers
   extends ExecutionMappers
   with ParameterMappers
   with ResultMappers
+  with CompabilityMappers

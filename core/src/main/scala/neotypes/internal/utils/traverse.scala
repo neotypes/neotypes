@@ -1,7 +1,8 @@
 package neotypes
 package internal.utils
 
-import scala.collection.Factory
+import scala.collection.compat._
+import scala.collection.compat.Factory
 import scala.collection.mutable.Builder
 
 private[neotypes] object traverse {
@@ -11,7 +12,7 @@ private[neotypes] object traverse {
     @annotation.tailrec
     def loop(acc: Builder[B, C]): Either[Throwable, C] =
       if (iter.hasNext) f(iter.next()) match {
-        case Right(value) => loop(acc = acc.addOne(value))
+        case Right(value) => loop(acc = acc += value)
         case Left(e)      => Left(e)
       } else {
         Right(acc.result())

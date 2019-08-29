@@ -3,7 +3,7 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 
-import scala.collection.immutable.ListMap
+import scala.collection.immutable.{ListMap, ListSet, SortedMap}
 import scala.concurrent.Future
 
 class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
@@ -43,12 +43,30 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a ListMap" in execute { s =>
+  it should "retrieve multiple results as a custom collection (ListSet)" in execute { s =>
+    "match (p:Person) return p.name"
+      .query[Int]
+      .collectAs(ListSet)(s)
+      .map {
+        names => assert(names == ListSet((0 to 10) : _*))
+      }
+  }
+
+  it should "retrieve multiple results as a custom collection (ListMap)" in execute { s =>
     "match (p:Person) return p.name, 1"
       .query[(Int, Int)]
       .collectAs(ListMap)(s)
       .map {
-        names => assert(names == (0 to 10).map(k => k -> 1).to(ListMap))
+        names => assert(names == ListMap((0 to 10).map(k => k -> 1) : _*))
+      }
+  }
+
+  it should "retrieve multiple results as a custom collection (SortedMap)" in execute { s =>
+    "match (p:Person) return p.name, 1"
+      .query[(Int, Int)]
+      .collectAs(SortedMap)(s)
+      .map {
+        names => assert(names == SortedMap((0 to 10).map(k => k -> 1) : _*))
       }
   }
 

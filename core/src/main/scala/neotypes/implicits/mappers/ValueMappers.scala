@@ -15,7 +15,8 @@ import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Path => NPath, Point, Relationship}
 import shapeless.HNil
 
-import scala.collection.Factory
+import scala.collection.compat._
+import scala.collection.compat.Factory
 import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -174,11 +175,11 @@ trait ValueMappers {
             if (value.`type` == InternalTypeSystem.TYPE_SYSTEM.PATH) {
               val path = value.asPath
 
-              val nodes = traverseAs(List.iterableFactory[N])(path.nodes.asScala.iterator.zipWithIndex) {
+              val nodes = traverseAs(List : Factory[N, List[N]])(path.nodes.asScala.iterator.zipWithIndex) {
                 case (node, index) => nm.to(Seq(s"node $index" -> new NodeValue(node)), None)
               }
 
-              val relationships = traverseAs(List.iterableFactory[R])(path.relationships.asScala.iterator.zipWithIndex) {
+              val relationships = traverseAs(List : Factory[R, List[R]])(path.relationships.asScala.iterator.zipWithIndex) {
                 case (relationship, index) => rm.to(Seq(s"relationship $index" -> new RelationshipValue(relationship)), None)
               }
 
