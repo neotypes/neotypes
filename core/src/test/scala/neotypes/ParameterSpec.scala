@@ -9,14 +9,16 @@ import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
 
-import scala.collection.immutable.SortedSet
+import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
-class ParameterSpec extends BaseIntegrationSpec[Future] {
+class ParameterSpec extends CleaningIntegrationSpec[Future] {
   it should "convert parameters" in execute { s =>
     val name: String = "test"
     val born: Int = 123
+    val age1: Option[Int] = None
+    val age2: Option[Int] = Some(5)
     val lastName: Option[String] = None
     val middleName: Option[String] = Some("test2")
     val data: Array[Byte] = Array(0, 0, 1, 1)
@@ -41,6 +43,8 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
       _ <- c"""create (p: Person {
                  name: $name,
                  born: $born,
+                 age1: $age1,
+                 age2: $age2,
                  lastName: $lastName,
                  middleName: $middleName,
                  data: $data,
@@ -65,6 +69,8 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
     } yield {
       assert(res.get("name").asString == name)
       assert(res.get("born").asInt == born)
+      assert(res.get("age1").isNull)
+      assert(res.get("age2").asInt == age2.get)
       assert(res.get("lastName").isNull)
       assert(res.get("middleName").asString == middleName.get)
       assert(res.get("data").asByteArray.toList == data.toList)
@@ -87,5 +93,15 @@ class ParameterSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  override val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
+  it should "convert map-like parameters" in execute { s =>
+    val parameters = SortedMap("p1" -> 3, "p2" -> 5)
+
+    for {
+      _ <- c"""create (p: Person ${parameters})""".query[Unit].execute(s)
+      res <- "match (p:Person) return p limit 1".query[Node].single(s)
+    } yield {
+      assert(res.get("p1").asInt == 3)
+      assert(res.get("p2").asInt == 5)
+    }
+  }
 }

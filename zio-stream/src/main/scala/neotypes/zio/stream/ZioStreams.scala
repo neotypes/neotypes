@@ -12,7 +12,7 @@ trait ZioStreams {
         ZStream.unfoldM(()) { _: Unit =>
           value().map { optional =>
             optional.map { v =>
-              v -> ()
+              (v, ())
             }
           }
         }

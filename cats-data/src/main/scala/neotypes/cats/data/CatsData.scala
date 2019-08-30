@@ -1,7 +1,7 @@
 package neotypes
 package cats.data
 
-import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.utils.traverse.{traverseAs, traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import exceptions.{PropertyNotFoundException, UncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, ValueMapper}
 import types.QueryParam
@@ -19,8 +19,8 @@ import _root_.cats.data.{
 }
 import _root_.cats.instances.string._ // Brings the implicit Order[String] instance into the scope.
 
-import scala.collection.JavaConverters._
 import scala.collection.immutable.{SortedMap, SortedSet}
+import scala.jdk.CollectionConverters._
 
 trait CatsData {
   // Chain.
@@ -80,7 +80,7 @@ trait CatsData {
           case Some(value) =>
             traverseAsChain(value.values.asScala.iterator) { v: Value =>
               mapper.to("", Option(v))
-            }.right.flatMap { chain =>
+            }.flatMap { chain =>
               NonEmptyChain.fromChain(chain) match {
                 case None =>
                   Left(UncoercibleException("NonEmptyChain from an empty list", None.orNull))
@@ -110,7 +110,7 @@ trait CatsData {
           case Some(value) =>
             traverseAsList(value.values.asScala.iterator) { v: Value =>
               mapper.to("", Option(v))
-            }.right.flatMap { list =>
+            }.flatMap { list =>
               NonEmptyList.fromList(list) match {
                 case None =>
                   Left(UncoercibleException("NonEmptyList from an empty list", None.orNull))
@@ -139,10 +139,10 @@ trait CatsData {
 
           case Some(value) =>
             traverseAsMap(value.keys.asScala.iterator) { key: String =>
-              mapper.to(key, Option(value.get(key))).right.map { value =>
+              mapper.to(key, Option(value.get(key))).map { value =>
                 key -> value
               }
-            }.right.flatMap { map =>
+            }.flatMap { map =>
               NonEmptyMap.fromMap(SortedMap.empty[String, T] ++ map) match {
                 case None =>
                   Left(UncoercibleException("NonEmptyMap from an empty map", None.orNull))
@@ -172,7 +172,7 @@ trait CatsData {
           case Some(value) =>
             traverseAsSet(value.values.asScala.iterator) { v: Value =>
               mapper.to("", Option(v))
-            }.right.flatMap { set =>
+            }.flatMap { set =>
               NonEmptySet.fromSet(SortedSet.empty[T](order.toOrdering) | set) match {
                 case None =>
                   Left(UncoercibleException("NonEmptySet from an empty list", None.orNull))
@@ -202,7 +202,7 @@ trait CatsData {
           case Some(value) =>
             traverseAsVector(value.values.asScala.iterator) { v: Value =>
               mapper.to("", Option(v))
-            }.right.flatMap { vector =>
+            }.flatMap { vector =>
               NonEmptyVector.fromVector(vector) match {
                 case None =>
                   Left(UncoercibleException("NonEmptyVector from an empty list", None.orNull))

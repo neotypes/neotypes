@@ -5,7 +5,7 @@ import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetD
 import java.util.UUID
 
 import exceptions.{ConversionException, PropertyNotFoundException}
-import internal.utils.traverse.traverseAs
+import internal.utils.traverse.{traverseAs, traverseAsList}
 import mappers.{ResultMapper, TypeHint, ValueMapper}
 import types.Path
 
@@ -175,11 +175,11 @@ trait ValueMappers {
             if (value.`type` == InternalTypeSystem.TYPE_SYSTEM.PATH) {
               val path = value.asPath
 
-              val nodes = traverseAs(List : Factory[N, List[N]])(path.nodes.asScala.iterator.zipWithIndex) {
+              val nodes = traverseAsList(path.nodes.asScala.iterator.zipWithIndex) {
                 case (node, index) => nm.to(Seq(s"node $index" -> new NodeValue(node)), None)
               }
 
-              val relationships = traverseAs(List : Factory[R, List[R]])(path.relationships.asScala.iterator.zipWithIndex) {
+              val relationships = traverseAsList(path.relationships.asScala.iterator.zipWithIndex) {
                 case (relationship, index) => rm.to(Seq(s"relationship $index" -> new RelationshipValue(relationship)), None)
               }
 

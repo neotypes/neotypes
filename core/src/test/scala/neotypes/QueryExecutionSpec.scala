@@ -70,5 +70,23 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
+  it should "retrieve a Neo4j LIST into a Scala collection (List)" in execute { s =>
+    "unwind [1, 2] as x return x"
+      .query[Int]
+      .list(s)
+      .map {
+        names => assert(names == List(1, 2))
+      }
+  }
+
+  it should "retrieve a Neo4j LIST into a Scala collection (ListSet)" in execute { s =>
+    "unwind [1, 2] as x return x"
+      .query[Int]
+      .collectAs(ListSet)(s)
+      .map {
+        names => assert(names == ListSet(1, 2))
+      }
+  }
+
   override def initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
 }

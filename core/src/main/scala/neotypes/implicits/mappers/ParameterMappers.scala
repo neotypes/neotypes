@@ -10,7 +10,7 @@ import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Point}
 
 import scala.collection.compat._
-import scala.collection.compat.IterableOnce
+import scala.collection.Iterable
 import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 
@@ -72,15 +72,25 @@ trait ParameterMappers {
   implicit final val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
     ParameterMapper.identity
 
-  private final def iterableOnceParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[IterableOnce[T]] =
+  private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
     ParameterMapper.fromCast { col =>
       col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 
-  implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< IterableOnce[T]): ParameterMapper[C[T]] =
-    iterableOnceParameterMapper(mapper).contramap(ev)
+  implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]): ParameterMapper[C[T]] =
+    iterableParameterMapper(mapper).contramap(ev)
 
-  implicit final def optionParameterMapper[T >: Null](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
+  private final def iterableMapParameterMapper[V](mapper: ParameterMapper[V]): ParameterMapper[Iterable[(String, V)]] =
+    ParameterMapper.fromCast { col =>
+      col.iterator.map {
+        case (key, v) => key -> mapper.toQueryParam(v).underlying
+      }.toMap.asJava
+    }
+
+  implicit final def mapParameterMapper[V, M[_, _]](implicit mapper: ParameterMapper[V], ev: M[String, V] <:< Iterable[(String, V)]): ParameterMapper[M[String, V]] =
+    iterableMapParameterMapper(mapper).contramap(ev)
+
+  implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     ParameterMapper.fromCast { optional =>
       optional.map(v => mapper.toQueryParam(v).underlying).orNull
     }

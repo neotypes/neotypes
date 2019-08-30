@@ -3,7 +3,7 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
-import internal.utils.traverse.traverseAs
+import internal.utils.traverse.{traverseAs, traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import internal.syntax.stage._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
@@ -17,7 +17,7 @@ import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 
 final class Transaction[F[_]](private val transaction: NTransaction) extends AnyVal {
-  import Transaction.{convertParams, nextAsyncToF, recordToSeq}
+  import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToSeq}
 
   def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
                 (implicit F: Async[F], executionMapper: ExecutionMapper[T]): F[T] =
@@ -31,32 +31,23 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
   def collectAs[C, T](factory: Factory[T, C])
                      (query: String, params: Map[String, QueryParam] = Map.empty)
                      (implicit F: Async[F], resultMapper: ResultMapper[T]): F[C] =
-    F.async { cb =>
-      transaction
-        .runAsync(query, convertParams(params))
-        .thenCompose(_.listAsync())
-        .accept(cb) { result: java.util.List[Record] =>
-          traverseAs(factory)(result.asScala.iterator) { v: Record =>
-            resultMapper.to(recordToSeq(v), None)
-          }
-        }
-    }
+    collectAsImpl(this.transaction)(query, params)(traverseAs(factory))
 
   def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
              (implicit F: Async[F], resultMapper: ResultMapper[T]): F[List[T]] =
-    collectAs[List[T], T](List)(query, params)
+    collectAsImpl(this.transaction)(query, params)(traverseAsList[Record, T])
 
   def map[K, V](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[(K, V)]): F[Map[K, V]] =
-    collectAs[Map[K, V], (K, V)](Map)(query, params)
+    collectAsImpl(this.transaction)(query, params)(traverseAsMap[Record, K, V])
 
   def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
             (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Set[T]] =
-    collectAs[Set[T], T](Set)(query, params)
+    collectAsImpl(this.transaction)(query, params)(traverseAsSet[Record, T])
 
   def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Vector[T]] =
-    collectAs[Vector[T], T](Vector)(query, params)
+    collectAsImpl(this.transaction)(query, params)(traverseAsVector[Record, T])
 
   def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[T] =
@@ -113,5 +104,20 @@ object Transaction {
             resultMapper.to(recordToSeq(res), None).map(r => Option(r))
         }
       }
+    }
+
+  private def collectAsImpl[F[_], T, C](transaction: NTransaction)
+                                       (query: String, params: Map[String, QueryParam])
+                                       (traverseFun: Iterator[Record] => (Record => Either[Throwable, T]) => Either[Throwable, C])
+                                       (implicit F: Async[F], resultMapper: ResultMapper[T]): F[C] =
+    F.async { cb =>
+      transaction
+        .runAsync(query, convertParams(params))
+        .thenCompose(_.listAsync())
+        .accept(cb) { result: java.util.List[Record] =>
+          traverseFun(result.asScala.iterator) { v: Record =>
+            resultMapper.to(recordToSeq(v), None)
+          }
+        }
     }
 }

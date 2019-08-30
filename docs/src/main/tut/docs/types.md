@@ -46,7 +46,7 @@ title: "Supported types"
 
 > `*` Generic types are supported as long as the the `T` is also supported.<br>
 > `**` `None` is converted into `null`.<br>
-> `***` Since **Neo4j** does not support `Tuples` for their parameters, any kind of `Map` is not supported.
+> `***` Map-like collections are supported only if their keys are of type `String`. Any other kind of tuples is not supported.
 > `****` Support is provided in the **neotypes-refined** _module_.<br>
 > `*****` Support is provided in the **neotypes-cats-data** _module_.<br>
 
