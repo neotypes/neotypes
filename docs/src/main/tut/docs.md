@@ -71,6 +71,7 @@ If you need to support your return types for this type of queries, you can provi
 * `set(s)` - runs a query and returns a **Set** of results.
 * `vector(s)` - runs a query and returns a **Vector** of results.
 * `map(s)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
+* `collectAs(Col)(s)` - runs a query and retunrs a **Col** of results _(where **Col** is any kind of collection)_.
 * `stream(s)` - runs a query and returns a **Stream** of results
 _(for more information, please read [streaming](docs/streams.html))_.
 
@@ -98,4 +99,8 @@ _(for more information, please read [streaming](docs/streams.html))_.
 
 // Map.
 "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].map(s)
+
+// Any collection.
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].collectAs(ListSet)(s)
+"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].collectAs(ListMap)(s)
 ```

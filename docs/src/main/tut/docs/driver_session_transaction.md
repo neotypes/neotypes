@@ -46,7 +46,7 @@ val result: F[(String, String)] = session.transact { tx =>
 
 > Note: under the hood, the previous method uses this one. Thus, they are equivalent for single-query transactions.
 
-# Multiple queries + explicit commit / rollback.
+### Multiple queries + explicit commit / rollback.
 
 If you want to control when to `commit` or `rollback` a `Transaction`.
 You can use the `Session.transaction` method, to create an `F[Transaction[F]]`.
