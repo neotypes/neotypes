@@ -63,7 +63,7 @@ class MapperSpec extends FreeSpec {
       val lengthOfStringMapper = ResultMapper[String].map(_.length)
       val productMapper = StringResultMapper.product(lengthOfStringMapper)
       val result = productMapper.to(Seq(("value", new StringValue("twelve chars"))), None)
-      assert(result == Right("twelve chars", 12))
+      assert(result == Right("twelve chars" -> 12))
     }
 
     "should derive an either mapper" in {
@@ -126,7 +126,7 @@ class MapperSpec extends FreeSpec {
       val lengthOfStringMapper = ValueMapper[String].map(_.length)
       val productMapper = StringValueMapper.product(lengthOfStringMapper)
       val result = productMapper.to("value", Some(new StringValue("twelve chars")))
-      assert(result == Right("twelve chars", 12))
+      assert(result == Right("twelve chars" -> 12))
     }
 
     "should derive an either mapper" in {

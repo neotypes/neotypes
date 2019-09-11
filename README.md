@@ -13,7 +13,7 @@
 
 For early adopters:
 
-|Supports Scala 2.11 and 2.12||
+|Supports Scala 2.12 and 2.13||
 | ----------------------------------------- |:--------------|
 |`"com.dimafeng" %% "neotypes" % version`|core functionality. Supports `scala.concurrent.Future`.|
 |`"com.dimafeng" %% "neotypes-cats-effect" % version`|`cats.effect.Async[F]` implementation.|

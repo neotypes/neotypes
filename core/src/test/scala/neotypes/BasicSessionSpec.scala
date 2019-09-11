@@ -2,11 +2,10 @@ package neotypes
 
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
+import org.neo4j.driver.v1.types.Node
 import shapeless._
 
 import scala.concurrent.Future
-import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.Node
 
 class BasicSessionSpec extends BaseIntegrationSpec[Future] {
   import BasicSessionSpec._
@@ -21,7 +20,6 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
       notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover { case ex => ex.toString }
       cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
       cc2 <- "match (p:Person {name: 'Charlize Theron'}) return p.born as born, p.name as name".query[Person2].single(s)
-      map <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Map[String, Value]].single(s)
       emptyResult <- "match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
       emptyResultList <- "match (p:Person {name: '1243'}) return p.born".query[Int].list(s)
       emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover { case ex => ex.toString }
@@ -42,8 +40,6 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
       assert(hlist.size == 1)
       assert(hlist.head.head.name.contains("Charlize Theron"))
       assert(hlist.head.last.title == "That Thing You Do")
-      assert(map("name").asString == "Charlize Theron")
-      assert(map("born").asInt == 1975)
       assert(emptyResult.isEmpty)
       assert(emptyResultList.isEmpty)
       assert(emptyResultEx == "neotypes.exceptions.PropertyNotFoundException: Property  not found") // TODO test separately

@@ -1,7 +1,5 @@
 package neotypes
 
-import internal.syntax.async._
-
 import neotypes.implicits.mappers.executions._
 import neotypes.implicits.syntax.string._
 import org.scalatest.FutureOutcome

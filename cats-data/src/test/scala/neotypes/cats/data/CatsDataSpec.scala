@@ -107,7 +107,7 @@ class CatsDataSpec extends CleaningIntegrationSpec[Future] {
     }
   }
 
-  it should "fail if retrieving an empty map a NonEmptyMap" in execute { s =>
+  it should "fail if retrieving an empty map as a NonEmptyMap" in execute { s =>
     recoverToSucceededIf[UncoercibleException] {
       for {
         properties <- "RETURN {}".query[Properties].single(s)

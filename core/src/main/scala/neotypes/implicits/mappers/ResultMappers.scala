@@ -14,7 +14,7 @@ import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Path => NPath, Poin
 import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
 import shapeless.labelled.FieldType
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
 trait ResultMappers extends ValueMappers {
@@ -95,7 +95,7 @@ trait ResultMappers extends ValueMappers {
                                              ct: ClassTag[A]): ResultMapper[A] =
     new ResultMapper[A] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
-        reprDecoder.value.to(value, Some(TypeHint(ct))).right.map(gen.from)
+        reprDecoder.value.to(value, Some(TypeHint(ct))).map(gen.from)
     }
 
   implicit final def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
@@ -106,7 +106,7 @@ trait ResultMappers extends ValueMappers {
         val head = fieldDecoder.to(headName, Some(headValue))
         val tail = tailDecoder.to(value.tail, None)
 
-        head.right.flatMap(h => tail.right.map(t => h :: t))
+        head.flatMap(h => tail.map(t => h :: t))
       }
     }
 
@@ -127,7 +127,7 @@ trait ResultMappers extends ValueMappers {
           case Some(TypeHint(true)) =>
             val index = fieldName.substring(1).toInt - 1
             val decodedHead = head.to(fieldName, if (value.size <= index) None else Some(value(index)._2))
-            decodedHead.right.flatMap(v => tail.to(value, typeHint).right.map(t => labelled.field[K](v) :: t))
+            decodedHead.flatMap(v => tail.to(value, typeHint).map(t => labelled.field[K](v) :: t))
 
           case _ =>
             val convertedValue =
@@ -142,16 +142,10 @@ trait ResultMappers extends ValueMappers {
               }
 
             val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
-            decodedHead.right.flatMap(v => tail.to(convertedValue, typeHint).right.map(t => labelled.field[K](v) :: t))
+            decodedHead.flatMap(v => tail.to(convertedValue, typeHint).map(t => labelled.field[K](v) :: t))
         }
       }
     }
-
-  implicit final def listResultMapper[T: ValueMapper]: ResultMapper[List[T]] =
-    ResultMapper.fromValueMapper
-
-  implicit final def mapResultMapper[T: ValueMapper]: ResultMapper[Map[String, T]] =
-    ResultMapper.fromValueMapper
 
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
@@ -159,18 +153,9 @@ trait ResultMappers extends ValueMappers {
         if (fields.isEmpty)
           Right(None)
         else
-          mapper
-            .to(fields, typeHint)
-            .right
-            .map(Option(_))
+          mapper.to(fields, typeHint).map(r => Option(r))
     }
 
   implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
-    ResultMapper.fromValueMapper
-
-  implicit final def setResultMapper[T: ValueMapper]: ResultMapper[Set[T]] =
-    ResultMapper.fromValueMapper
-
-  implicit final def vectorResultMapper[T: ValueMapper]: ResultMapper[Vector[T]] =
     ResultMapper.fromValueMapper
 }

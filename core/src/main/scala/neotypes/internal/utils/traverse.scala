@@ -1,56 +1,38 @@
 package neotypes
 package internal.utils
 
+import scala.collection.compat._
+import scala.collection.compat.Factory
+import scala.collection.mutable.Builder
+
 private[neotypes] object traverse {
-  def traverseAsList[A, B](iter: Iterator[A])
-                          (f: A => Either[Throwable, B]): Either[Throwable, List[B]] = {
+  final def traverseAs[A, B, C](factory: Factory[B, C])
+                               (iter: Iterator[A])
+                               (f: A => Either[Throwable, B]): Either[Throwable, C] = {
     @annotation.tailrec
-    def loop(acc: List[B]): Either[Throwable, List[B]] =
+    def loop(acc: Builder[B, C]): Either[Throwable, C] =
       if (iter.hasNext) f(iter.next()) match {
-        case Right(value) => loop(acc = value :: acc)
+        case Right(value) => loop(acc = acc += value)
         case Left(e)      => Left(e)
       } else {
-        Right(acc.reverse)
+        Right(acc.result())
       }
-    loop(acc = List.empty)
+    loop(acc = factory.newBuilder)
   }
 
-  def traverseAsSet[A, B](iter: Iterator[A])
-                          (f: A => Either[Throwable, B]): Either[Throwable, Set[B]] = {
-    @annotation.tailrec
-    def loop(acc: Set[B]): Either[Throwable, Set[B]] =
-      if (iter.hasNext) f(iter.next()) match {
-        case Right(value) => loop(acc = acc + value)
-        case Left(e)      => Left(e)
-      } else {
-        Right(acc)
-      }
-    loop(acc = Set.empty)
-  }
+  final def traverseAsList[A, B](iter: Iterator[A])
+                                (f: A => Either[Throwable, B]): Either[Throwable, List[B]] =
+    traverseAs(List : Factory[B, List[B]])(iter)(f)
 
-  def traverseAsVector[A, B](iter: Iterator[A])
-                            (f: A => Either[Throwable, B]): Either[Throwable, Vector[B]] = {
-    @annotation.tailrec
-    def loop(acc: Vector[B]): Either[Throwable, Vector[B]] =
-      if (iter.hasNext) f(iter.next()) match {
-        case Right(value) => loop(acc = acc :+ value)
-        case Left(e)      => Left(e)
-      } else {
-        Right(acc)
-      }
-    loop(acc = Vector.empty)
-  }
+  final def traverseAsSet[A, B](iter: Iterator[A])
+                               (f: A => Either[Throwable, B]): Either[Throwable, Set[B]] =
+    traverseAs(Set : Factory[B, Set[B]])(iter)(f)
 
-  def traverseAsMap[A, K, V](iter: Iterator[A])
-                            (f: A => Either[Throwable, (K, V)]): Either[Throwable, Map[K, V]] = {
-    @annotation.tailrec
-    def loop(acc: Map[K, V]): Either[Throwable, Map[K, V]] =
-      if (iter.hasNext) f(iter.next()) match {
-        case Right((key, value)) => loop(acc = acc + (key -> value))
-        case Left(e)             => Left(e)
-      } else {
-        Right(acc)
-      }
-    loop(acc = Map.empty)
-  }
+  final def traverseAsVector[A, B](iter: Iterator[A])
+                                  (f: A => Either[Throwable, B]): Either[Throwable, Vector[B]] =
+    traverseAs(Vector : Factory[B, Vector[B]])(iter)(f)
+
+  final def traverseAsMap[A, K, V](iter: Iterator[A])
+                                  (f: A => Either[Throwable, (K, V)]): Either[Throwable, Map[K, V]] =
+    traverseAs(Map : Factory[(K, V), Map[K, V]])(iter)(f)
 }

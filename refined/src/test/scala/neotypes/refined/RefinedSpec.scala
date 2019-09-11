@@ -22,8 +22,8 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
 
     for {
       _ <- c"CREATE (level: Level { value: ${L1} })".query[Unit].execute(s)
-      value <- "MATCH (level: Level) RETURN level.value".query[Level].single(s)
-    } yield assert(value == L1)
+      level <- "MATCH (level: Level) RETURN level.value".query[Level].single(s)
+    } yield assert(level == L1)
   }
 
   it should "insert and retrieve multiple refined values" in execute { s =>
@@ -33,19 +33,19 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
     for {
       _ <- c"CREATE (level: Level { value: ${L1} })".query[Unit].execute(s)
       _ <- c"CREATE (level: Level { value: ${L2} })".query[Unit].execute(s)
-      values <- "MATCH (level: Level) RETURN level.value ORDER BY level.value ASC".query[Level].list(s)
-    } yield assert(values == List(L1, L2))
+      levels <- "MATCH (level: Level) RETURN level.value ORDER BY level.value ASC".query[Level].list(s)
+    } yield assert(levels == List(L1, L2))
   }
 
   it should "insert and retrieve wrapped refined values" in execute { s =>
     val L1: Level = 1
     val L2: Level = 2
-    val levels = Option(List(L1, L2))
+    val levels = List(Option(L1), Option(L2))
 
     for {
       _ <- c"CREATE (levels: Levels { values: ${levels} })".query[Unit].execute(s)
-      values <- "MATCH (levels: Levels) RETURN levels.values".query[Option[List[Level]]].single(s)
-    } yield assert(values == levels)
+      levels <- "MATCH (levels: Levels) UNWIND levels.values AS level RETURN level".query[Option[Level]].list(s)
+    } yield assert(levels == levels)
   }
 
   it should "retrieve refined values inside a case class" in execute { s =>
@@ -79,7 +79,7 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
     recoverToSucceededIf[UncoercibleException] {
       for {
         _ <- "CREATE (levels: Levels { values: [3, -1, 5] })".query[Unit].execute(s)
-        levels <- "MATCH (levels: Levels) RETURN levels.values".query[Option[List[Level]]].single(s)
+        levels <- "MATCH (levels: Levels) UNWIND levels.values AS level RETURN level".query[Option[Level]].list(s)
       } yield levels
     }
   }

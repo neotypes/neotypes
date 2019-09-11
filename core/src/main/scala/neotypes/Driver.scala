@@ -3,9 +3,9 @@ package neotypes
 import internal.syntax.async._
 import internal.syntax.stage._
 
-import org.neo4j.driver.v1.{AccessMode, Driver => NDriver, Session => NSession}
+import org.neo4j.driver.v1.{AccessMode, Driver => NDriver}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 
 final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
@@ -16,8 +16,7 @@ final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
                    (implicit F: Async.Aux[F, R]): R[Session[F]] =
     F.resource(createSession(accessMode, bookmarks))(session => session.close)
 
-  private[this] def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty)
-                                 (implicit F: Async[F]): Session[F] =
+  private[this] def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty): Session[F] =
     new Session(
       bookmarks match {
         case Seq()         => driver.session(accessMode)
@@ -43,9 +42,6 @@ final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
 
   def close(implicit F: Async[F]): F[Unit] =
     F.async { cb =>
-      driver
-        .closeAsync()
-        .accept { _: Void => cb(Right(())) }
-        .recover { ex: Throwable => cb(Left(ex)) }
+      driver.closeAsync().acceptVoid(cb)
     }
 }

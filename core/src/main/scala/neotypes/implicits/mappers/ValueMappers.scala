@@ -5,7 +5,7 @@ import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetD
 import java.util.UUID
 
 import exceptions.{ConversionException, PropertyNotFoundException}
-import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.utils.traverse.{traverseAs, traverseAsList}
 import mappers.{ResultMapper, TypeHint, ValueMapper}
 import types.Path
 
@@ -15,7 +15,10 @@ import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Path => NPath, Point, Relationship}
 import shapeless.HNil
 
-import scala.collection.JavaConverters._
+import scala.collection.compat._
+import scala.collection.compat.Factory
+import scala.jdk.CollectionConverters._
+import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 trait ValueMappers {
@@ -106,6 +109,26 @@ trait ValueMappers {
   implicit final val ZonedDateTimeValueMapper: ValueMapper[ZonedDateTime] =
     ValueMapper.fromCast(v => v.asZonedDateTime)
 
+  private final def collectionValueMapper[T, C](factory: Factory[T, C], mapper: ValueMapper[T]): ValueMapper[C] =
+    new ValueMapper[C] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, C] =
+        value match {
+          case None =>
+            Right(factory.newBuilder.result())
+
+          case Some(value) =>
+            traverseAs(factory)(value.values.asScala.iterator) { value: Value =>
+              mapper.to("", Option(value))
+            }
+        }
+    }
+
+  implicit final def iterableValueMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ValueMapper[I[T]] =
+    collectionValueMapper(factory, mapper)
+
+  implicit final def mapValueMapper[K, V, M[_, _]](implicit factory: Factory[(K, V), M[K, V]], mapper: ValueMapper[(K, V)]): ValueMapper[M[K, V]] =
+    collectionValueMapper(factory, mapper)
+
   implicit final def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] =
     new ValueMapper[T] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] =
@@ -129,36 +152,6 @@ trait ValueMappers {
         }
     }
 
-  implicit final def listValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[List[T]] =
-    new ValueMapper[List[T]] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, List[T]] =
-        value match {
-          case None =>
-            Right(List.empty)
-
-          case Some(value) =>
-            traverseAsList(value.values.asScala.iterator) { value: Value =>
-              mapper.to("", Option(value))
-            }
-        }
-    }
-
-  implicit final def mapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Map[String, T]] =
-    new ValueMapper[Map[String, T]] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Map[String, T]] =
-        value match {
-          case None =>
-            Right(Map.empty)
-
-          case Some(value) =>
-            traverseAsMap(value.keys.asScala.iterator) { key: String =>
-              mapper.to(key, Option(value.get(key))).right.map { value =>
-                key -> value
-              }
-            }
-        }
-    }
-
   implicit final def optionValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Option[T]] =
     new ValueMapper[Option[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] =
@@ -167,10 +160,7 @@ trait ValueMappers {
             Right(None)
 
           case Some(value) =>
-            mapper
-              .to(fieldName, Some(value))
-              .right
-              .map(Option(_))
+            mapper.to(fieldName, Some(value)).map(r => Option(r))
         }
     }
 
@@ -194,39 +184,11 @@ trait ValueMappers {
               }
 
               for {
-                nodes <- nodes.right
-                relationships <- relationships.right
+                nodes <- nodes
+                relationships <- relationships
               } yield Path(nodes, relationships, path)
             } else {
               Left(ConversionException(s"$fieldName of type ${value.`type`} cannot be converted into a Path"))
-            }
-        }
-    }
-
-  implicit final def setValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Set[T]] =
-    new ValueMapper[Set[T]] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Set[T]] =
-        value match {
-          case None =>
-            Right(Set.empty)
-
-          case Some(value) =>
-            traverseAsSet(value.values.asScala.iterator) { value: Value =>
-              mapper.to("", Option(value))
-            }
-        }
-    }
-
-  implicit final def vectorValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Vector[T]] =
-    new ValueMapper[Vector[T]] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, Vector[T]] =
-        value match {
-          case None =>
-            Right(Vector.empty)
-
-          case Some(value) =>
-            traverseAsVector(value.values.asScala.iterator) { value: Value =>
-              mapper.to("", Option(value))
             }
         }
     }

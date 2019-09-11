@@ -9,7 +9,10 @@ import mappers.ParameterMapper
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Point}
 
-import scala.collection.JavaConverters._
+import scala.collection.compat._
+import scala.collection.Iterable
+import scala.jdk.CollectionConverters._
+import scala.language.higherKinds
 
 trait ParameterMappers {
   implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
@@ -69,28 +72,26 @@ trait ParameterMappers {
   implicit final val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
     ParameterMapper.identity
 
-  implicit final def listParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[List[T]] =
-    ParameterMapper.fromCast { list =>
-      list.map(v => mapper.toQueryParam(v).underlying).asJava
+  private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
+    ParameterMapper.fromCast { col =>
+      col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 
-  implicit final def mapParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Map[String, T]] =
-    ParameterMapper.fromCast { map =>
-      map.mapValues(v => mapper.toQueryParam(v).underlying).asJava
+  implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]): ParameterMapper[C[T]] =
+    iterableParameterMapper(mapper).contramap(ev)
+
+  private final def iterableMapParameterMapper[V](mapper: ParameterMapper[V]): ParameterMapper[Iterable[(String, V)]] =
+    ParameterMapper.fromCast { col =>
+      col.iterator.map {
+        case (key, v) => key -> mapper.toQueryParam(v).underlying
+      }.toMap.asJava
     }
 
-  implicit final def optionParameterMapper[T >: Null](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
+  implicit final def mapParameterMapper[V, M[_, _]](implicit mapper: ParameterMapper[V], ev: M[String, V] <:< Iterable[(String, V)]): ParameterMapper[M[String, V]] =
+    iterableMapParameterMapper(mapper).contramap(ev)
+
+  implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     ParameterMapper.fromCast { optional =>
       optional.map(v => mapper.toQueryParam(v).underlying).orNull
-    }
-
-  implicit final def setParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Set[T]] =
-    ParameterMapper.fromCast { set =>
-      set.map(v => mapper.toQueryParam(v).underlying).asJava
-    }
-
-  implicit final def vectorParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Vector[T]] =
-    ParameterMapper.fromCast { vector =>
-      vector.map(v => mapper.toQueryParam(v).underlying).asJava
     }
 }

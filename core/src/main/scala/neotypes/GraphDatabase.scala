@@ -4,7 +4,7 @@ import java.net.URI
 
 import org.neo4j.driver.v1.{AuthToken, AuthTokens, Config, Driver => NDriver, GraphDatabase => NFactory}
 
-import scala.collection.JavaConverters._
+import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 
 /** Factory of Drivers. */

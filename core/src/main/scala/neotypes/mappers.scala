@@ -40,7 +40,7 @@ object mappers {
       */
     def map[B](f: A => B): ResultMapper[B] = new ResultMapper[B] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
-        self.to(value, typeHint).right.map(f)
+        self.to(value, typeHint).map(f)
     }
 
     /**
@@ -53,7 +53,7 @@ object mappers {
       */
     def flatMap[B](f: A => ResultMapper[B]): ResultMapper[B] = new ResultMapper[B] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
-        self.to(value, typeHint).right.flatMap(a => f(a).to(value, typeHint))
+        self.to(value, typeHint).flatMap(a => f(a).to(value, typeHint))
     }
 
     /**
@@ -177,7 +177,8 @@ object mappers {
       * @return A new ResultMapper that applies your function to the result.
       */
     def map[B](f: A => B): ValueMapper[B] = new ValueMapper[B] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, B] = self.to(fieldName, value).right.map(f)
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, B] =
+        self.to(fieldName, value).map(f)
     }
 
     /**
@@ -190,7 +191,7 @@ object mappers {
       */
     def flatMap[B](f: A => ValueMapper[B]): ValueMapper[B] = new ValueMapper[B] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, B] =
-        self.to(fieldName, value).right.flatMap(a => f(a).to(fieldName, value))
+        self.to(fieldName, value).flatMap(a => f(a).to(fieldName, value))
     }
 
     /**

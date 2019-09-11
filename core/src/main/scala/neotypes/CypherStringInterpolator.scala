@@ -2,7 +2,6 @@ package neotypes
 
 import types.QueryParam
 
-import scala.language.implicitConversions
 import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 

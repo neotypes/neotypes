@@ -2,10 +2,6 @@ package neotypes
 
 import java.time.Duration
 
-import internal.syntax.async._
-
-import neotypes.implicits.syntax.string._
-import neotypes.implicits.mappers.executions._
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.neo4j.driver.{v1 => neo4j}
 import org.scalatest.AsyncFlatSpec
