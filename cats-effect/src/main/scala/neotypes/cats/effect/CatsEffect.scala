@@ -34,7 +34,7 @@ trait CatsEffect {
         F.map(m)(f)
 
       override final def recoverWith[T, U >: T](m: F[T])(f: PartialFunction[Throwable, F[U]]): F[U] =
-        F.recoverWith(F.map(m)(identity[U]))(f)
+        F.recoverWith(F.widen[T, U](m))(f)
 
       override final def resource[A](input: => A)(close: A => F[Unit]): Resource[F, A] =
         Resource.make(F.delay(input))(close)
