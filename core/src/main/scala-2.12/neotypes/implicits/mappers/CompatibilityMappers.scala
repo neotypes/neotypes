@@ -11,20 +11,20 @@ import scala.reflect.ClassTag
 /**
  * This trait contains some implicit conversions that are required
  * to enable the collectAs(Col)(session / tx) method on Scala 2.12.
- * It consists of a group of forwarders to the converions
+ * It consists of a group of forwarders to the conversions
  * defined in the scala-collection-compat library.
  * These convert from companion objects of the collections,
  * to instances of CanBuildFrom (Factory).
  *
- * The propouse of this trait, as well of it being mixed in the
+ * The purpose of this trait, as well of it being mixed in the
  * neotypes.implicits.mappers.results object,
- * is to hide the dependency of the compability library to final users.
+ * is to hide the dependency of the compatibility library to final users.
  * We may as well remove this, and force them to import scala.collection.compat._
  *
- * The original definitions of the convertions can be found here:
+ * The original definitions of the conversions can be found here:
  * https://github.com/scala/scala-collection-compat/blob/master/compat/src/main/scala-2.11_2.12/scala/collection/compat/PackageShared.scala#L47-L86
  */
-trait CompabilityMappers {
+trait CompatibilityMappers {
   private type ImmutableBitSetCC[X] = ({ type L[_] = i.BitSet })#L[X]
   private type MutableBitSetCC[X] = ({ type L[_] = m.BitSet })#L[X]
 

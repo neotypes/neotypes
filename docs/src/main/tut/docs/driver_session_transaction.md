@@ -7,19 +7,19 @@ title: "Driver -> Session -> Transaction"
 
 These three classes are the main points of interactions with a **Neo4j** database.
 
-A `Driver` is basically the conection with the Database _per se_. Usually, you would only need one instance per application, unless you need to connect to two different databases.<br>
+A `Driver` is basically the connection with the Database. Usually, you would only need one instance per application, unless you need to connect to two different databases.<br>
 A `Session` provides a context for performing operations _(`Transactions`)_ over the database. You may need as many as concurrent operations you want to have.
 A `Transaction` is a logical container for an atomic unit of work. Only one transaction may exist in a `Session` at any point in time.
 
 ## Transaction managment
 
-Each `Transaction` has to be started, used and finally either, commited or rollbacked.
+Each `Transaction` has to be started, used and finally either, committed or rolled back.
 
 **neotypes** provides 3 ways of interacting with `Transactions`, designed for different use cases.
 
 ### Single query + automatic commit / rollback.
 
-If you only need to perform one query, and want it to be automatically commited in case of success, or rollbacked in case of failure.
+If you only need to perform one query, and want it to be automatically committed in case of success, or rolled back in case of failure.
 You can use the `Session` directly.
 
 ```scala

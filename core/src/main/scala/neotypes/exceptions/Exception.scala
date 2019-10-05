@@ -10,4 +10,4 @@ final case class ConversionException(message: String) extends NeotypesException(
 
 final case class NoFieldsDefinedException(message: String) extends NeotypesException(message)
 
-final case class UncoercibleException(message: String, cause: Uncoercible) extends NeotypesException(message, Option(cause))
+final case class IncoercibleException(message: String, cause: Uncoercible) extends NeotypesException(message, Option(cause))

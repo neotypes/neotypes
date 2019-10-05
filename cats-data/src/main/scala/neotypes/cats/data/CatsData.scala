@@ -2,7 +2,7 @@ package neotypes
 package cats.data
 
 import internal.utils.traverse.{traverseAs, traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
-import exceptions.{PropertyNotFoundException, UncoercibleException}
+import exceptions.{PropertyNotFoundException, IncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, ValueMapper}
 import types.QueryParam
 
@@ -83,7 +83,7 @@ trait CatsData {
             }.flatMap { chain =>
               NonEmptyChain.fromChain(chain) match {
                 case None =>
-                  Left(UncoercibleException("NonEmptyChain from an empty list", None.orNull))
+                  Left(IncoercibleException("NonEmptyChain from an empty list", None.orNull))
 
                 case Some(nonEmptyChain) =>
                   Right(nonEmptyChain)
@@ -113,7 +113,7 @@ trait CatsData {
             }.flatMap { list =>
               NonEmptyList.fromList(list) match {
                 case None =>
-                  Left(UncoercibleException("NonEmptyList from an empty list", None.orNull))
+                  Left(IncoercibleException("NonEmptyList from an empty list", None.orNull))
 
                 case Some(nonEmptyList) =>
                   Right(nonEmptyList)
@@ -145,7 +145,7 @@ trait CatsData {
             }.flatMap { map =>
               NonEmptyMap.fromMap(SortedMap.empty[String, T] ++ map) match {
                 case None =>
-                  Left(UncoercibleException("NonEmptyMap from an empty map", None.orNull))
+                  Left(IncoercibleException("NonEmptyMap from an empty map", None.orNull))
 
                 case Some(nonEmptyMap) =>
                   Right(nonEmptyMap)
@@ -175,7 +175,7 @@ trait CatsData {
             }.flatMap { set =>
               NonEmptySet.fromSet(SortedSet.empty[T](order.toOrdering) | set) match {
                 case None =>
-                  Left(UncoercibleException("NonEmptySet from an empty list", None.orNull))
+                  Left(IncoercibleException("NonEmptySet from an empty list", None.orNull))
 
                 case Some(nonEmptySet) =>
                   Right(nonEmptySet)
@@ -205,7 +205,7 @@ trait CatsData {
             }.flatMap { vector =>
               NonEmptyVector.fromVector(vector) match {
                 case None =>
-                  Left(UncoercibleException("NonEmptyVector from an empty list", None.orNull))
+                  Left(IncoercibleException("NonEmptyVector from an empty list", None.orNull))
 
                 case Some(nonEmptyVector) =>
                   Right(nonEmptyVector)

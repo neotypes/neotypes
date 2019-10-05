@@ -1,6 +1,6 @@
 package neotypes
 
-import exceptions.{PropertyNotFoundException, UncoercibleException}
+import exceptions.{PropertyNotFoundException, IncoercibleException}
 import types.QueryParam
 
 import org.neo4j.driver.v1.Value
@@ -285,7 +285,7 @@ object mappers {
             try {
               Right(f(v))
             } catch {
-              case ex: Uncoercible => Left(UncoercibleException(ex.getLocalizedMessage, ex))
+              case ex: Uncoercible => Left(IncoercibleException(ex.getLocalizedMessage, ex))
               case ex: Throwable   => Left(ex)
             }
 
