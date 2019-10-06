@@ -1,7 +1,7 @@
 package neotypes
 package refined
 
-import exceptions.{PropertyNotFoundException, UncoercibleException}
+import exceptions.{PropertyNotFoundException, IncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, TypeHint, ValueMapper}
 import types.QueryParam
 
@@ -19,7 +19,7 @@ trait RefinedMappers {
           case Some(value) =>
             mapper
               .to(fieldName, Some(value))
-              .flatMap(t => rt.refine(t).left.map(msg => UncoercibleException(msg, None.orNull)))
+              .flatMap(t => rt.refine(t).left.map(msg => IncoercibleException(msg, None.orNull)))
         }
     }
 

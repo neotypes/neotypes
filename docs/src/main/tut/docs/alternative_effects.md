@@ -100,9 +100,9 @@ val data: String = runtime.unsafeRun(program)
 ```
 
 ## Custom effect type
-In order to support your any other effect yupe,
-you need to implement the `neotypes.Async.Aux[F[_], R[_]]` **typeclasses**.
-And add them to the implicit scope.
+In order to support your any other effect type,
+you need to implement the `neotypes.Async.Aux[F[_], R[_]]` **typeclasses**
+and add them to the implicit scope.
 
 The type parameters in the signature indicate:
 

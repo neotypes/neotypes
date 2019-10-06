@@ -1,7 +1,7 @@
 package neotypes.refined
 
 import neotypes.CleaningIntegrationSpec
-import neotypes.exceptions.UncoercibleException
+import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
@@ -56,7 +56,7 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
   }
 
   it should "fail if a single value does not satisfy the refinement condition" in execute { s =>
-    recoverToSucceededIf[UncoercibleException] {
+    recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (level: Level { value: -1 })".query[Unit].execute(s)
         level <- "MATCH (level: Level) RETURN level".query[Level].single(s)
@@ -65,7 +65,7 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
   }
 
   it should "fail if at least one of multiple values does not satisfy the refinement condition" in execute { s =>
-    recoverToSucceededIf[UncoercibleException] {
+    recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (level: Level { value: 3 })".query[Unit].execute(s)
         _ <- "CREATE (level: Level { value: -1 })".query[Unit].execute(s)
@@ -76,7 +76,7 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
   }
 
   it should "fail if at least one wrapped value does not satisfy the refinement condition" in execute { s =>
-    recoverToSucceededIf[UncoercibleException] {
+    recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (levels: Levels { values: [3, -1, 5] })".query[Unit].execute(s)
         levels <- "MATCH (levels: Levels) UNWIND levels.values AS level RETURN level".query[Option[Level]].list(s)
@@ -85,7 +85,7 @@ class RefinedSpec extends CleaningIntegrationSpec[Future] {
   }
 
   it should "fail if at least one value inside a case class does not satisfy the refinement condition" in execute { s =>
-    recoverToSucceededIf[UncoercibleException] {
+    recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (user: User { name: \"???\", level: -1 })".query[Unit].execute(s)
         user <- "MATCH (user: User { name: \"???\" }) RETURN user".query[User].single(s)

@@ -43,7 +43,7 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
       assert(emptyResult.isEmpty)
       assert(emptyResultList.isEmpty)
       assert(emptyResultEx == "neotypes.exceptions.PropertyNotFoundException: Property  not found") // TODO test separately
-      assert(notString == "neotypes.exceptions.UncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
+      assert(notString == "neotypes.exceptions.IncoercibleException: Cannot coerce INTEGER to Java String") // TODO test separately
       assert(node.head.get("name").asString() == "Charlize Theron")
     }
   }
