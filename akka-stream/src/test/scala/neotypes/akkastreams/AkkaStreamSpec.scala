@@ -11,7 +11,7 @@ import neotypes.implicits.syntax.string._
 import scala.concurrent.Future
 
 class AkkaStreamSpec extends BaseIntegrationSpec[Future] {
-  it should "work with Akka streams" in execute { s =>
+  ignore should "work with Akka streams" in execute { s =>
     implicit val system = ActorSystem("QuickStart")
     implicit val materializer = ActorMaterializer()
 
