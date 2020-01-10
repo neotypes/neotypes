@@ -1,18 +1,17 @@
 package neotypes
 package implicits.mappers
 
-import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time._
 import java.util.UUID
 
-import mappers.{ResultMapper, TypeHint, ValueMapper}
-import types.Path
-
+import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
+import neotypes.types.Path
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Path => NPath, Point, Relationship}
-import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
+import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Point, Relationship, Path => NPath}
 import shapeless.labelled.FieldType
+import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
 
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
@@ -120,6 +119,16 @@ trait ResultMappers extends ValueMappers {
         (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: entityFields
       }
 
+      private def collectMapFields(mapFields: List[(String, Value)], acc: List[(String, Value)]): List[(String, Value)] = {
+        mapFields match {
+          case Nil => acc
+          case h::t if h._2.`type`() == InternalTypeSystem.TYPE_SYSTEM.MAP =>
+            val tailAcc = collectMapFields(h._2.keys.asScala.toList.map(k => (k, h._2.get(k))), acc)
+            collectMapFields(t, tailAcc)
+          case h::t => collectMapFields(t, acc :+ h)
+        }
+      }
+
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
 
@@ -137,6 +146,8 @@ trait ResultMappers extends ValueMappers {
               } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP) {
                 val relationship = value.head._2.asRelationship
                 collectEntityFields(relationship)
+              } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.MAP) {
+                collectMapFields(List(value.head), Nil)
               } else {
                 value
               }

@@ -3,15 +3,13 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.Value
-import org.scalatest.Ignore
 
 import scala.concurrent.Future
 
-@Ignore
 class MapSessionSpec extends BaseIntegrationSpec[Future] {
   import MapSessionSpec._
 
-  it should "create a map from a node" in execute { s =>
+  it should "create a map from a node" ignore execute { s =>
     "match (p:Person {name: 'Charlize Theron'}) return p"
       .query[(String, Value)]
       .map(s)
@@ -32,7 +30,7 @@ class MapSessionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "create a map from a map projection" in execute { s =>
+  it should "create a map from a map projection" ignore execute { s =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .*, extra: 1 }"
       .query[(String, Value)]
       .map(s)
