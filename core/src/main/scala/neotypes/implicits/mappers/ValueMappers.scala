@@ -12,11 +12,10 @@ import types.Path
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{IsoDuration, Node, Path => NPath, Point, Relationship}
+import org.neo4j.driver.v1.types.{IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
 import shapeless.HNil
 
 import scala.collection.compat._
-import scala.collection.compat.Factory
 import scala.jdk.CollectionConverters._
 import scala.language.higherKinds
 import scala.reflect.ClassTag
@@ -109,40 +108,44 @@ trait ValueMappers {
   implicit final val ZonedDateTimeValueMapper: ValueMapper[ZonedDateTime] =
     ValueMapper.fromCast(v => v.asZonedDateTime)
 
-  private final def collectionValueMapper[T, C](factory: Factory[T, C], mapper: ValueMapper[T]): ValueMapper[C] =
-    new ValueMapper[C] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, C] =
+  implicit final def iterableValueMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ValueMapper[I[T]] =
+    new ValueMapper[I[T]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, I[T]] =
         value match {
           case None =>
             Right(factory.newBuilder.result())
 
           case Some(value) =>
-            traverseAs(factory)(value.values.asScala.iterator) { value: Value =>
+            traverseAs(factory)(value.values.asScala.iterator) { value =>
               mapper.to("", Option(value))
             }
         }
     }
 
-  implicit final def iterableValueMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ValueMapper[I[T]] =
-    collectionValueMapper(factory, mapper)
+  protected def getKeyValuesFrom(nmap: NMap): Iterator[(String, Value)] =
+    nmap.keys.asScala.iterator.map(key => key -> nmap.get(key))
 
-  implicit final def mapValueMapper[K, V, M[_, _]](implicit factory: Factory[(K, V), M[K, V]], mapper: ValueMapper[(K, V)]): ValueMapper[M[K, V]] =
-    collectionValueMapper(factory, mapper)
+  implicit final def mapValueMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ValueMapper[M[String, V]] =
+    new ValueMapper[M[String, V]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, M[String, V]] =
+        value match {
+          case None =>
+            Right(factory.newBuilder.result())
+
+          case Some(value) =>
+            traverseAs(factory)(getKeyValuesFrom(value)) {
+              case (key, value) =>
+                mapper.to("", Option(value)).map(v => key -> v)
+            }
+        }
+    }
 
   implicit final def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] =
     new ValueMapper[T] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] =
         value match {
           case Some(value: MapValue) =>
-            resultMapper.to(
-              value
-                .keys
-                .asScala
-                .iterator
-                .map(key => key -> value.get(key))
-                .toList,
-              Some(TypeHint(ct))
-            )
+            resultMapper.to(getKeyValuesFrom(value).toList, Some(TypeHint(ct)))
 
           case Some(value) =>
             resultMapper.to(Seq(fieldName -> value), Some(TypeHint(ct)))
