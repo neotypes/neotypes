@@ -14,6 +14,7 @@ import org.neo4j.driver.v1.types.{Entity, IsoDuration, MapAccessor => NMap, Node
 import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
 import shapeless.labelled.FieldType
 
+import scala.collection.compat.Factory
 import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
@@ -90,6 +91,12 @@ trait ResultMappers extends ValueMappers {
   implicit final val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
     ResultMapper.fromValueMapper
 
+  implicit final def iterableResultMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ResultMapper[I[T]] =
+    ResultMapper.fromValueMapper
+
+  implicit final def mapResultMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ResultMapper[M[String, V]] =
+    ResultMapper.fromValueMapper
+
   implicit final def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
                                              reprDecoder: Lazy[ResultMapper[R]],
                                              ct: ClassTag[A]): ResultMapper[A] =
@@ -114,11 +121,8 @@ trait ResultMappers extends ValueMappers {
                                                                   head: ValueMapper[H],
                                                                   tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :!: T] =
     new ResultMapper[FieldType[K, H] :!: T] {
-      private def collectMapFields(nmap: NMap): List[(String, Value)] =
-        nmap.keys.asScala.iterator.map(key => key -> nmap.get(key)).toList
-
       private def collectEntityFields(entity: Entity): List[(String, Value)] =
-        (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: collectMapFields(entity)
+        (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: getKeyValuesFrom(entity).toList
 
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
@@ -138,7 +142,7 @@ trait ResultMappers extends ValueMappers {
                 val relationship = value.head._2.asRelationship
                 collectEntityFields(relationship)
               } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.MAP) {
-                collectMapFields(value.head._2)
+                getKeyValuesFrom(value.head._2).toList
               } else {
                 value
               }

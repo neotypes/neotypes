@@ -8,7 +8,7 @@ import shapeless._
 import scala.concurrent.Future
 
 class PathSessionSpec extends BaseIntegrationSpec[Future] {
-  import PathSessionSpec.Person
+  import PathSessionSpec._
 
   it should "map path to Seq" in execute { s =>
     for {
@@ -21,9 +21,19 @@ class PathSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
+  it should "assign path to case class field" ignore execute { s =>
+    for {
+      data <- "match path=(_:Person)-[*]->() return { path: path }".query[Data].single(s)
+    } yield {
+      assert(data.path.nodes.size == 2)
+    }
+  }
+
   override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
 object PathSessionSpec {
   final case class Person(name: String)
+
+  final case class Data(path: types.Path[Node, Relationship])
 }
