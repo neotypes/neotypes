@@ -1,7 +1,7 @@
 package neotypes
 package implicits.mappers
 
-import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time._
 import java.util.UUID
 
 import mappers.{ResultMapper, TypeHint, ValueMapper}
@@ -10,8 +10,8 @@ import types.Path
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Path => NPath, Point, Relationship}
-import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Lazy, Witness, labelled}
+import org.neo4j.driver.v1.types.{Entity, IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
+import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
 import shapeless.labelled.FieldType
 
 import scala.jdk.CollectionConverters._
@@ -114,11 +114,11 @@ trait ResultMappers extends ValueMappers {
                                                                   head: ValueMapper[H],
                                                                   tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :!: T] =
     new ResultMapper[FieldType[K, H] :!: T] {
+      private def collectMapFields(nmap: NMap): List[(String, Value)] =
+        nmap.keys.asScala.iterator.map(key => key -> nmap.get(key)).toList
 
-      private def collectEntityFields(entity: Entity): List[(String, Value)] = {
-        val entityFields = entity.keys.asScala.iterator.map(key => key -> entity.get(key)).toList
-        (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: entityFields
-      }
+      private def collectEntityFields(entity: Entity): List[(String, Value)] =
+        (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: collectMapFields(entity)
 
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
@@ -137,6 +137,8 @@ trait ResultMappers extends ValueMappers {
               } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP) {
                 val relationship = value.head._2.asRelationship
                 collectEntityFields(relationship)
+              } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.MAP) {
+                collectMapFields(value.head._2)
               } else {
                 value
               }
