@@ -3,6 +3,7 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.types.{Node, Relationship}
+import collection.JavaConverters._
 import shapeless._
 
 import scala.concurrent.Future
@@ -21,11 +22,20 @@ class PathSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  it should "assign path to case class field" ignore execute { s =>
-    for {
-      data <- "match path=(_:Person)-[*]->() return { path: path }".query[Data].single(s)
-    } yield {
-      assert(data.path.nodes.size == 2)
+  it should "assign path to case class field" in execute { s =>
+    "match path=(_:Person)-[*]->() return { path: path }".query[Data].list(s).map{ res =>
+      assert(res.size == 2)
+
+      assert(res.head.path.nodes.size == 2)
+      assert(res.head.path.nodes.flatMap(i => i.labels().asScala.toList) == List("Person", "Movie"))
+      assert(res.head.path.relationships.size == 1)
+      assert(res.head.path.relationships(0).`type`() == "ACTED_IN")
+
+      assert(res.last.path.nodes.size == 3)
+      assert(res.last.path.nodes.flatMap(i => i.labels().asScala.toList) == List("Person", "Movie", "Test"))
+      assert(res.last.path.relationships.size == 2)
+      assert(res.last.path.relationships(0).`type`() == "ACTED_IN")
+      assert(res.last.path.relationships(1).`type`() == "TEST_EDGE")
     }
   }
 
