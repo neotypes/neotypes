@@ -1,6 +1,6 @@
 package neotypes.zio
 
-import zio.{Cause, Exit, Managed, Task}
+import zio.{Exit, Managed, Task}
 
 trait Zio {
   private[neotypes] final type ZioResource[A] = Managed[Throwable, A]
@@ -17,7 +17,7 @@ trait Zio {
         }
 
       override final def delay[A](t: => A): zio.Task[A] =
-        Task.succeedLazy(t)
+        Task.effectTotal(t)
 
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
@@ -43,6 +43,6 @@ trait Zio {
         Task.fail(e)
 
       override def resource[A](input: => A)(close: A => Task[Unit]): Managed[Throwable, A] =
-        Managed.make(Task.succeedLazy(input))(a => close(a).orDie)
+        Managed.make(Task.effectTotal(input))(a => close(a).orDie)
     }
 }

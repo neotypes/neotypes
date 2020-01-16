@@ -11,7 +11,7 @@ import org.neo4j.driver.v1.exceptions.ClientException
 import scala.concurrent.ExecutionContext
 
 class ZioAsyncSpec extends BaseIntegrationSpec[Task] { self =>
-  val runtime = new DefaultRuntime { override val Platform = PlatformLive.fromExecutionContext(self.executionContext) }
+  val runtime = new DefaultRuntime { override val platform = PlatformLive.fromExecutionContext(self.executionContext) }
 
   it should "work with zio.Task" in {
     val runtime = new DefaultRuntime {}

@@ -1,7 +1,5 @@
 package neotypes.fs2
 
-import language.higherKinds
-
 trait Fs2Streams {
   implicit final def fs2Stream[_F[_]](implicit F: cats.effect.Async[_F]): neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
     new neotypes.Stream[Fs2FStream[_F]#T] {

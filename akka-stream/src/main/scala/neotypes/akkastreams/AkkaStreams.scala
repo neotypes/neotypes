@@ -57,7 +57,7 @@ trait AkkaStreams {
         */
       override final def fToS[T](f: Future[AkkaStream[T]]): AkkaStream[T] =
         Source
-          .fromFutureSource(f)
+          .futureSource(f)
           .viaMat(Flow[T]) { (m, _) => m.flatMap(identity) }
     }
 }

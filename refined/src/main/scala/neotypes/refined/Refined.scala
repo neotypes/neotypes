@@ -3,7 +3,6 @@ package refined
 
 import exceptions.{PropertyNotFoundException, IncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, TypeHint, ValueMapper}
-import types.QueryParam
 
 import eu.timepit.refined.api.{Refined, RefinedType}
 import org.neo4j.driver.v1.Value
