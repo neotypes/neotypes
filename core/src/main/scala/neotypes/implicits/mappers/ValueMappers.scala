@@ -17,7 +17,6 @@ import shapeless.HNil
 
 import scala.collection.compat._
 import scala.jdk.CollectionConverters._
-import scala.language.higherKinds
 import scala.reflect.ClassTag
 
 trait ValueMappers {
@@ -38,7 +37,7 @@ trait ValueMappers {
         .ZERO
         .plusDays(isoDuration.days)
         .plusSeconds(isoDuration.seconds)
-        .plusNanos(isoDuration.nanoseconds)
+        .plusNanos(isoDuration.nanoseconds.toLong)
     }
 
   implicit final val FloatValueMapper: ValueMapper[Float] =

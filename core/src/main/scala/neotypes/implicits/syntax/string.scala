@@ -1,8 +1,6 @@
 package neotypes
 package implicits.syntax
 
-import scala.language.implicitConversions
-
 trait StringSyntax {
   implicit final def neotypesSyntaxStringId(s: String): StringIdOps =
     new StringIdOps(s)

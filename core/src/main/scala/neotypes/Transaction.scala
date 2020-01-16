@@ -12,9 +12,7 @@ import org.neo4j.driver.v1.exceptions.NoSuchRecordException
 import org.neo4j.driver.v1.{Record, StatementResultCursor, Transaction => NTransaction, Value}
 
 import scala.collection.compat._
-import scala.collection.compat.Factory
 import scala.jdk.CollectionConverters._
-import scala.language.higherKinds
 
 final class Transaction[F[_]](private val transaction: NTransaction) extends AnyVal {
   import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToSeq}

@@ -6,7 +6,6 @@ import types.QueryParam
 
 import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
-import scala.language.higherKinds
 
 /** Representation of a query that is deferred in an effect type and evaluated asynchronously in a session transaction backed by neo4j.
   *
@@ -198,8 +197,10 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return Map[K, V] in effect type F
     */
   def map[F[_], K, V](tx: Transaction[F])
-                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
+    internal.utils.void(ev)
     tx.map(query, params)
+  }
 
   /** Executes the query and returns a Set of values.
     *
