@@ -6,7 +6,7 @@ trait StringSyntax {
     new StringIdOps(s)
 }
 
-final class StringIdOps(private val underlying: String) extends AnyVal {
+private[neotypes] final class StringIdOps(private val underlying: String) extends AnyVal {
   def query[T]: DeferredQuery[T] =
     DeferredQuery(query = underlying, params = Map.empty)
 }

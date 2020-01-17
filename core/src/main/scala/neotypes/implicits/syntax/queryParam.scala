@@ -9,8 +9,7 @@ trait QueryParamSyntax {
     new QueryParamIdOps(a)
 }
 
-final class QueryParamIdOps[A](private val underlying: A) extends AnyVal {
+private[neotypes] final class QueryParamIdOps[A](private val underlying: A) extends AnyVal {
   def asQueryParam(implicit mapper: ParameterMapper[A]): QueryParam =
     mapper.toQueryParam(underlying)
 }
-
