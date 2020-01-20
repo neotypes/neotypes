@@ -1,7 +1,6 @@
 package neotypes.akkastreams
 
 import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.scaladsl.Sink
 import neotypes.BaseIntegrationSpec
 import neotypes.akkastreams.implicits._
@@ -13,7 +12,6 @@ import scala.concurrent.Future
 class AkkaStreamSpec extends BaseIntegrationSpec[Future] {
   ignore should "work with Akka streams" in execute { s =>
     implicit val system = ActorSystem("QuickStart")
-    implicit val materializer = ActorMaterializer()
 
     "match (p:Person) return p.name"
       .query[Int]

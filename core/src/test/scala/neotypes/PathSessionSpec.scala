@@ -3,10 +3,10 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.types.{Node, Relationship}
-import collection.JavaConverters._
 import shapeless._
 
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 
 class PathSessionSpec extends BaseIntegrationSpec[Future] {
   import PathSessionSpec._
