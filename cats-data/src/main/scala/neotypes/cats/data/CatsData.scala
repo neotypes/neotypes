@@ -1,10 +1,9 @@
 package neotypes
 package cats.data
 
-import internal.utils.traverse.{traverseAs, traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import exceptions.{PropertyNotFoundException, IncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, ValueMapper}
-import types.QueryParam
 
 import org.neo4j.driver.v1.Value
 import _root_.cats.Order

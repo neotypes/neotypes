@@ -25,9 +25,6 @@ import scala.reflect.ClassTag
  * https://github.com/scala/scala-collection-compat/blob/master/compat/src/main/scala-2.11_2.12/scala/collection/compat/PackageShared.scala#L47-L86
  */
 trait CompatibilityMappers {
-  private type ImmutableBitSetCC[X] = ({ type L[_] = i.BitSet })#L[X]
-  private type MutableBitSetCC[X] = ({ type L[_] = m.BitSet })#L[X]
-
   implicit final def neotypesGenericCompanionToCBF[A, CC[X] <: c.GenTraversable[X]](fact: GenericCompanion[CC]): CanBuildFrom[Any, A, CC[A]] =
     scala.collection.compat.genericCompanionToCBF(fact)
 
@@ -46,9 +43,9 @@ trait CompatibilityMappers {
   implicit final def neotypesBitSetFactoryToCBF(fact: BitSetFactory[c.BitSet]): CanBuildFrom[Any, Int, c.BitSet] =
     scala.collection.compat.bitSetFactoryToCBF(fact)
 
-  implicit final def neotypesImmutableBitSetFactoryToCBF(fact: BitSetFactory[i.BitSet]): CanBuildFrom[Any, Int, ImmutableBitSetCC[Int]] =
+  implicit final def neotypesImmutableBitSetFactoryToCBF(fact: BitSetFactory[i.BitSet]): CanBuildFrom[Any, Int, i.BitSet] =
     scala.collection.compat.immutableBitSetFactoryToCBF(fact)
 
-  implicit final def neotypesMutableBitSetFactoryToCBF(fact: BitSetFactory[m.BitSet]): CanBuildFrom[Any, Int, MutableBitSetCC[Int]] =
+  implicit final def neotypesMutableBitSetFactoryToCBF(fact: BitSetFactory[m.BitSet]): CanBuildFrom[Any, Int, m.BitSet] =
     scala.collection.compat.mutableBitSetFactoryToCBF(fact)
 }

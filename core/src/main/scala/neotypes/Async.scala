@@ -1,11 +1,9 @@
 package neotypes
 
-import scala.annotation.implicitNotFound
 import scala.concurrent.{ExecutionContext, Future, Promise}
-import scala.language.higherKinds
 import scala.util.{Failure, Success}
 
-@implicitNotFound("The effect type ${F} is not supported by neotypes")
+@annotation.implicitNotFound("The effect type ${F} is not supported by neotypes")
 trait Async[F[_]] {
   type R[A]
 

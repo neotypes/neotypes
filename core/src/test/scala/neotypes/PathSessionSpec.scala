@@ -23,7 +23,7 @@ class PathSessionSpec extends BaseIntegrationSpec[Future] {
   }
 
   it should "assign path to case class field" in execute { s =>
-    "match path=(_:Person)-[*]->() return { path: path }".query[Data].list(s).map{ res =>
+    "match path=(_:Person)-[*]->() return { path: path }".query[Data].list(s).map { res =>
       assert(res.size == 2)
 
       assert(res.head.path.nodes.size == 2)

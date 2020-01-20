@@ -6,7 +6,6 @@ import internal.syntax.stage._
 import org.neo4j.driver.v1.{AccessMode, Driver => NDriver}
 
 import scala.jdk.CollectionConverters._
-import scala.language.higherKinds
 
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase

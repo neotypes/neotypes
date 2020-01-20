@@ -3,25 +3,27 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "1.7.5"
-val scalaCollectionCompatVersion = "2.1.2"
+val scalaCollectionCompatVersion = "2.1.3"
 val shapelessVersion = "2.3.3"
-val testcontainersScalaVersion = "0.31.0"
+val testcontainersScalaVersion = "0.34.3"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.0.8"
-val slf4jVersion = "1.7.27"
-val catsVersion = "2.0.0"
+val slf4jVersion = "1.7.30"
+val catsVersion = "2.1.0"
 val catsEffectsVersion = "2.0.0"
-val monixVersion = "3.0.0"
-val akkaStreamVersion = "2.5.25"
-val fs2Version = "2.0.0"
-val zioVersion = "1.0.0-RC12-1"
-val refinedVersion = "0.9.9"
+val monixVersion = "3.1.0"
+val akkaStreamVersion = "2.6.1"
+val fs2Version = "2.1.0"
+val zioVersion = "1.0.0-RC17"
+val refinedVersion = "0.9.10"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
   scalaVersion in ThisBuild := "2.12.10",
-  crossScalaVersions := Seq("2.13.0", "2.12.10"),
+  crossScalaVersions := Seq("2.13.1", "2.12.10"),
+  scalacOptions += "-Ywarn-macros:after",
+  scalacOptions in Test := Seq(),
 
   /**
     * Publishing

@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 class ZioTaskTransactSpec extends TransactIntegrationSpec[Task] { self =>
   import TransactIntegrationSpec.CustomException
 
-  val runtime = new DefaultRuntime { override val Platform = PlatformLive.fromExecutionContext(self.executionContext) }
+  val runtime = new DefaultRuntime { override val platform = PlatformLive.fromExecutionContext(self.executionContext) }
 
   override def fToFuture[T](task: Task[T]): Future[T] = runtime.unsafeRunToFuture(task)
 

@@ -7,11 +7,11 @@ import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.exceptions.value.Uncoercible
 import org.neo4j.driver.v1.summary.ResultSummary
 
-import scala.annotation.implicitNotFound
 import scala.reflect.ClassTag
+import scala.util.Try
 
 object mappers {
-  @implicitNotFound("Could not find the ResultMapper for ${A}")
+  @annotation.implicitNotFound("Could not find the ResultMapper for ${A}")
   trait ResultMapper[A] { self =>
     def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A]
 
@@ -24,10 +24,7 @@ object mappers {
       */
     def or[AA >: A](mapper: => ResultMapper[AA]): ResultMapper[AA] = new ResultMapper[AA] {
       override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, AA] = {
-        self.to(value, typeHint) match {
-          case r @ Right(_) => r
-          case Left(_) => mapper.to(value, typeHint)
-        }
+        self.to(value, typeHint).left.flatMap(_ => mapper.to(value, typeHint))
       }
     }
 
@@ -151,7 +148,7 @@ object mappers {
       }
   }
 
-  @implicitNotFound("Could not find the ValueMapper for ${A}")
+  @annotation.implicitNotFound("Could not find the ValueMapper for ${A}")
   trait ValueMapper[A] { self =>
     def to(fieldName: String, value: Option[Value]): Either[Throwable, A]
 
@@ -163,10 +160,8 @@ object mappers {
       * @return A new [[ValueMapper]] that returns the type of the supplied secondary mapper.
       */
     def or[AA >: A](mapper: => ValueMapper[AA]): ValueMapper[AA] = new ValueMapper[AA] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, AA] = self.to(fieldName, value) match {
-        case r @ Right(_) => r
-        case Left(_) => mapper.to(fieldName, value)
-      }
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, AA] =
+        self.to(fieldName, value).left.flatMap(_ => mapper.to(fieldName, value))
     }
 
     /**
@@ -282,11 +277,9 @@ object mappers {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, A] =
         value match {
           case Some(v) =>
-            try {
-              Right(f(v))
-            } catch {
-              case ex: Uncoercible => Left(IncoercibleException(ex.getLocalizedMessage, ex))
-              case ex: Throwable   => Left(ex)
+            Try(f(v)).toEither.left.map {
+              case ex: Uncoercible => IncoercibleException(ex.getLocalizedMessage, ex)
+              case ex: Throwable   => ex
             }
 
           case None =>
@@ -295,7 +288,7 @@ object mappers {
     }
   }
 
-  @implicitNotFound("Could not find the ExecutionMapper for ${A}")
+  @annotation.implicitNotFound("Could not find the ExecutionMapper for ${A}")
   trait ExecutionMapper[A] {
     def to(resultSummary: ResultSummary): Either[Throwable, A]
   }
@@ -307,7 +300,7 @@ object mappers {
       new TypeHint(classTag.runtimeClass.getName.startsWith("scala.Tuple"))
   }
 
-  @implicitNotFound("Could not find the ParameterMapper for ${A}")
+  @annotation.implicitNotFound("Could not find the ParameterMapper for ${A}")
   sealed trait ParameterMapper[A] { self =>
     /**
       * Casts a Scala value of type A into a valid Neo4j parameter.

@@ -1,6 +1,5 @@
 package neotypes.cats.effect
 
-import scala.language.higherKinds
 import cats.effect.{Async => CatsAsync, ExitCase, Resource}
 
 trait CatsEffect {

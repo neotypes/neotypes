@@ -6,7 +6,6 @@ import types.QueryParam
 
 import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
-import scala.language.higherKinds
 
 /** Representation of a query that is deferred in an effect type and evaluated asynchronously in a session transaction backed by neo4j.
   *
@@ -32,7 +31,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return an asynchronous C[T] in F
     */
   def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
-    new CollectAsPartiallyApplied(factory, this)
+    new CollectAsPartiallyApplied(factory -> this)
 
   /** Executes the query and returns a List of values.
     *
@@ -198,8 +197,10 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return Map[K, V] in effect type F
     */
   def map[F[_], K, V](tx: Transaction[F])
-                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
+    internal.utils.void(ev)
     tx.map(query, params)
+  }
 
   /** Executes the query and returns a Set of values.
     *
@@ -304,14 +305,18 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
 }
 
 private[neotypes] object DeferredQuery {
-  private[neotypes] final class CollectAsPartiallyApplied[T, C](private val factory: Factory[T, C], private val dq: DeferredQuery[T]) {
+  private[neotypes] final class CollectAsPartiallyApplied[T, C](private val factoryAndDq: (Factory[T, C], DeferredQuery[T])) extends AnyVal {
     def apply[F[_]](session: Session[F])
-                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] =
+                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] = {
+      val (factory, dq) = factoryAndDq
       session.transact(tx => tx.collectAs(factory)(dq.query, dq.params))
+    }
 
     def apply[F[_]](tx: Transaction[F])
-                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] =
+                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] = {
+      val (factory, dq) = factoryAndDq
       tx.collectAs(factory)(dq.query, dq.params)
+    }
   }
 
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {

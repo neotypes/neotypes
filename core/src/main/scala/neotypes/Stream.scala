@@ -1,9 +1,6 @@
 package neotypes
 
-import scala.annotation.implicitNotFound
-import scala.language.higherKinds
-
-@implicitNotFound("The stream type ${S} is not supported by neotypes")
+@annotation.implicitNotFound("The stream type ${S} is not supported by neotypes")
 trait Stream[S[_]] {
   type F[T]
 

@@ -9,29 +9,27 @@ import mappers.ParameterMapper
 import org.neo4j.driver.v1.Value
 import org.neo4j.driver.v1.types.{IsoDuration, Point}
 
-import scala.collection.compat._
 import scala.collection.Iterable
 import scala.jdk.CollectionConverters._
-import scala.language.higherKinds
 
 trait ParameterMappers {
   implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
-    ParameterMapper.fromCast(b => new java.lang.Boolean(b))
+    ParameterMapper.fromCast(Boolean.box)
 
   implicit final val ByteArrayParameterMapper: ParameterMapper[Array[Byte]] =
     ParameterMapper.identity
 
   implicit final val DoubleParameterMapper: ParameterMapper[Double] =
-    ParameterMapper.fromCast(d => new java.lang.Double(d))
+    ParameterMapper.fromCast(Double.box)
 
   implicit final val DurationParameterMapper: ParameterMapper[Duration] =
     ParameterMapper.identity
 
   implicit final val FloatParameterMapper: ParameterMapper[Float] =
-    ParameterMapper.fromCast(f => new java.lang.Float(f))
+    ParameterMapper.fromCast(Float.box)
 
   implicit final val IntParameterMapper: ParameterMapper[Int] =
-    ParameterMapper.fromCast(i => new java.lang.Integer(i))
+    ParameterMapper.fromCast(Int.box)
 
   implicit final val IsoDurationParameterMapper: ParameterMapper[IsoDuration] =
     ParameterMapper.identity
@@ -46,7 +44,7 @@ trait ParameterMappers {
     ParameterMapper.identity
 
   implicit final val LongParameterMapper: ParameterMapper[Long] =
-    ParameterMapper.fromCast(l => new java.lang.Long(l))
+    ParameterMapper.fromCast(Long.box)
 
   implicit final val OffsetDateTimeParameterMapper: ParameterMapper[OffsetDateTime] =
     ParameterMapper.identity

@@ -10,12 +10,11 @@ import types.Path
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{Entity, IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
+import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Path => NPath, Point, Relationship}
 import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
 import shapeless.labelled.FieldType
 
 import scala.collection.compat.Factory
-import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 
 trait ResultMappers extends ValueMappers {

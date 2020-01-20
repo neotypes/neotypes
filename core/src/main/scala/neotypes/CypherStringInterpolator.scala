@@ -2,7 +2,6 @@ package neotypes
 
 import types.QueryParam
 
-import scala.language.experimental.macros
 import scala.reflect.macros.blackbox
 
 final class CypherStringInterpolator(private val sc: StringContext) extends AnyVal {
@@ -33,7 +32,8 @@ object CypherStringInterpolator {
   def macroImpl(c: blackbox.Context)(args: c.Expr[Any]*): c.Expr[DeferredQueryBuilder] = {
     import c.universe._
 
-    val q"$conv($sc)" = c.prefix.tree
+    val q"$foo($sc)" = c.prefix.tree
+    neotypes.internal.utils.void(q"$foo")
 
     val parameters = args.map { arg =>
       val nextElement = arg.tree
