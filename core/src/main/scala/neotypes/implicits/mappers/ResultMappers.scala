@@ -100,14 +100,14 @@ trait ResultMappers extends ValueMappers {
                                              reprDecoder: Lazy[ResultMapper[R]],
                                              ct: ClassTag[A]): ResultMapper[A] =
     new ResultMapper[A] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
         reprDecoder.value.to(value, Some(TypeHint(ct))).map(gen.from)
     }
 
   implicit final def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
                                                              tailDecoder: ResultMapper[T]): ResultMapper[H :!: T] =
     new ResultMapper[H :!: T] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :!: T] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :!: T] = {
         val (headName, headValue) = value.head
         val head = fieldDecoder.to(headName, Some(headValue))
         val tail = tailDecoder.to(value.tail, None)
@@ -123,7 +123,7 @@ trait ResultMappers extends ValueMappers {
       private def collectEntityFields(entity: Entity): List[(String, Value)] =
         (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: getKeyValuesFrom(entity).toList
 
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
 
         typeHint match {
@@ -154,7 +154,7 @@ trait ResultMappers extends ValueMappers {
 
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
-      override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
+      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
         if (fields.isEmpty)
           Right(None)
         else

@@ -9,13 +9,13 @@ import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
 import org.neo4j.driver.v1.exceptions.NoSuchRecordException
-import org.neo4j.driver.v1.{Record, StatementResultCursor, Transaction => NTransaction, Value}
+import org.neo4j.driver.v1.{Record, Transaction => NTransaction, Value}
 
 import scala.collection.compat._
 import scala.jdk.CollectionConverters._
 
 final class Transaction[F[_]](private val transaction: NTransaction) extends AnyVal {
-  import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToSeq}
+  import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToList}
 
   def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
                 (implicit F: Async[F], executionMapper: ExecutionMapper[T]): F[T] =
@@ -53,10 +53,10 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
       transaction
         .runAsync(query, convertParams(params))
         .thenCompose(_.singleAsync())
-        .acceptExceptionally(cb) { res: Record =>
-          resultMapper.to(recordToSeq(res), None)
+        .acceptExceptionally(cb) { record =>
+          resultMapper.to(recordToList(record), None)
         } {
-          case _: NoSuchRecordException => resultMapper.to(Seq.empty, None)
+          case _: NoSuchRecordException => resultMapper.to(List.empty, None)
         }
     }
 
@@ -66,8 +66,8 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
       F.async { cb =>
         transaction
           .runAsync(query, convertParams(params))
-          .accept(cb) { x: StatementResultCursor =>
-            Right(S.init(() => nextAsyncToF(x.nextAsync())))
+          .accept(cb) { statementResultCursor =>
+            Right(S.init(() => nextAsyncToF(statementResultCursor.nextAsync())))
           }
       }
     )
@@ -84,8 +84,8 @@ final class Transaction[F[_]](private val transaction: NTransaction) extends Any
 }
 
 object Transaction {
-  private def recordToSeq(record: Record): Seq[(String, Value)] =
-    record.fields.asScala.view.map(p => p.key -> p.value).to(Seq)
+  private def recordToList(record: Record): List[(String, Value)] =
+    record.fields.asScala.iterator.map(p => p.key -> p.value).toList
 
   private def convertParams(params: Map[String, QueryParam]): JMap[String, Object] =
     params.view.mapValues(_.underlying).toMap.asJava
@@ -93,13 +93,13 @@ object Transaction {
   private def nextAsyncToF[F[_], T](cs: CompletionStage[Record])
                                    (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Option[T]] =
     F.async { cb =>
-      cs.accept(cb) { res: Record =>
-        Option(res) match {
+      cs.accept(cb) { r =>
+        Option(r) match {
           case None =>
             Right(None)
 
-          case Some(res) =>
-            resultMapper.to(recordToSeq(res), None).map(r => Option(r))
+          case Some(record) =>
+            resultMapper.to(recordToList(record), None).map(r => Option(r))
         }
       }
     }
@@ -112,9 +112,9 @@ object Transaction {
       transaction
         .runAsync(query, convertParams(params))
         .thenCompose(_.listAsync())
-        .accept(cb) { result: java.util.List[Record] =>
-          traverseFun(result.asScala.iterator) { v: Record =>
-            resultMapper.to(recordToSeq(v), None)
+        .accept(cb) { records =>
+          traverseFun(records.asScala.iterator) { record =>
+            resultMapper.to(recordToList(record), None)
           }
         }
     }

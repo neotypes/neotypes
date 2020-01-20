@@ -147,7 +147,7 @@ trait ValueMappers {
             resultMapper.to(getKeyValuesFrom(value).toList, Some(TypeHint(ct)))
 
           case Some(value) =>
-            resultMapper.to(Seq(fieldName -> value), Some(TypeHint(ct)))
+            resultMapper.to((fieldName -> value) :: Nil, Some(TypeHint(ct)))
 
           case None =>
             Left(ConversionException(s"Cannot convert $fieldName [$value]"))
@@ -178,11 +178,11 @@ trait ValueMappers {
               val path = value.asPath
 
               val nodes = traverseAsList(path.nodes.asScala.iterator.zipWithIndex) {
-                case (node, index) => nm.to(Seq(s"node $index" -> new NodeValue(node)), None)
+                case (node, index) => nm.to((s"node $index" -> new NodeValue(node)) :: Nil, None)
               }
 
               val relationships = traverseAsList(path.relationships.asScala.iterator.zipWithIndex) {
-                case (relationship, index) => rm.to(Seq(s"relationship $index" -> new RelationshipValue(relationship)), None)
+                case (relationship, index) => rm.to((s"relationship $index" -> new RelationshipValue(relationship)) :: Nil, None)
               }
 
               for {

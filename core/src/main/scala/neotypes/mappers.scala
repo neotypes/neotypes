@@ -13,7 +13,7 @@ import scala.util.Try
 object mappers {
   @annotation.implicitNotFound("Could not find the ResultMapper for ${A}")
   trait ResultMapper[A] { self =>
-    def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A]
+    def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A]
 
     /**
       * Allows supplying a secondary [[ResultMapper]] to try if the original fails.
@@ -23,7 +23,7 @@ object mappers {
       * @return A new [[ResultMapper]] that returns the type of the supplied secondary mapper.
       */
     def or[AA >: A](mapper: => ResultMapper[AA]): ResultMapper[AA] = new ResultMapper[AA] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, AA] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, AA] = {
         self.to(value, typeHint).left.flatMap(_ => mapper.to(value, typeHint))
       }
     }
@@ -36,7 +36,7 @@ object mappers {
       * @return A new ResultMapper that applies your function to the result.
       */
     def map[B](f: A => B): ResultMapper[B] = new ResultMapper[B] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
         self.to(value, typeHint).map(f)
     }
 
@@ -49,7 +49,7 @@ object mappers {
       * @return A new [[ResultMapper]] derived from the value your original [[ResultMapper]] outputs.
       */
     def flatMap[B](f: A => ResultMapper[B]): ResultMapper[B] = new ResultMapper[B] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
         self.to(value, typeHint).flatMap(a => f(a).to(value, typeHint))
     }
 
@@ -61,7 +61,7 @@ object mappers {
       * @return A [[ResultMapper]] that produces a pair of values.
       */
     def product[B](fa: ResultMapper[B]): ResultMapper[(A, B)] = new ResultMapper[(A, B)] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, (A, B)] =
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, (A, B)] =
         self.flatMap(t => fa.map(a => (t, a))).to(value, typeHint)
     }
 
@@ -74,7 +74,7 @@ object mappers {
       * @return A [[ResultMapper]] that, if sucessful, will return a value of either the original or secondary type.
       */
     def either[B](fa: ResultMapper[B]): ResultMapper[Either[A, B]] = new ResultMapper[Either[A, B]] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Either[A, B]] =
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Either[A, B]] =
         self.to(value, typeHint) match {
           case Right(r) => Right(Left(r))
           case Left(_) => fa.to(value, typeHint) match {
@@ -103,7 +103,7 @@ object mappers {
       * @return A [[ResultMapper]] that always returns the supplied value and never errors.
       */
     def const[A](a: A): ResultMapper[A] = new ResultMapper[A] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Right(a)
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Right(a)
     }
 
     /**
@@ -116,8 +116,8 @@ object mappers {
       * @tparam A The result type of this [[ResultMapper]]
       * @return A new [[ResultMapper]] that parses query results with the supplied function.
       */
-    def instance[A](f: (Seq[(String, Value)], Option[TypeHint]) => Either[Throwable, A]): ResultMapper[A] = new ResultMapper[A] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = f(value, typeHint)
+    def instance[A](f: (List[(String, Value)], Option[TypeHint]) => Either[Throwable, A]): ResultMapper[A] = new ResultMapper[A] {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = f(value, typeHint)
     }
 
     /**
@@ -128,7 +128,7 @@ object mappers {
       * @return A [[ResultMapper]] that always returns a throwable error.
       */
     def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
-      override def to(value: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
     }
 
     /**
@@ -139,7 +139,7 @@ object mappers {
       */
     def fromValueMapper[A](implicit marshallable: ValueMapper[A]): ResultMapper[A] =
       new ResultMapper[A] {
-        override def to(fields: Seq[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
+        override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
           fields
             .headOption
             .fold(ifEmpty = marshallable.to("", None)) {
