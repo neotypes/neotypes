@@ -18,9 +18,19 @@ abstract class TransactIntegrationSpec[F[_]] extends CleaningIntegrationSpec[F] 
       results => assert(results == expectedResults)
     }
 
+  final def testSession[E <: Throwable : ClassTag](sessF: Session[F] => F[Unit])(implicit F: Async[F]): Future[Assertion] =
+    recoverToSucceededIf[E] {
+    fToFuture(execute(s => sessF(s)))
+    }flatMap { _ =>
+      fToFuture(execute(s => "MATCH (n) RETURN count(n)".query[Int].single(s)))
+    } map {
+      count => assert(count > 0 && count < 10)
+    }
+
+
   final def ensureRollbackedTransaction[E <: Throwable : ClassTag]
-                                       (txF: Transaction[F] => F[Unit])
-                                       (implicit F: Async[F]): Future[Assertion] =
+  (txF: Transaction[F] => F[Unit])
+  (implicit F: Async[F]): Future[Assertion] =
     recoverToSucceededIf[E] {
       fToFuture(execute(s => s.transact(txF)))
     } flatMap { _ =>
