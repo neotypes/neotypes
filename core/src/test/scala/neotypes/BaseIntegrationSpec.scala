@@ -19,9 +19,9 @@ abstract class BaseIntegrationSpec[F[_]] extends AsyncFlatSpec with ForAllTestCo
 
   lazy val driver = neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
 
-  def execute[T](work: Session[F] => F[T])
+  def execute[T](work: Transaction[F] => F[T])
                 (implicit F: Async[F]): F[T] =
-    (new Driver[F](driver)).writeSession(work)
+    new Driver[F](driver).writeTransaction(work)
 
   override def afterStart(): Unit = {
     if (initQuery != null) {

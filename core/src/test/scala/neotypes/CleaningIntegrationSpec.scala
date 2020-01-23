@@ -11,7 +11,7 @@ abstract class CleaningIntegrationSpec[F[_]] extends BaseIntegrationSpec[F] {
   override final def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     val f = for {
       r <- super.withFixture(test).toFuture
-      _ <- (new Driver[Future](driver)).writeSession { session =>
+      _ <- (new Driver[Future](driver)).writeTransaction { session =>
              "MATCH (n) DETACH DELETE n".query[Unit].execute(session)
            }
     } yield r

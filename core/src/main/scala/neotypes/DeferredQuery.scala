@@ -1,6 +1,5 @@
 package neotypes
 
-import internal.syntax.async._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
@@ -33,145 +32,6 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
     new CollectAsPartiallyApplied(factory -> this)
 
-  /** Executes the query and returns a List of values.
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * val result: F[List[(Person, Movie)]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].list(s)
-    * }}}
-    *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return List[T] in effect type F
-    */
-  def list[F[_]](session: Session[F])
-                (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
-    session.transact(tx => list(tx))
-
-  /** Executes the query and returns a Map[K,V] of values.
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * val result: F[Map[Person, Movie]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].map(s)
-    * }}}
-    *
-    * @param session neotypes session for effect type F
-    * @param ev Map (Key, Value) type constraint.  T must be subtype of (K, V)
-    * @param F effect type F
-    * @param rm result mapper for type (K, V)
-    * @tparam F effect type
-    * @tparam K key for Map
-    * @tparam V value for Map
-    * @return Map[K, V] in effect type F
-    */
-  def map[F[_], K, V](session: Session[F])
-                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    session.transact(tx => map(tx))
-
-  /** Executes the query and returns a Set of values.
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * val result: F[Set[(Person, Movie)]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].set(s)
-    * }}}
-    *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return Set[T] in effect type F
-    */
-  def set[F[_]](session: Session[F])
-               (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
-    session.transact(tx => set(tx))
-
-  /** Executes the query and returns a Vector of values.
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * val result: F[Vector[(Person, Movie)]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].vector(s)
-    * }}}
-    *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return Vector[T] in effect type F
-    */
-  def vector[F[_]](session: Session[F])
-                  (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
-    session.transact(tx => vector(tx))
-
-  /** Executes the query and returns the first record in the result
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * val result: F[(Person, Movie)] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].single(s)
-    * }}}
-    *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return F[T]
-    */
-  def single[F[_]](session: Session[F])
-                  (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
-    session.transact(tx => single(tx))
-
-  /** Executes the query and ignores its output.
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * c"CREATE (chat: Chat { user1: ${"Charlize"}, user2: ${"Theron"}, messages: ${messages} })"
-    *   .query[Unit].execute(s)
-    * }}}
-    *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return F[T]
-    */
-  def execute[F[_]](session: Session[F])
-                   (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
-    session.transact(tx => execute(tx))
-
-  /** Executes the query and returns a List of values.
-    *
-    * @example
-    * {{{
-    * val deferredQuery =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)]
-    * val result: F[List[(Person, Movie)]] =
-    *   session.transact(tx => deferredQuery.list(tx))
-    * }}}
-    *
-    * @param tx neotypes transaction for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return List[T] in effect type F
-    */
   def list[F[_]](tx: Transaction[F])
                 (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
@@ -306,12 +166,6 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
 
 private[neotypes] object DeferredQuery {
   private[neotypes] final class CollectAsPartiallyApplied[T, C](private val factoryAndDq: (Factory[T, C], DeferredQuery[T])) extends AnyVal {
-    def apply[F[_]](session: Session[F])
-                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] = {
-      val (factory, dq) = factoryAndDq
-      session.transact(tx => tx.collectAs(factory)(dq.query, dq.params))
-    }
-
     def apply[F[_]](tx: Transaction[F])
                    (implicit F: Async[F], rm: ResultMapper[T]): F[C] = {
       val (factory, dq) = factoryAndDq
@@ -320,15 +174,6 @@ private[neotypes] object DeferredQuery {
   }
 
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
-    def apply[F[_]](session: Session[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
-      S.fToS(
-        session.transaction.flatMap { tx =>
-          F.delay(
-            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
-          )
-        }
-      )
-
     def apply[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
       tx.stream(dq.query, dq.params)
   }

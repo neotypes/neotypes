@@ -18,7 +18,7 @@ class CatsImplicitsSpec extends BaseIntegrationSpec[IO] {
     def makeSession[F[_]: Async]: Resource[F, Session[F]] =
       Resource
         .make(Async[F].delay(new Driver[F](driver)))(_.close)
-        .flatMap(_.session)
+        .flatMap(_.transaction)
 
     def useSession[F[_]: Async]: F[String] = makeSession[F].use { s =>
       (test1[F] *> test2[F]).flatMap { _=>

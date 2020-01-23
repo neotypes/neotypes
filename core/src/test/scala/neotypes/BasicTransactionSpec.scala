@@ -6,31 +6,32 @@ import neotypes.implicits.syntax.string._
 import scala.concurrent.Future
 
 class BasicTransactionSpec extends CleaningIntegrationSpec[Future] {
-  it should "explicitly commit a transaction" in execute { s =>
-    s.transaction.flatMap { tx =>
-      for {
+  it should "create and commit data" in {
+    execute {
+      tx => for {
         _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
         _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
-        _ <- tx.commit
       } yield ()
-    } flatMap { _ =>
-      "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
-    } map { people =>
-      assert(people == List("Luis", "Dmitry"))
+    }.flatMap{
+      _ => execute{ tx2 =>
+        "MATCH (p: PERSON) RETURN p.name".query[String].list(tx2)
+      } map { people =>
+        assert(people == List("Luis", "Dmitry"))
+      }
     }
   }
-
-  it should "explicitly rollback a transaction" in execute { s =>
-    s.transaction.flatMap { tx =>
+  it should "rollback a transaction on exception" in {
+    execute { tx =>
       for {
         _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
         _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
-        _ <- tx.rollback
-      } yield ()
-    } flatMap { _ =>
-      "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
-    } map { people =>
-      assert(people == List.empty)
+      } yield throw new Exception("Boom!")
+    }.recoverWith{
+      case _ => execute{ tx2 =>
+          "MATCH (p: PERSON) RETURN p.name".query[String].list(tx2)
+      } map { people =>
+        assert(people == List.empty)
+      }
     }
   }
 }
