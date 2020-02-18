@@ -15,7 +15,7 @@ val monixVersion = "3.1.0"
 val akkaStreamVersion = "2.6.1"
 val fs2Version = "2.1.0"
 val zioVersion = "1.0.0-RC17"
-val refinedVersion = "0.9.10"
+val refinedVersion = "0.9.12"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
