@@ -210,7 +210,8 @@ lazy val microsite = (project in file("site"))
   .settings(
     micrositeName := "neotypes",
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
-    micrositeAuthor := "dimafeng",
+    micrositeAuthor := "neotypes",
+    micrositeTheme := "pattern",
     micrositeHighlightTheme := "atom-one-light",
     micrositeHomepage := "https://neotypes.github.io/neotypes/",
     micrositeDocumentationUrl := "docs.html",

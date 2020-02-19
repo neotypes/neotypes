@@ -1,6 +1,8 @@
 ---
-layout: docs
-title: "Documentation"
+layout: page
+section: overview
+title: "Overview"
+position: 10
 ---
 
 # Overview

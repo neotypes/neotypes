@@ -1,6 +1,8 @@
 ---
-layout: docs
-title: "Driver -> Session -> Transaction"
+layout: page
+section: transaction
+title: "Transactions"
+position: 100
 ---
 
 # Driver -> Session -> Transaction

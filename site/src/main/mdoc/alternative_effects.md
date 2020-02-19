@@ -1,6 +1,8 @@
 ---
-layout: docs
-title: "Side effects"
+layout: page
+section: effects
+title: "Alternative effects"
+position: 40
 ---
 
 # Alternative effects: Future/IO/Task/ZIO

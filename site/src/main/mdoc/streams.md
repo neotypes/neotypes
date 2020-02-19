@@ -1,6 +1,8 @@
 ---
-layout: docs
+layout: page
+section: streams
 title: "Streams"
+position: 50
 ---
 
 # Streams

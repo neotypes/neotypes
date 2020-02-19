@@ -1,6 +1,8 @@
 ---
-layout: docs
+layout: page
+section: queries
 title: "Parameterized Queries"
+position: 20
 ---
 
 # Parameterized Queries

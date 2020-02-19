@@ -1,8 +1,8 @@
 ---
 layout: home
-position: 0
 section: home
 title: "Home"
+position: 0
 ---
 
 ![Logo](img/neotypes.png)

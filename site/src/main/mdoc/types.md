@@ -1,6 +1,8 @@
 ---
-layout: docs
+layout: page
+section: types
 title: "Supported types"
+position: 30
 ---
 
 ## Supported types
