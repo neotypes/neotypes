@@ -9,9 +9,9 @@ position: 10
 
 ## Requirements
 
-* Scala 2.12/2.11
+* Scala 2.13 / 2.12
 * Java 8+
-* neo4j 3+
+* Neo4j 3+
 
 ## Session creation
 
@@ -20,7 +20,7 @@ You can use this `Driver`, to create a `Session`, which can be used to perform o
 This **Scala** classes, are nothing more than simple wrappers over their **Java** counterparts. Which provide a more _"Scala-friendly"_ and functional API.
 
 You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass** in scope.
-The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](docs/alternative_effects.html))_.
+The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](alternative_effects#Alternative effects))_.
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
@@ -94,7 +94,7 @@ If you need to support your return types for this type of queries, you can provi
 * `map(session)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
 * `collectAs(Col)(session)` - runs a query and retunrs a **Col** of results _(where **Col** is any kind of collection)_.
 * `stream(session)` - runs a query and returns a **Stream** of results
-_(for more information, please read [streaming](docs/streams.html))_.
+_(for more information, please read [streaming](streams#Streaming))_.
 
 ```scala mdoc:compile-only
 import org.neo4j.driver.v1.Value

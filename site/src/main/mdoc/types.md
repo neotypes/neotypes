@@ -5,7 +5,7 @@ title: "Supported types"
 position: 30
 ---
 
-## Supported types
+# Supported types
 
 {:.table}
 | Type                                       | Query result | Field of a case class | Query parameter |

@@ -1,11 +1,11 @@
 ---
 layout: page
 section: streams
-title: "Streams"
+title: "Streaming"
 position: 50
 ---
 
-# Streams
+# Streaming
 
 **neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream.
 Currently, there are four implementations of streaming supported out of the box _(one for each effect type)_ -

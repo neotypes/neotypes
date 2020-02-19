@@ -5,9 +5,9 @@ title: "Alternative effects"
 position: 40
 ---
 
-# Alternative effects: Future/IO/Task/ZIO
+# Alternative effects
 
-**neotypes** comes with four effect implementations:
+**neotypes** comes with four effect implementations: **Future**, **cats-effect**, **Monix** & **ZIO**.
 
 ### scala.concurrent.Future _(neotypes)_
 

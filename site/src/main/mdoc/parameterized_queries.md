@@ -25,7 +25,7 @@ assert(query.query == "CREATE (a:Test {name: $p1})")
 assert(query.params == Map("p1" -> neotypes.types.QueryParam("John")))
 ```
 
-All parameters will be converted to neo4j supported types (please see [Supported types](types.html)).
+All parameters will be converted to neo4j supported types (please see [Supported types](types#Supported types)).
 
 The `c` interpolator creates a `DeferredQueryBuilder` which is an immutable representation of a cypher query.
 You can concatenate `DeferredQueryBuilder`s with other `DeferredQueryBuilder`s or `String`s, to build complex queries.
