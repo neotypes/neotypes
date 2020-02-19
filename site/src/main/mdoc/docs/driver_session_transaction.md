@@ -22,10 +22,20 @@ Each `Transaction` has to be started, used and finally either, committed or roll
 If you only need to perform one query, and want it to be automatically committed in case of success, or rolled back in case of failure.
 You can use the `Session` directly.
 
-```scala
-val session: Session[F] = ???
+```scala mdoc:invisible
+type F[A] = scala.concurrent.Future[A]
+import scala.concurrent.ExecutionContext.Implicits.global
+```
 
-val result: F[String] = "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(session)
+```scala mdoc:compile-only
+import neotypes.Session
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+
+def result(session: Session[F]): F[String] =
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name"
+    .query[String]
+    .single(session)
 ```
 
 ### Multiple queries + automatic commit / rollback.
@@ -33,10 +43,12 @@ val result: F[String] = "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.nam
 Like the previous one, but with the possibility of executing multiple queries in the same transaction.
 You can use `Session.transact` method.
 
-```scala
-val session: Session[F] = ???
+```scala mdoc:compile-only
+import neotypes.Session
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
-val result: F[(String, String)] = session.transact { tx =>
+def result(session: Session[F]): F[(String, String)] = session.transact { tx =>
   for {
     r1 <-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(tx)
     r2 <-"MATCH (p:Person {name: 'Tom Hanks'}) RETURN p.name".query[String].single(tx)
@@ -51,14 +63,15 @@ val result: F[(String, String)] = session.transact { tx =>
 If you want to control when to `commit` or `rollback` a `Transaction`.
 You can use the `Session.transaction` method, to create an `F[Transaction[F]]`.
 
-```scala
-val session: Session[F] = ???
-val transaction: F[Transaction[F]] = session.transaction
+```scala mdoc:compile-only
+import neotypes.Session
+import neotypes.implicits.mappers.executions._ // Brings the implicit ExecutionMapper[Unit] instance into the scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
-val result: F[Unit] = transaction.flatMap { tx =>
+def result(session: Session[F]): F[Unit] = session.transaction.flatMap { tx =>
   for {
-    r1 <-"CREATE (p: Person {name: 'Charlize Theron'})".query[Unit].execute(tx)
-    r2 <-"CREATE (p:Person {name: 'Tom Hanks'})".query[Unit].execute(tx)
+    _ <-"CREATE (p: Person {name: 'Charlize Theron'})".query[Unit].execute(tx)
+    _ <-"CREATE (p:Person {name: 'Tom Hanks'})".query[Unit].execute(tx)
     _ <- tx.rollback // Nothing will be done.
   } yield ()
 }

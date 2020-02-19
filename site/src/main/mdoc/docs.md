@@ -20,10 +20,11 @@ This **Scala** classes, are nothing more than simple wrappers over their **Java*
 You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass** in scope.
 The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](docs/alternative_effects.html))_.
 
-```scala
+```scala mdoc:compile-only
 import neotypes.GraphDatabase
+import org.neo4j.driver.v1.AuthTokens
 import scala.concurrent.Future
-import scala.concurrent.ExecutionContex.Implicits.global
+import scala.concurrent.ExecutionContext.Implicits.global
 
 val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 val session = driver.session
@@ -34,73 +35,97 @@ Please note that, you have to make sure that the driver and session are properly
 You can also use the `readSession` & `writeSession` helpers which will ensure that the session is properly closed after you use it.<br>
 Or, if you use other effect type instead of `Future`, for example `IO`. Then, the creation of both the `Driver` & the `Session` will be wrapped over some kind of **Resource**.
 
-```scala
-import neotypes.GraphDatabase
+```scala mdoc:invisible
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
+````
 
-val driver: Driver[Future] = ???
+```scala mdoc:compile-only
+import neotypes.Driver
+import neotypes.implicits.mappers.results._ // Allows to automatically derive an implicit ResultMapper for case classes.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
-val result: Future[List[Movie]] =
+final case class Movie(title: String, released: Int)
+
+def result(driver: Driver[Future]): Future[List[Movie]] =
   driver.readSession { session =>
-    """MATCH (movie:Movie)
-        WHERE lower(movie.title) CONTAINS "Thing"
-        RETURN movie""".query[Movie].list(session)
+    """MATCH (movie: Movie)
+       WHERE lower(movie.title) CONTAINS "thing"
+       RETURN movie""".query[Movie].list(session)
   }
 ```
 
 ## Query execution
 
-Once you have a session constructed, you can start querying the database.
-The import `neotypes.implicits.all._` adds an extension method `query[T]` to each string literal in its scope, or you can use string interpolation.
-Type parameter `[T]` specifies the result type.
+Once you have a `Session` constructed, you can start querying the database.
+The import `neotypes.implicits.all._` adds an extension method `query[T]` to each string literal in its scope, or you can use the cypher _(`c`)_ string interpolator.
 
-```scala
-"CREATE (p:Person {name: $name, born: $born})".query[Unit].execute(s)
-"CREATE (p:Person {name: $name, born: $born})".query[Unit].withParams(Map("name" -> "John", "born" -> 1980)).execute(s)
+```scala mdoc:invisible
+import neotypes.implicits.all._
+def session: neotypes.Session[Future] = ???
+```
 
+```scala mdoc:compile-only
+// Query with plain string.
+"CREATE (p: Person { name: 'John', born: 1980 })".query[Unit].execute(session)
+
+import neotypes.types.QueryParam
+"CREATE (p: Person { name: $name, born: $born })"
+  .query[Unit]
+  .withParams(Map("name" -> QueryParam("John"), "born" -> QueryParam(1980)))
+  .execute(session)
+
+ // Query with string interpolation.
 val name = "John"
 val born = 1980
-c"CREATE (p:Person {name: $name, born: $born})".query[Unit].execute(s) // Query with string interpolation.
+c"CREATE (p:Person { name: $name, born: $born })".query[Unit].execute(session)
 ```
 
 A query can be run in six different ways:
 
-* `execute(s)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`.
+* `execute(session)` - executes a query that has no return data. Query can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`.
 If you need to support your return types for this type of queries, you can provide an implementation of `ExecutionMapper` for any custom type.
-* `single(s)` - runs a query and return a **single** result.
-* `list(s)` - runs a query and returns a **List** of results.
-* `set(s)` - runs a query and returns a **Set** of results.
-* `vector(s)` - runs a query and returns a **Vector** of results.
-* `map(s)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
-* `collectAs(Col)(s)` - runs a query and retunrs a **Col** of results _(where **Col** is any kind of collection)_.
-* `stream(s)` - runs a query and returns a **Stream** of results
+* `single(session)` - runs a query and return a **single** result.
+* `list(session)` - runs a query and returns a **List** of results.
+* `set(session)` - runs a query and returns a **Set** of results.
+* `vector(session)` - runs a query and returns a **Vector** of results.
+* `map(session)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
+* `collectAs(Col)(session)` - runs a query and retunrs a **Col** of results _(where **Col** is any kind of collection)_.
+* `stream(session)` - runs a query and returns a **Stream** of results
 _(for more information, please read [streaming](docs/streams.html))_.
 
-```scala
+```scala mdoc:compile-only
+import org.neo4j.driver.v1.Value
+import shapeless.{::, HNil}
+import scala.collection.immutable.{ListMap, ListSet}
+final case class Movie(title: String, released: Int)
+final case class Person(name: String, born: Int)
+
 // Execute.
-"CREATE (p:Person {name: $name, born: $born})".query[Unit].execute(s)
+"CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".query[Unit].execute(session)
 
 // Single.
-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p".query[Person].single(s)
-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p".query[Map[String, Value]].single(s)
-"MATCH (p:Person {name: '1243'}) RETURN p.born".query[Option[Int]].single(s)
+"MATCH (p:Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(session)
+"MATCH (p:Person { name: 'Charlize Theron' }) RETURN p".query[Person].single(session)
+"MATCH (p:Person { name: 'Charlize Theron' }) RETURN p".query[Map[String, Value]].single(session)
+"MATCH (p:Person { name: '1243' }) RETURN p.born".query[Option[Int]].single(session)
 
 // List.
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].list(s)
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].list(s)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].list(session)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].list(session)
 
 // Set.
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].set(s)
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].set(s)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].set(session)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].set(session)
 
 // Vector.
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].vector(s)
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].vector(s)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].vector(session)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].vector(session)
 
 // Map.
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].map(s)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].map(session)
 
 // Any collection.
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].collectAs(ListSet)(s)
-"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].collectAs(ListMap)(s)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[Person :: Movie :: HNil].collectAs(ListSet)(session)
+"MATCH (p:Person { name: 'Charlize Theron' })-[]->(m:Movie) RETURN p,m".query[(Person, Movie)].collectAs(ListMap)(session)
 ```

@@ -3,9 +3,14 @@ package neotypes.zio
 import zio.{Exit, Managed, Task}
 
 trait Zio {
+  implicit final def zioAsync: neotypes.Async.Aux[Task, Zio.ZioResource] =
+    Zio.instance
+}
+
+object Zio {
   private[neotypes] final type ZioResource[A] = Managed[Throwable, A]
 
-  implicit final val zioAsync: neotypes.Async.Aux[Task, ZioResource] =
+  private final val instance: neotypes.Async.Aux[Task, ZioResource] =
     new neotypes.Async[Task] {
       override final type R[A] = Managed[Throwable, A]
 
