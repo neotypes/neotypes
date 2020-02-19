@@ -24,6 +24,7 @@ val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.1", "2.12.10"),
   scalacOptions += "-Ywarn-macros:after",
   scalacOptions in Test := Seq("-feature", "-deprecation"),
+  autoAPIMappings := true,
 
   /**
     * Publishing
@@ -206,7 +207,7 @@ lazy val catsData = (project in file("cats-data"))
 
 lazy val microsite = (project in file("site"))
   .settings(moduleName := "site")
-  .enablePlugins(MicrositesPlugin)
+  .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
   .settings(
     micrositeName := "neotypes",
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
@@ -222,9 +223,18 @@ lazy val microsite = (project in file("site"))
     mdocIn := (sourceDirectory in Compile).value / "mdoc",
     fork in mdoc := true,
     docsMappingsAPIDir := "api",
-    addMappingsToSiteDir(mappings in packageDoc in Compile, docsMappingsAPIDir),
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
+    micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     scalacOptions -= "-Xfatal-warnings",
+    scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
+      "-groups",
+      "-doc-source-url",
+      scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
+      "-sourcepath",
+      baseDirectory.in(LocalRootProject).value.getAbsolutePath,
+      "-diagrams"
+    ),
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
   ).dependsOn(
     core % "compile->compile;provided->provided",
