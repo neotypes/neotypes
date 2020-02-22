@@ -24,6 +24,7 @@ val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.1", "2.12.10"),
   scalacOptions += "-Ywarn-macros:after",
   scalacOptions in Test := Seq("-feature", "-deprecation"),
+  autoAPIMappings := true,
 
   /**
     * Publishing
@@ -83,21 +84,17 @@ lazy val root = (project in file("."))
   )
 
 lazy val core = (project in file("core"))
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes",
-
-
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      )
-        ++ COMPILE(
+      ) ++ COMPILE(
         "com.chuusai" %% "shapeless" % shapelessVersion,
         "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
         scalaVersion("org.scala-lang" % "scala-reflect" % _).value
-      )
-        ++ TEST(
+      ) ++ TEST(
         "org.scalatest" %% "scalatest" % scalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
         "org.mockito" % "mockito-all" % mockitoVersion,
@@ -113,7 +110,7 @@ def enablePartialUnificationIn2_12(scalaVersion: String) =
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
     scalacOptions in Test ++= enablePartialUnificationIn2_12(scalaVersion.value),
@@ -124,7 +121,7 @@ lazy val catsEffect = (project in file("cats-effect"))
 
 lazy val monix = (project in file("monix"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
@@ -134,7 +131,7 @@ lazy val monix = (project in file("monix"))
 
 lazy val zio = (project in file("zio"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-zio",
     libraryDependencies ++= PROVIDED(
@@ -144,7 +141,7 @@ lazy val zio = (project in file("zio"))
 
 lazy val akkaStream = (project in file("akka-stream"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-akka-stream",
     libraryDependencies ++= PROVIDED(
@@ -155,7 +152,7 @@ lazy val akkaStream = (project in file("akka-stream"))
 lazy val fs2Stream = (project in file("fs2-stream"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
   .dependsOn(catsEffect % "test->test")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-fs2-stream",
     libraryDependencies ++= PROVIDED(
@@ -167,7 +164,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
 lazy val monixStream = (project in file("monix-stream"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
   .dependsOn(monix % "test->test")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
@@ -179,7 +176,7 @@ lazy val monixStream = (project in file("monix-stream"))
 lazy val zioStream = (project in file("zio-stream"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
   .dependsOn(zio % "test->test")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
@@ -190,7 +187,7 @@ lazy val zioStream = (project in file("zio-stream"))
 
 lazy val refined = (project in file("refined"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-refined",
     libraryDependencies ++= PROVIDED(
@@ -200,7 +197,7 @@ lazy val refined = (project in file("refined"))
 
 lazy val catsData = (project in file("cats-data"))
   .dependsOn(core % "compile->compile;test->test;provided->provided")
-  .settings(commonSettings: _*)
+  .settings(commonSettings)
   .settings(
     name := "neotypes-cats-data",
     libraryDependencies ++= PROVIDED(
@@ -208,13 +205,14 @@ lazy val catsData = (project in file("cats-data"))
     )
   )
 
-lazy val microsite = (project in file("docs"))
-  .settings(moduleName := "docs")
-  .enablePlugins(MicrositesPlugin)
+lazy val microsite = (project in file("site"))
+  .settings(moduleName := "site")
+  .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
   .settings(
     micrositeName := "neotypes",
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
-    micrositeAuthor := "dimafeng",
+    micrositeAuthor := "neotypes",
+    micrositeTheme := "pattern",
     micrositeHighlightTheme := "atom-one-light",
     micrositeHomepage := "https://neotypes.github.io/neotypes/",
     micrositeDocumentationUrl := "docs.html",
@@ -222,5 +220,31 @@ lazy val microsite = (project in file("docs"))
     micrositeGithubRepo := "neotypes",
     micrositeBaseUrl := "/neotypes",
     ghpagesNoJekyll := false,
-    fork in tut := true
+    mdocIn := (sourceDirectory in Compile).value / "mdoc",
+    fork in mdoc := true,
+    docsMappingsAPIDir := "api",
+    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
+    micrositeDocumentationLabelDescription := "API Documentation",
+    micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
+    scalacOptions -= "-Xfatal-warnings",
+    scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
+      "-groups",
+      "-doc-source-url",
+      scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
+      "-sourcepath",
+      baseDirectory.in(LocalRootProject).value.getAbsolutePath,
+      "-diagrams"
+    ),
+    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
+  ).dependsOn(
+    core % "compile->compile;provided->provided",
+    catsEffect % "compile->compile;provided->provided",
+    monix % "compile->compile;provided->provided",
+    zio % "compile->compile;provided->provided",
+    akkaStream % "compile->compile;provided->provided",
+    fs2Stream % "compile->compile;provided->provided",
+    monixStream % "compile->compile;provided->provided",
+    zioStream % "compile->compile;provided->provided"
   )
+
+lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
