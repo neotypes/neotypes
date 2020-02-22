@@ -57,18 +57,9 @@ object Async {
                                         (f: A => Future[B])
                                         (finalizer: (A, Option[Throwable]) => Future[Unit]): Future[B] =
         fa.flatMap { a =>
-          val result = for {
-            r <- f(a)
-            _ <- finalizer(a, None)
-          } yield r
-
-          result.recoverWith {
-            case ex: Throwable =>
-              finalizer(a, Some(ex))
-                .flatMap(_ => failed[B](ex))
-                .recoverWith {
-                  case _ => failed[B](ex)
-                }
+          f(a).transformWith {
+            case Success(b)  => finalizer(a, None).map(_ => b)
+            case Failure(ex) => finalizer(a, Some(ex)).transform(_ => Failure(ex))
           }
         }
 
