@@ -23,7 +23,7 @@ val commonSettings = Seq(
   scalaVersion in ThisBuild := "2.12.10",
   crossScalaVersions := Seq("2.13.1", "2.12.10"),
   scalacOptions += "-Ywarn-macros:after",
-  scalacOptions in Test := Seq(),
+  scalacOptions in Test := Seq("-feature", "-deprecation"),
 
   /**
     * Publishing

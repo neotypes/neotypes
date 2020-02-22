@@ -7,6 +7,7 @@ import scala.jdk.CollectionConverters._
 import shapeless._
 
 import scala.concurrent.Future
+import scala.jdk.CollectionConverters._
 
 class PathSessionSpec extends BaseIntegrationSpec[Future] {
   import PathSessionSpec._
