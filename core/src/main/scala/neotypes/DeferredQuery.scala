@@ -7,7 +7,9 @@ import types.QueryParam
 import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
 
-/** Representation of a query that is deferred in an effect type and evaluated asynchronously in a session transaction backed by neo4j.
+/** Represents a Neo4j query that can be asynchronously on a effect type.
+  *
+  * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
   *
   * @param query statement that will be executed
   * @param params variable values substituted into the query statement
@@ -16,38 +18,20 @@ import scala.collection.mutable.StringBuilder
 final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
   import DeferredQuery.{CollectAsPartiallyApplied, StreamPartiallyApplied}
 
-  /** Executes the query and returns a custom collection of values.
-    *
-    * @example
-    * {{{
-    * val s: Session[F] = ??? //define session
-    * val result: F[ListMap[Person, Movie]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].collectAs(ListMap)(s)
-    * }}}
-    *
-    * @param factory the type of the custom collection to return.
-    * @tparam C collection type constructed
-    * @return an asynchronous C[T] in F
-    */
-  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
-    new CollectAsPartiallyApplied(factory -> this)
-
   /** Executes the query and returns a List of values.
     *
     * @example
     * {{{
-    * val s: Session[F] = ??? //define session
     * val result: F[List[(Person, Movie)]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].list(s)
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .list(session)
     * }}}
     *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return List[T] in effect type F
+    * @param session neotypes session.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a List of T elements.
     */
   def list[F[_]](session: Session[F])
                 (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
@@ -57,20 +41,19 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *
     * @example
     * {{{
-    * val s: Session[F] = ??? //define session
     * val result: F[Map[Person, Movie]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].map(s)
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .map(session)
     * }}}
     *
-    * @param session neotypes session for effect type F
-    * @param ev Map (Key, Value) type constraint.  T must be subtype of (K, V)
-    * @param F effect type F
-    * @param rm result mapper for type (K, V)
-    * @tparam F effect type
-    * @tparam K key for Map
-    * @tparam V value for Map
-    * @return Map[K, V] in effect type F
+    * @param session neotypes session.
+    * @param ev evidence that T is a tuple (K, V).
+    * @param rm result mapper for type (K, V).
+    * @tparam F effect type.
+    * @tparam K keys type.
+    * @tparam V values type.
+    * @return An effectual value that will compute a Map of key-value pairs.
     */
   def map[F[_], K, V](session: Session[F])
                      (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
@@ -80,17 +63,16 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *
     * @example
     * {{{
-    * val s: Session[F] = ??? //define session
     * val result: F[Set[(Person, Movie)]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].set(s)
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .set(session)
     * }}}
     *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return Set[T] in effect type F
+    * @param session neotypes session.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a Set of T elements.
     */
   def set[F[_]](session: Session[F])
                (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
@@ -100,37 +82,37 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *
     * @example
     * {{{
-    * val s: Session[F] = ??? //define session
     * val result: F[Vector[(Person, Movie)]] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].vector(s)
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .vector(session)
     * }}}
     *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return Vector[T] in effect type F
+    * @param session neotypes session.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a Vector of T elements.
     */
   def vector[F[_]](session: Session[F])
                   (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
     session.transact(tx => vector(tx))
 
-  /** Executes the query and returns the first record in the result
+  /** Executes the query and returns the unique record in the result.
     *
     * @example
     * {{{
-    * val s: Session[F] = ??? //define session
     * val result: F[(Person, Movie)] =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)].single(s)
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .single(session)
     * }}}
     *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return F[T]
+    * @note This will fail if the query returned more than a single result.
+    *
+    * @param session neotypes session.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a single T element.
     */
   def single[F[_]](session: Session[F])
                   (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
@@ -140,16 +122,15 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *
     * @example
     * {{{
-    * val s: Session[F] = ??? //define session
-    * c"CREATE (chat: Chat { user1: ${"Charlize"}, user2: ${"Theron"}, messages: ${messages} })"
-    *   .query[Unit].execute(s)
+    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *   .query[Unit]
+    *   .execute(session)
     * }}}
     *
-    * @param session neotypes session for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return F[T]
+    * @param session neotypes session.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will execute the query.
     */
   def execute[F[_]](session: Session[F])
                    (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
@@ -160,41 +141,39 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @example
     * {{{
     * val deferredQuery =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)]
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
+    *
     * val result: F[List[(Person, Movie)]] =
     *   session.transact(tx => deferredQuery.list(tx))
     * }}}
     *
-    * @param tx neotypes transaction for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return List[T] in effect type F
+    * @param tx neotypes transaction.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a List of T elements.
     */
   def list[F[_]](tx: Transaction[F])
                 (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
 
-  /** Executes the query and returns a Map[K,V] of values.
+  /** Executes the query and returns a Map of values.
     *
     * @example
     * {{{
     * val deferredQuery =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)]
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
+    *
     * val result: F[Map[Person, Movie]] =
     *   session.transact(tx => deferredQuery.map(tx))
     * }}}
     *
-    * @param tx neotypes transaction for effect type F
-    * @param ev  Map (Key, Value) type constraint.  T must be subtype of (K, V)
-    * @param F effect type F
-    * @param rm result mapper for type (K, V)
-    * @tparam F effect type
-    * @tparam K key for Map
-    * @tparam V value for Map
-    * @return Map[K, V] in effect type F
+    * @param tx neotypes transaction.
+    * @param ev evidence that T is a tuple (K, V).
+    * @param rm result mapper for type (K, V).
+    * @tparam F effect type.
+    * @tparam K keys type.
+    * @tparam V values type.
+    * @return An effectual value that will compute a Map of key-value pairs.
     */
   def map[F[_], K, V](tx: Transaction[F])
                      (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
@@ -207,17 +186,16 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @example
     * {{{
     * val deferredQuery =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)]
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
+    *
     * val result: F[Set[(Person, Movie)]] =
     *   session.transact(tx => deferredQuery.set(tx))
     * }}}
     *
-    * @param tx neotypes transaction for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return Set[T] in effect type F
+    * @param tx neotypes transaction.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a Set of T elements.
     */
   def set[F[_]](tx: Transaction[F])
                (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
@@ -228,38 +206,38 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @example
     * {{{
     * val deferredQuery =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)]
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
+    *
     * val result: F[Vector[(Person, Movie)]] =
     *   session.transact(tx => deferredQuery.vector(tx))
     * }}}
     *
-    * @param tx neotypes transaction for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return Vector[T] in effect Type F
+    * @param tx neotypes transaction.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a Vector of T elements.
     */
   def vector[F[_]](tx: Transaction[F])
                   (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
     tx.vector(query, params)
 
-  /** Executes the query and returns the first record in the result
+  /** Executes the query and returns the unique record in the result.
     *
     * @example
     * {{{
     * val deferredQuery =
-    *   c"MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *   .query[(Person, Movie)]
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
+    *
     * val result: F[(Person, Movie)] =
     *   session.transact(tx => deferredQuery.single(tx))
     * }}}
     *
-    * @param tx neotypes transaction for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return F[T]
+    * @note This will fail if the query returned more than a single result.
+    *
+    * @param tx neotypes transaction.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a single T element.
     */
   def single[F[_]](tx: Transaction[F])
                   (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
@@ -270,35 +248,54 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @example
     * {{{
     * val deferredQuery =
-    *   c"CREATE (chat: Chat { user1: ${"Charlize"}, user2: ${"Theron"}, messages: ${messages} })".query[Unit]
-    *   session.transact(tx => deferredQuery.execute(tx))
+    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *
+    * session.transact(tx => deferredQuery.execute(tx))
     * }}}
     *
-    * @param tx neotypes transaction for effect type F
-    * @param F effect type F
-    * @param rm result mapper for type T
-    * @tparam F effect type
-    * @return F[T]
+    * @param tx neotypes transaction.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will execute the query.
     */
   def execute[F[_]](tx: Transaction[F])
                    (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
-  /** Evaluate the query on a stream
+  /** Executes the query and returns a custom collection of values.
     *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">stream documentation</a>
+    * @example
+    * {{{
+    * val result: F[ListMap[Person, Movie]] =
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .collectAs(ListMap)(session)
+    * }}}
     *
-    * @tparam S stream type
-    * @return S[T]
+    * @param factory the type of the custom collection to return.
+    * @tparam C collection type to be constructed.
+    * @return An effectual value that will compute a Collection of T elements.
+    */
+  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
+    new CollectAsPartiallyApplied(factory -> this)
+
+  /** Evaluate the query an get the results as a Stream.
+    *
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @tparam S stream type.
+    * @return An effectual Stream of T values.
     */
   def stream[S[_]]: StreamPartiallyApplied[S, T] =
     new StreamPartiallyApplied(this)
 
   /** Creates a new query with an updated set of parameters.
-    * @note Map concatenation can cause values in the second Map to override values in the first Map that share the same Key
+   *
+    * @note If params contains a key that is already present in the current query,
+    * the new one will override the previous one.
     *
-    * @param params QueryParams to  be concatenated
-    * @return DeferredQuery with params concatenated to existing params
+    * @param params QueryParams to be added.
+    * @return DeferredQuery with params added to existing params.
     */
   def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
     this.copy(params = this.params ++ params)
@@ -334,24 +331,29 @@ private[neotypes] object DeferredQuery {
   }
 }
 
-/** Builder that constructs a DeferredQuery
-  * <p>
-  * The idiomatic way to use the DeferredQueryBuilder is with String Interpolation
+/** A builder for constructing instance of [DeferredQuery].
+  *
+  * The idiomatic way to use the DeferredQueryBuilder is with the `c` String Interpolation.
+  *
+  * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
+  *
   * @example
   * {{{
-  *   val stringInter = c"""create (a:Test {name: $name,""" + c"born: $born})"
-  *   val deferredQuery = stringInter.query[Unit]
-  * }}}
+  * val name = "John"
+  * val born = 1980
   *
-  * @param parts
+  * val deferredQueryBuilder = c"create (a: Person { name: \$name," + c"born: \$born })"
+  *
+  * val deferredQuery = defferedQueryBuilder.query[Unit]
+  * }}}
   */
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
   import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query}
 
-  /** Creates a DeferredQuery from this builder
+  /** Creates a [DeferredQuery] from this builder.
     *
-    * @tparam T the result type of the constructed query
-    * @return DeferredQuery[T]
+    * @tparam T the result type of the constructed query.
+    * @return A [DeferredQuery[T]]
     */
   def query[T]: DeferredQuery[T] = {
     @annotation.tailrec
@@ -397,18 +399,18 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
       )
   }
 
-  /** Concatenate Query and Param of the this DeferredQueryBuilder with supplied DeferredQueryBuilder
+  /** Concatenate another [DeferredQueryBuilder] with this one.
     *
-    * @param that DeferredQueryBuilder to be concatenated
-    * @return DeferredQueryBuilder result
+    * @param that [DeferredQueryBuilder] to be concatenated.
+    * @return A new [DeferredQueryBuilder].
     */
   def +(that: DeferredQueryBuilder): DeferredQueryBuilder =
     new DeferredQueryBuilder(this.parts ::: that.parts)
 
-  /** Concatenate the String element as a Query into this DeferredQueryBuilder
+  /** Concatenate a [String] with this [DeferredQueryBuilder].
     *
-    * @param that String element to be added as a Query
-    * @return DeferredQueryBuilder result
+    * @param that [String] to be concatenated.
+    * @return A new [DeferredQueryBuilder].
     */
   def +(that: String): DeferredQueryBuilder =
     new DeferredQueryBuilder(this.parts :+ Query(that))

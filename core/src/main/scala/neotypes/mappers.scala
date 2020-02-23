@@ -121,7 +121,7 @@ object mappers {
     }
 
     /**
-      * Constructs a [[ResultMapper]] that always returns the specified [[Throwable]].
+      * Constructs a [[ResultMapper]] that always returns the specified Throwable.
       *
       * @param failure A throwable error.
       * @tparam A The result type (never returned) of this [[ResultMapper]]
@@ -256,7 +256,7 @@ object mappers {
     }
 
     /**
-      * Constructs a [[ValueMapper]] that always returns the specified [[Throwable]].
+      * Constructs a [[ValueMapper]] that always returns the specified Throwable.
       *
       * @param failure A throwable error.
       * @tparam A The result type (never returned) of this [[ValueMapper]]
