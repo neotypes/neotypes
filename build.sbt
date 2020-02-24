@@ -226,7 +226,8 @@ lazy val microsite = (project in file("site"))
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
-    scalacOptions -= "-Xfatal-warnings",
+    mdocExtraArguments := Seq("--no-link-hygiene"),
+    scalacOptions in Compile -= "-Xfatal-warnings",
     scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
       "-groups",
       "-doc-source-url",
