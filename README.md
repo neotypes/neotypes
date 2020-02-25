@@ -1,10 +1,11 @@
-![Logo](docs/src/main/resources/microsite/img/neotypes.png)
+![Logo](site/src/main/resources/microsite/img/neotypes.png)
 
 > neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed.
 
 [![Build Status](https://travis-ci.org/neotypes/neotypes.svg?branch=master)](https://travis-ci.org/neotypes/neotypes)
 [![Maven Central](https://img.shields.io/maven-central/v/com.dimafeng/neotypes_2.12.svg)](https://maven-badges.herokuapp.com/maven-central/com.dimafeng/neotypes_2.12)
 [![Gitter Chat](https://badges.gitter.im/neotypes-neotypes/Lobby.svg)](https://gitter.im/neotypes-neotypes/Lobby)
+[![Scala Steward badge](https://img.shields.io/badge/Scala_Steward-helping-blue.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
 
 
 # neotypes
@@ -39,46 +40,10 @@ The project aims to provide seamless integration with most popular scala infrast
 
 ## Resources
 
-* [Documentation](https://neotypes.github.io/neotypes/docs.html)
+* [Documentation](https://neotypes.github.io/neotypes)
 * [Example project (Akka-http + neotypes)](https://github.com/neotypes/examples)
-
-## Showcase
-
-```scala
-import org.neo4j.driver.v1._
-import neotypes.Async._
-import neotypes.implicits._
-import shapeless._
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.Future
-
-scala> val driver = GraphDatabase.driver("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-Nov 26, 2018 10:42:42 AM org.neo4j.driver.internal.logging.JULogger info
-INFO: Direct driver instance 542400040 created for server address localhost:7687
-driver: org.neo4j.driver.v1.Driver = org.neo4j.driver.internal.InternalDriver@20545e28
-
-scala> val session = driver.session().asScala[Future]
-session: neotypes.Session[scala.concurrent.Future] = neotypes.Session@6f30d4df
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
-scala> val people = "match (p:Person) return p.name, p.born limit 10".query[(String, Int)].list(session)
-people: scala.concurrent.Future[Seq[(String, Int)]] = Future(<not completed>)
-
-scala> Await.result(people, 1 second)
-res0: Seq[(String, Int)] = ArrayBuffer((Charlize Theron,1975), (Keanu Reeves,1964), (Carrie-Anne Moss,1967), (Laurence Fishburne,1961), (Hugo Weaving,1960), (Lilly Wachowski,1967), (Lana Wachowski,1965), (Joel Silver,1952), (Emil Eifrem,1978), (Charlize Theron,1975))
-
-scala> case class Person(id: Long, born: Int, name: Option[String], notExists: Option[Int])
-defined class Person
-
-scala> val peopleCC = "match (p:Person) return p limit 10".query[Person].list(session)
-peopleCC: scala.concurrent.Future[Seq[Person]] = Future(<not completed>)
-
-scala> Await.result(peopleCC, 1 second)
-res1: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
-```
 
 ## Special thanks
 
 * [Luis Miguel Mejía Suárez](https://github.com/BalmungSan)
+* [geoffjohn11](https://github.com/geoffjohn11)
