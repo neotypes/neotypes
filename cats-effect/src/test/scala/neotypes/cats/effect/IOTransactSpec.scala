@@ -2,6 +2,7 @@ package neotypes.cats.effect
 
 import cats.effect.IO
 import neotypes.{Async, TransactIntegrationSpec}
+import neotypes.cats.effect.implicits._
 import scala.concurrent.Future
 
 class IOTransactSpec extends TransactIntegrationSpec[IO] {
@@ -9,5 +10,5 @@ class IOTransactSpec extends TransactIntegrationSpec[IO] {
     io.unsafeToFuture()
 
   override final val F: Async[IO] =
-    implicits.IOAsync
+    implicitly
 }

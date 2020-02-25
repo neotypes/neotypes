@@ -1,10 +1,10 @@
 package neotypes.monix
 
 import java.util.concurrent.Executors
-
 import monix.eval.Task
 import monix.execution.Scheduler
 import neotypes.{Async, AsyncGuaranteeSpec}
+import neotypes.monix.implicits._
 import scala.concurrent.duration.Duration
 
 class MonixTaskAsyncGuaranteeSpec extends AsyncGuaranteeSpec[Task] {
@@ -15,5 +15,5 @@ class MonixTaskAsyncGuaranteeSpec extends AsyncGuaranteeSpec[Task] {
     task.attempt.runSyncUnsafe(Duration.Inf)
 
   override final val F: Async[Task] =
-    implicits.monixAsync
+    implicitly
 }

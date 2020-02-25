@@ -3,6 +3,7 @@ package neotypes.monix
 import monix.eval.Task
 import monix.execution.Scheduler
 import neotypes.{Async, TransactIntegrationSpec}
+import neotypes.monix.implicits._
 import scala.concurrent.Future
 
 class MonixTaskTransactSpec extends TransactIntegrationSpec[Task] { self =>
@@ -13,5 +14,5 @@ class MonixTaskTransactSpec extends TransactIntegrationSpec[Task] { self =>
     task.runToFuture
 
   override final val F: Async[Task] =
-    implicits.monixAsync
+    implicitly
 }

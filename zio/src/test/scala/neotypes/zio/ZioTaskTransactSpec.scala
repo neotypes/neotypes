@@ -1,9 +1,10 @@
 package neotypes.zio
 
+import neotypes.{Async, TransactIntegrationSpec}
+import neotypes.zio.implicits._
+import scala.concurrent.Future
 import zio.{DefaultRuntime, Task}
 import zio.internal.PlatformLive
-import neotypes.{Async, TransactIntegrationSpec}
-import scala.concurrent.Future
 
 class ZioTaskTransactSpec extends TransactIntegrationSpec[Task] { self =>
   val runtime = new DefaultRuntime {
@@ -14,5 +15,5 @@ class ZioTaskTransactSpec extends TransactIntegrationSpec[Task] { self =>
     runtime.unsafeRunToFuture(task)
 
   override final val F: Async[zio.Task] =
-    implicits.zioAsync
+    implicitly
 }
