@@ -1,30 +1,26 @@
 package neotypes.zio.stream
 
-import zio.Task
-import zio.DefaultRuntime
-import neotypes.BaseIntegrationSpec
-import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.string._
+import neotypes.{Async, StreamIntegrationSpec}
 import neotypes.zio.implicits._
 import neotypes.zio.stream.implicits._
+import scala.concurrent.Future
+import zio.{DefaultRuntime, Task}
+import zio.internal.PlatformLive
 
-class ZioStreamSpec extends BaseIntegrationSpec[Task] {
-  it should "work with zio.ZStream" in {
-    val runtime = new DefaultRuntime {}
-
-    val program = execute { s =>
-      "match (p:Person) return p.name"
-        .query[Int]
-        .stream[ZioStream](s)
-        .runCollect
-    }
-
-    runtime
-      .unsafeRunToFuture(program)
-      .map { names =>
-        assert(names == (0 to 10).toList)
-      }
+class ZioStreamSpec extends StreamIntegrationSpec[ZioStream, Task] { self =>
+  val runtime = new DefaultRuntime {
+    override val platform = PlatformLive.fromExecutionContext(self.executionContext)
   }
 
-  override val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
+  override def fToFuture[T](task: Task[T]): Future[T] =
+    runtime.unsafeRunToFuture(task)
+
+  override def streamToFList[T](stream: ZioStream[T]): zio.Task[List[T]] =
+    stream.runCollect
+
+  override def F: Async[zio.Task] =
+    implicitly
+
+  override def S: neotypes.Stream.Aux[ZioStream,zio.Task] =
+    implicitly
 }

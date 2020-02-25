@@ -7,5 +7,5 @@ class FutureTransactSpec extends TransactIntegrationSpec[Future] {
     future
 
   override final val F: Async[Future] =
-    Async.futureAsync
+    implicitly
 }
