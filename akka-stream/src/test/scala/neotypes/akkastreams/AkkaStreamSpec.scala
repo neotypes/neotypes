@@ -2,25 +2,31 @@ package neotypes.akkastreams
 
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
-import neotypes.BaseIntegrationSpec
+import neotypes.{Async, StreamIntegrationSpec}
 import neotypes.akkastreams.implicits._
-import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.string._
-
 import scala.concurrent.Future
+import scala.concurrent.duration.Duration
 
-class AkkaStreamSpec extends BaseIntegrationSpec[Future] {
-  ignore should "work with Akka streams" in execute { s =>
-    implicit val system = ActorSystem("QuickStart")
+class AkkaStreamSpec extends StreamIntegrationSpec[AkkaStream, Future] {
+  implicit val system =
+    ActorSystem("QuickStart")
 
-    "match (p:Person) return p.name"
-      .query[Int]
-      .stream[AkkaStream](s)
-      .runWith(Sink.seq[Int])
-      .map {
-        names => assert(names == (0 to 10))
+  override def fToFuture[T](future: Future[T]): Future[T] =
+    future
+
+  override def streamToFList[T](stream: AkkaStream[T]): Future[List[T]] =
+    stream.runWith(Sink.seq[T]).map(_.toList).flatMap { result =>
+      Future {
+        // Delaying the answer a little seems to fix:
+        // https://github.com/neotypes/neotypes/issues/47
+        Thread.sleep(1000)
+        result
       }
-  }
+    }
 
-  override val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
+  override def F: Async[Future] =
+    implicitly
+
+  override def S: neotypes.Stream.Aux[AkkaStream, Future] =
+    implicitly
 }

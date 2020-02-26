@@ -1,30 +1,14 @@
 package neotypes.cats.effect
 
 import cats.effect.IO
-import neotypes.BaseIntegrationSpec
+import neotypes.{Async, AsyncIntegrationSpec}
 import neotypes.cats.effect.implicits._
-import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.string._
-import org.neo4j.driver.v1.exceptions.ClientException
+import scala.concurrent.Future
 
-class CatsAsyncSpec extends BaseIntegrationSpec[IO] {
-  it should "work with cats.effect.IO" in execute { s =>
-    """match (p:Person {name: "Charlize Theron"}) return p.name"""
-      .query[String]
-      .single(s)
-  }.unsafeToFuture().map {
-    name => assert(name == "Charlize Theron")
-  }
+class CatsAsyncSpec extends AsyncIntegrationSpec[IO] {
+  override def fToFuture[T](io: IO[T]): Future[T] =
+    io.unsafeToFuture()
 
-  it should "catch exceptions inside cats.effect.IO" in {
-    recoverToSucceededIf[ClientException] {
-      execute { s =>
-        "match test return p.name"
-          .query[String]
-          .single(s)
-      }.unsafeToFuture()
-    }
-  }
-
-  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
+  override final val F: Async[IO] =
+    implicitly
 }
