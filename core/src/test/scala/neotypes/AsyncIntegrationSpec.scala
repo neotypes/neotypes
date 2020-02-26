@@ -5,9 +5,13 @@ import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.exceptions.ClientException
 import org.scalatest.compatible.Assertion
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Async[F] instances. */
-abstract class AsyncIntegrationSpec[F[_]] extends BaseIntegrationSpec[F] {
+abstract class AsyncIntegrationSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends BaseIntegrationSpec[F] {
+  private val effectName: String = ct.runtimeClass.getCanonicalName
+  behavior of s"Async[${effectName}]"
+
   def fToFuture[T](f: F[T]): Future[T]
 
   implicit def F: Async[F]

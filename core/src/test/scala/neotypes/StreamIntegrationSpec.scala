@@ -5,9 +5,14 @@ import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.exceptions.ClientException
 import org.scalatest.compatible.Assertion
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Stream[S, F] instances. */
-abstract class StreamIntegrationSpec[S[_], F[_]] extends BaseIntegrationSpec[F] {
+abstract class StreamIntegrationSpec[S[_], F[_]] (implicit ctF: ClassTag[F[_]], ctS: ClassTag[S[_]]) extends BaseIntegrationSpec[F] {
+  private val effectName: String = ctF.runtimeClass.getCanonicalName
+  private val streamName: String = ctS.runtimeClass.getCanonicalName
+  behavior of s"Stream[${streamName}, ${effectName}]"
+
   def fToFuture[T](f: F[T]): Future[T]
   def streamToFList[T](stream: S[T]): F[List[T]]
 

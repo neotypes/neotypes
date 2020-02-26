@@ -9,7 +9,10 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the Session[F].transact method. */
-abstract class TransactIntegrationSpec[F[_]] extends CleaningIntegrationSpec[F] {
+abstract class TransactIntegrationSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends CleaningIntegrationSpec[F] {
+  private val effectName: String = ct.runtimeClass.getCanonicalName
+  behavior of s"Session[${effectName}].transact"
+
   import TransactIntegrationSpec.CustomException
 
   def fToFuture[T](f: F[T]): Future[T]
