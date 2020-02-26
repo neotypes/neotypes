@@ -13,7 +13,6 @@ abstract class AsyncIntegrationSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends 
   behavior of s"Async[${effectName}]"
 
   def fToFuture[T](f: F[T]): Future[T]
-
   implicit def F: Async[F]
 
   private final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =

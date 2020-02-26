@@ -15,7 +15,6 @@ abstract class StreamIntegrationSpec[S[_], F[_]] (implicit ctF: ClassTag[F[_]], 
 
   def fToFuture[T](f: F[T]): Future[T]
   def streamToFList[T](stream: S[T]): F[List[T]]
-
   implicit def F: Async[F]
   implicit def S: Stream.Aux[S, F]
 

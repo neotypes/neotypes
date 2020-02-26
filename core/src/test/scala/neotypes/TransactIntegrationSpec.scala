@@ -13,11 +13,10 @@ abstract class TransactIntegrationSpec[F[_]] (implicit ct: ClassTag[F[_]]) exten
   private val effectName: String = ct.runtimeClass.getCanonicalName
   behavior of s"Session[${effectName}].transact"
 
-  import TransactIntegrationSpec.CustomException
-
   def fToFuture[T](f: F[T]): Future[T]
-
   implicit def F: Async[F]
+
+  import TransactIntegrationSpec.CustomException
 
   private final def ensureCommitedTransaction[T](expectedResults: T)
                                                 (txF: Transaction[F] => F[T]): Future[Assertion] =
