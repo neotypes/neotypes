@@ -1,12 +1,15 @@
 package neotypes
 
 import neotypes.internal.syntax.async._
-
 import org.scalatest.{EitherValues, FlatSpec, Matchers}
 import org.scalatest.compatible.Assertion
+import scala.reflect.ClassTag
 
 /** Base class for testing the Async[F].guarantee method. */
-abstract class AsyncGuaranteeSpec[F[_]] extends FlatSpec with Matchers with EitherValues {
+abstract class AsyncGuaranteeSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends FlatSpec with Matchers with EitherValues {
+  private val effectName: String = ct.runtimeClass.getCanonicalName
+  behavior of s"Async[${effectName}].guarantee"
+
   def fToEither[T](f: F[T]): Either[Throwable, T]
   implicit def F: Async[F]
 
