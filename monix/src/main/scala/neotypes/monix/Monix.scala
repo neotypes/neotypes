@@ -4,9 +4,14 @@ import cats.effect.{ExitCase, Resource}
 import monix.eval.Task
 
 trait Monix {
+  implicit final def monixAsync: neotypes.Async.Aux[Task, Monix.TaskResource] =
+    Monix.instance
+}
+
+object Monix {
   private[neotypes] final type TaskResource[A] = Resource[Task, A]
 
-  implicit final val monixAsync: neotypes.Async.Aux[Task, TaskResource] =
+  private final val instance: neotypes.Async.Aux[Task, TaskResource] =
     new neotypes.Async[Task] {
       override final type R[A] = Resource[Task, A]
 

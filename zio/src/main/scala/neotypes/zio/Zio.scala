@@ -3,9 +3,14 @@ package neotypes.zio
 import zio.{Exit, Managed, Task}
 
 trait Zio {
+  implicit final def zioAsync: neotypes.Async.Aux[Task, Zio.ZioResource] =
+    Zio.instance
+}
+
+object Zio {
   private[neotypes] final type ZioResource[A] = Managed[Throwable, A]
 
-  implicit final val zioAsync: neotypes.Async.Aux[Task, ZioResource] =
+  private final val instance: neotypes.Async.Aux[Task, ZioResource] =
     new neotypes.Async[Task] {
       override final type R[A] = Managed[Throwable, A]
 
@@ -30,11 +35,11 @@ trait Zio {
                                   (finalizer: (A, Option[Throwable]) => zio.Task[Unit]): zio.Task[B] =
         Managed.makeExit(fa) {
           case (a, Exit.Failure(cause)) => cause.failureOrCause match {
-            case Left(ex: Throwable)    => finalizer(a, Some(ex)).orDie
-            case _                      => finalizer(a, None).orDie
+            case Left(ex: Throwable)    => finalizer(a, Some(ex)).ignore
+            case _                      => finalizer(a, None).ignore
           }
           case (a, _)                   => finalizer(a, None).orDie
-        }.use(f)
+        }.use(f).absorbWith(identity)
 
       override def recoverWith[T, U >: T](m: Task[T])(f: PartialFunction[Throwable, Task[U]]): Task[U] =
         m.catchSome(f)
