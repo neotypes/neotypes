@@ -16,19 +16,19 @@ abstract class StageSyntaxSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends Async
 
   import StageSyntaxSpec.CustomException
 
+  private def completionStage[T](inputEx: Option[Throwable], t: T = ()): CompletableFuture[T] =
+    inputEx.fold(ifEmpty = CompletableFuture.completedFuture(t)) { ex =>
+      val completedFuture = new CompletableFuture[T]()
+      completedFuture.completeExceptionally(ex)
+
+      completedFuture
+    }
+
   private def testAccept[T](result: => Either[Throwable, T],
                             inputEx: Option[Throwable] = None): Future[T] =
     fToFuture(
       F.async[T] { cb =>
-        val completionStage =
-          inputEx.fold(ifEmpty = CompletableFuture.completedFuture(())) { ex =>
-            val completedFuture = new CompletableFuture[Unit]()
-            completedFuture.completeExceptionally(ex)
-
-            completedFuture
-          }
-
-        completionStage.accept(cb)(_ => result)
+        completionStage(inputEx).accept(cb)(_ => result)
       }
     )
 
@@ -36,30 +36,14 @@ abstract class StageSyntaxSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends Async
                                         (recover: PartialFunction[Throwable, Either[Throwable, T]]): Future[T] =
     fToFuture(
       F.async[T] { cb =>
-        val completionStage =
-          inputEx.fold(ifEmpty = CompletableFuture.completedFuture(())) { ex =>
-            val completedFuture = new CompletableFuture[Unit]()
-            completedFuture.completeExceptionally(ex)
-
-            completedFuture
-          }
-
-        completionStage.acceptExceptionally(cb)(_ => result)(recover)
+        completionStage(inputEx).acceptExceptionally(cb)(_ => result)(recover)
       }
     )
 
   private def testAcceptVoid(inputEx: Option[Throwable] = None): Future[Unit] =
     fToFuture(
       F.async[Unit] { cb =>
-        val completionStage =
-          inputEx.fold(ifEmpty = CompletableFuture.completedFuture[Void](None.orNull)) { ex =>
-            val completedFuture = new CompletableFuture[Void]()
-            completedFuture.completeExceptionally(ex)
-
-            completedFuture
-          }
-
-        completionStage.acceptVoid(cb)
+        completionStage[Void](inputEx, t = None.orNull).acceptVoid(cb)
       }
     )
 
