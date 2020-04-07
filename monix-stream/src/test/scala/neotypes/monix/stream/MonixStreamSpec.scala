@@ -1,22 +1,25 @@
 package neotypes.monix.stream
 
 import monix.eval.Task
-import monix.execution.Scheduler.Implicits.global
-import neotypes.BaseIntegrationSpec
-import neotypes.implicits.mappers.results._
-import neotypes.implicits.syntax.string._
+import monix.execution.Scheduler
+import neotypes.{Async, StreamIntegrationSpec}
 import neotypes.monix.implicits._
 import neotypes.monix.stream.implicits._
+import scala.concurrent.Future
 
-class MonixStreamSpec extends BaseIntegrationSpec[Task] {
-  it should "work with monix.reactive.Observable" in execute { s =>
-    "match (p:Person) return p.name"
-      .query[Int]
-      .stream[MonixStream](s)
-      .toListL
-  }.runToFuture.map {
-    names => assert(names == (0 to 10).toList)
-  }
+class MonixStreamSpec extends StreamIntegrationSpec[MonixStream, Task] { self =>
+  implicit val scheduler: Scheduler =
+    Scheduler(self.executionContext)
 
-  override val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
+  override def fToFuture[T](task: Task[T]): Future[T] =
+    task.runToFuture
+
+  override def streamToFList[T](stream: MonixStream[T]): Task[List[T]] =
+    stream.toListL
+
+  override def F: Async[Task] =
+    implicitly
+
+  override def S: neotypes.Stream.Aux[MonixStream,Task] =
+    implicitly
 }
