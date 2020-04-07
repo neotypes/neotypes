@@ -35,14 +35,15 @@ object Async {
     new Async[Future] {
       override final type R[A] = A
 
-      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
-        val p = Promise[A]()
-        cb {
-          case Right(res) => p.complete(Success(res))
-          case Left(ex)   => p.complete(Failure(ex))
-        }
-        p.future
-      }
+      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] =
+        Future {
+          val p = Promise[A]()
+          cb {
+            case Right(res) => p.complete(Success(res))
+            case Left(ex) => p.complete(Failure(ex))
+          }
+          p.future
+        }.flatten
 
       override final def delay[A](a: => A): Future[A] =
         Future(a)
@@ -57,18 +58,9 @@ object Async {
                                         (f: A => Future[B])
                                         (finalizer: (A, Option[Throwable]) => Future[Unit]): Future[B] =
         fa.flatMap { a =>
-          val result = for {
-            r <- f(a)
-            _ <- finalizer(a, None)
-          } yield r
-
-          result.recoverWith {
-            case ex: Throwable =>
-              finalizer(a, Some(ex))
-                .flatMap(_ => failed[B](ex))
-                .recoverWith {
-                  case _ => failed[B](ex)
-                }
+          f(a).transformWith {
+            case Success(b)  => finalizer(a, None).map(_ => b)
+            case Failure(ex) => finalizer(a, Some(ex)).transform(_ => Failure(ex))
           }
         }
 
