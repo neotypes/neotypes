@@ -3,3 +3,11 @@ build/
 out/
 project/*/
 target/
+*.class
+*.log
+dist/*
+target/
+snapshots/*
+.idea/*
+.bloop/*
+.metals/*

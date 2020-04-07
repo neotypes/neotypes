@@ -9,9 +9,9 @@ position: 10
 
 ## Requirements
 
-* Scala 2.13 / 2.12
-* Java 8+
-* Neo4j 3+
++ Scala 2.13 / 2.12
++ Java 8+
++ Neo4j 3+
 
 ## Session creation
 
@@ -20,7 +20,7 @@ You can use this `Driver`, to create a `Session`, which can be used to perform o
 This **Scala** classes, are nothing more than simple wrappers over their **Java** counterparts. Which provide a more _"Scala-friendly"_ and functional API.
 
 You can create wrappers for any type `F[_]` for which you have an implementation of the `neotypes.Async` **typeclass** in scope.
-The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](alternative_effects#Alternative effects))_.
+The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](alternative_effects))_.
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
@@ -35,17 +35,14 @@ val session = driver.session
 Please note that, you have to make sure that the driver and session are properly closed at the end of the application execution, to make sure all resources _(such as network connection)_ obtained are cleaned up properly.
 
 You can also use the `readSession` & `writeSession` helpers which will ensure that the session is properly closed after you use it.<br>
-Or, if you use other effect type instead of `Future`, for example `IO`. Then, the creation of both the `Driver` & the `Session` will be wrapped over some kind of **Resource**.
-
-```scala mdoc:invisible
-import scala.concurrent.Future
-import scala.concurrent.ExecutionContext.Implicits.global
-````
+Or, if you use other effect types instead of `Future`, for example, `IO`. Then, the creation of both the `Driver` & the `Session` will be wrapped over some kind of **Resource**.
 
 ```scala mdoc:compile-only
 import neotypes.Driver
 import neotypes.implicits.mappers.results._ // Allows to automatically derive an implicit ResultMapper for case classes.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext.Implicits.global
 
 final case class Movie(title: String, released: Int)
 
@@ -64,7 +61,8 @@ The import `neotypes.implicits.all._` adds an extension method `query[T]` to eac
 
 ```scala mdoc:invisible
 import neotypes.implicits.all._
-def session: neotypes.Session[Future] = ???
+import scala.concurrent.ExecutionContext.Implicits.global
+def session: neotypes.Session[scala.concurrent.Future] = ???
 ```
 
 ```scala mdoc:compile-only
@@ -80,7 +78,7 @@ import neotypes.types.QueryParam
  // Query with string interpolation.
 val name = "John"
 val born = 1980
-c"CREATE (p:Person { name: $name, born: $born })".query[Unit].execute(session)
+c"CREATE (p: Person { name: $name, born: $born })".query[Unit].execute(session)
 ```
 
 A query can be run in six different ways:
@@ -94,7 +92,7 @@ If you need to support your return types for this type of queries, you can provi
 * `map(session)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
 * `collectAs(Col)(session)` - runs a query and retunrs a **Col** of results _(where **Col** is any kind of collection)_.
 * `stream(session)` - runs a query and returns a **Stream** of results
-_(for more information, please read [streaming](streams#Streaming))_.
+_(for more information, please read [streaming](streams))_.
 
 ```scala mdoc:compile-only
 import org.neo4j.driver.v1.Value
