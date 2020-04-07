@@ -35,14 +35,15 @@ object Async {
     new Async[Future] {
       override final type R[A] = A
 
-      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] = {
-        val p = Promise[A]()
-        cb {
-          case Right(res) => p.complete(Success(res))
-          case Left(ex)   => p.complete(Failure(ex))
-        }
-        p.future
-      }
+      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] =
+        Future {
+          val p = Promise[A]()
+          cb {
+            case Right(res) => p.complete(Success(res))
+            case Left(ex) => p.complete(Failure(ex))
+          }
+          p.future
+        }.flatten
 
       override final def delay[A](a: => A): Future[A] =
         Future(a)
