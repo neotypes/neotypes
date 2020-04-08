@@ -20,8 +20,8 @@ val refinedVersion = "0.9.13"
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  scalaVersion in ThisBuild := "2.12.10",
-  crossScalaVersions := Seq("2.13.1", "2.12.10"),
+  scalaVersion in ThisBuild := "2.12.11",
+  crossScalaVersions := Seq("2.13.1", "2.12.11"),
   scalacOptions += "-Ywarn-macros:after",
   scalacOptions in Test := Seq("-feature", "-deprecation"),
   autoAPIMappings := true,
@@ -29,7 +29,6 @@ val commonSettings = Seq(
   /**
     * Publishing
     */
-  useGpg := true,
   publishTo := {
     val nexus = "https://oss.sonatype.org/"
     if (isSnapshot.value)

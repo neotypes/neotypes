@@ -3,7 +3,8 @@ package internal.syntax
 
 import java.util.concurrent.{CompletableFuture, CompletionStage}
 import neotypes.internal.syntax.stage._
-import org.scalatest.{AsyncWordSpec, Matchers}
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AsyncWordSpec
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
