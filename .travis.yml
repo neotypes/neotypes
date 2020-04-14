@@ -16,6 +16,7 @@ cache:
   directories:
   - $HOME/.ivy2/cache
   - $HOME/.sbt
+  - $HOME/.cache/coursier
 
 install:
 - rvm use 2.6.0 --install --fuzzy
