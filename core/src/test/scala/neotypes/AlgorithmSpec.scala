@@ -5,58 +5,68 @@ import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 
 import scala.concurrent.Future
+import scala.reflect.ClassTag
 
 
-class AlgorithmSpec extends BaseAlgorithmIntegrationSpec[Future] with Matchers {
+abstract class AlgorithmSpec[F[_]](implicit ctF: ClassTag[F[_]]) extends BaseAlgorithmIntegrationSpec[F] with Matchers {
   import AlgorithmData._
+  private val effectName: String = ctF.runtimeClass.getCanonicalName
+  behavior of s"Effect[${effectName}]"
 
-  it should "execute the article rank centrality algorithm" in execute{ s =>
-    for{
-      _ <- articleRankingData.query[Unit].execute(s)
-      r <- """CALL algo.articleRank('Paper', 'CITES',
+  def fToFuture[T](f: F[T]): Future[T]
+
+  implicit def F: Async[F]
+
+  private final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
+    fToFuture(execute(work))
+
+  it should "execute the article rank centrality algorithm" in {
+    for {
+      _ <- executeAsFuture (s => articleRankingData.query[Unit].execute(s))
+      r <- executeAsFuture {s => """CALL algo.articleRank('Paper', 'CITES',
       {iterations:20, dampingFactor:0.85, write: true,writeProperty:"pagerank"})
-      YIELD nodes, iterations, dampingFactor, write, writeProperty""".query[ArticleRanking].single(s)
+      YIELD nodes, iterations, dampingFactor, write, writeProperty""".query[ArticleRanking].single (s)}
     } yield r shouldBe ArticleRanking(7, 20, 0.85, true, "pagerank")
   }
 
-  it should "execute the triangle count community detection algorithm" in execute{ s =>
+  it should "execute the triangle count community detection algorithm" in {
     for{
-      _ <- triangleCountData.query[Unit].execute(s)
-      r <- """CALL algo.triangleCount('Person', 'KNOWS',
+      _ <- executeAsFuture(s => triangleCountData.query[Unit].execute(s))
+      r <- executeAsFuture{s => """CALL algo.triangleCount('Person', 'KNOWS',
       {concurrency:4, write:true, writeProperty:'triangles',clusteringCoefficientProperty:'coefficient'})
-      YIELD loadMillis, computeMillis, writeMillis, nodeCount, triangleCount, averageClusteringCoefficient;""".query[TriangleCount].single(s)
+      YIELD loadMillis, computeMillis, writeMillis, nodeCount, triangleCount, averageClusteringCoefficient;""".query[TriangleCount].single(s)}
     } yield r shouldBe TriangleCount(6, 3, 0.6055555555555555)
   }
 
-  it should "execute the adamic adar link prediction algorithm" in execute{ s =>
+  it should "execute the adamic adar link prediction algorithm" in {
     for{
-      _ <- linkPredictionData.query[Unit].execute(s)
-      r <- """MATCH (p1:Person {name: 'Michael'})
+      _ <- executeAsFuture(s => linkPredictionData.query[Unit].execute(s))
+      r <- executeAsFuture{s => """MATCH (p1:Person {name: 'Michael'})
       MATCH (p2:Person {name: 'Karin'})
-      RETURN algo.linkprediction.adamicAdar(p1, p2) AS score""".query[AdamicLink].single(s)
+      RETURN algo.linkprediction.adamicAdar(p1, p2) AS score""".query[AdamicLink].single(s) }
     } yield r shouldBe AdamicLink(0.9102392266268373)
   }
 
-  it should "execute the shortest path algorithm" in execute{ s =>
+  it should "execute the shortest path algorithm" in {
     for{
-      _ <- shortestPathData.query[Unit].execute(s)
-      r <-"""MATCH (start:Loc{name:'A'}), (end:Loc{name:'F'})
+      _ <- executeAsFuture(s => shortestPathData.query[Unit].execute(s))
+      r <- executeAsFuture{s => """MATCH (start:Loc{name:'A'}), (end:Loc{name:'F'})
       CALL algo.shortestPath(start, end, 'cost',{write:true,writeProperty:'sssp'})
       YIELD writeMillis,loadMillis,nodeCount, totalCost
-      RETURN writeMillis,loadMillis,nodeCount,totalCost""".query[ShortestPath].single(s)
+      RETURN writeMillis,loadMillis,nodeCount,totalCost""".query[ShortestPath].single(s) }
     } yield r shouldBe ShortestPath(5, 160.0)
   }
 
-  it should "execute the jaccard similarity algorithm" in execute{ s =>
+  it should "execute the jaccard similarity algorithm" in {
     for{
-      _ <- similarityData.query[Unit].execute(s)
-      r <- """MATCH (p1:Person {name: 'Karin'})-[:LIKES]->(cuisine1)
+      _ <- executeAsFuture(s => similarityData.query[Unit].execute(s))
+      r <- executeAsFuture{s => """MATCH (p1:Person {name: 'Karin'})-[:LIKES]->(cuisine1)
       WITH p1, collect(id(cuisine1)) AS p1Cuisine
       MATCH (p2:Person {name: "Arya"})-[:LIKES]->(cuisine2)
       WITH p1, p1Cuisine, p2, collect(id(cuisine2)) AS p2Cuisine
       RETURN p1.name AS from,
              p2.name AS to,
-             algo.similarity.jaccard(p1Cuisine, p2Cuisine) AS similarity""".query[JaccardSimilarity].single(s)
+             algo.similarity.jaccard(p1Cuisine, p2Cuisine) AS similarity""".query[JaccardSimilarity].single(s) }
     } yield r shouldBe JaccardSimilarity("Karin", "Arya", 0.6666666666666666)
   }
 }
