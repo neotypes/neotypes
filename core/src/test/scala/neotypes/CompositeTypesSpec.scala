@@ -117,13 +117,13 @@ class CompositeTypesSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "construct an IncoercibleException message with a field name and optional value" in execute { s =>
+  it should "construct an IncoercibleException message with a field name and value" in execute { s =>
     final case class PersonIntName(name: Int, born: Int, extra: Option[Int])
     "match (p:Person {name: 'Charlize Theron'}) return p"
       .query[PersonIntName]
       .single(s)
       .transformWith{
-        case scala.util.Failure(f) => assert(f.getMessage == "Cannot coerce STRING to Java int for field [name] with value [Some(\"Charlize Theron\")]")
+        case scala.util.Failure(f) => assert(f.getMessage == "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]")
         case scala.util.Success(_) => fail("Query succeeded, but should have failed with IncoercibleException")
       }
   }
