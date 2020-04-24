@@ -278,7 +278,7 @@ object mappers {
         value match {
           case Some(v) =>
             Try(f(v)).toEither.left.map {
-              case ex: Uncoercible => IncoercibleException(s"${ex.getLocalizedMessage} for field [$fieldName] with value [${v}]", ex)
+              case ex: Uncoercible => IncoercibleException(s"${ex.getLocalizedMessage} for field [${fieldName}] with value [${v}]", ex)
               case ex: Throwable => ex
             }
 
