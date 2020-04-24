@@ -1,5 +1,6 @@
 package neotypes
 
+import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.v1.Value
@@ -115,6 +116,17 @@ class CompositeTypesSpec extends BaseIntegrationSpec[Future] {
         assert(list(1).asInt == 1975)
         assert(list(2).asInt == 1)
       }
+  }
+
+  it should "construct an IncoercibleException message with a field name and value" in execute { s =>
+    final case class PersonIntName(name: Int, born: Int, extra: Option[Int])
+    recoverToExceptionIf[IncoercibleException]{
+      "match (p:Person {name: 'Charlize Theron'}) return p"
+        .query[PersonIntName]
+        .single(s)
+    }.map{ ex =>
+      assert(ex.getMessage  == "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]")
+    }
   }
 
   override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
