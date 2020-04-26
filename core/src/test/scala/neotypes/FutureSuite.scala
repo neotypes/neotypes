@@ -2,7 +2,7 @@ package neotypes
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Implementation of the Effect Teskit for Future. */
+/** Implementation of the Effect Teskit for scala Future. */
 object FutureTestkit extends EffectTestkit[Future] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {

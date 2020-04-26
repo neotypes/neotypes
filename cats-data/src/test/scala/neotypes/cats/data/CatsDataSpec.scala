@@ -1,6 +1,6 @@
 package neotypes.cats.data
 
-import neotypes.CleaningIntegrationSpec
+import neotypes.{CleaningIntegrationSpec, FutureTestkit}
 import neotypes.cats.data.implicits._
 import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._
@@ -21,7 +21,7 @@ import _root_.cats.instances.int._ // Brings the implicit Order[Int] instance in
 
 import scala.concurrent.Future
 
-class CatsDataSpec extends CleaningIntegrationSpec[Future] {
+final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   import CatsDataSpec._
 
   it should "work with Chain" in execute { s =>

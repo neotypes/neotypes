@@ -17,10 +17,10 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
     waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(30))
   )
 
-  private lazy final val driver =
+  protected lazy final val driver =
     neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
 
-  private lazy final val session =
+  protected lazy final val session =
     driver.session()
 
   private final def runQuery(query: String): Unit = {

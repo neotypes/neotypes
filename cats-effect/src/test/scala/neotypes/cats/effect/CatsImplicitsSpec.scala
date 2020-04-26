@@ -10,14 +10,14 @@ import neotypes.implicits.all._
 import org.neo4j.driver.v1.exceptions.ClientException
 
 /** Ensures the neotypes implicits does not collide with the cats ones. */
-class CatsImplicitsSpec extends BaseIntegrationSpec[IO] {
+final class CatsImplicitsSpec extends BaseIntegrationSpec[IO](IOTestkit) {
   it should "work with cats implicits and neotypes implicits" in {
     def test1[F[_]: Applicative]: F[Unit] = Applicative[F].unit
     def test2[F[_]: Monad]: F[Unit] = ().pure[F]
 
     def makeSession[F[_]: Async]: Resource[F, Session[F]] =
       Resource
-        .make(Async[F].delay(new Driver[F](driver)))(_.close)
+        .make(Async[F].delay(new Driver[F](this.driver)))(_.close)
         .flatMap(_.session)
 
     def useSession[F[_]: Async]: F[String] = makeSession[F].use { s =>
