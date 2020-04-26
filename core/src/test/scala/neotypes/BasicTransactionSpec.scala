@@ -2,34 +2,33 @@ package neotypes
 
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
-
+import neotypes.internal.syntax.async._
 import scala.concurrent.Future
 
-class BasicTransactionSpec extends CleaningIntegrationSpec[Future] {
-  it should "explicitly commit a transaction" in execute { s =>
-    s.transaction.flatMap { tx =>
-      for {
-        _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
-        _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
-        _ <- tx.commit
-      } yield ()
-    } flatMap { _ =>
-      "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
-    } map { people =>
+/** Base class for testing the basic behaviour of Transaction[F] instances. */
+abstract class BasicTransactionSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec[F](testkit) {
+  behavior of s"Transaction[${effectName}]"
+
+  it should "explicitly commit a transaction" in executeAsFuture { s =>
+    for {
+      tx <- s.transaction
+      _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
+      _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
+      _ <- tx.commit
+      people <- "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
+    } yield  {
       assert(people == List("Luis", "Dmitry"))
     }
   }
 
-  it should "explicitly rollback a transaction" in execute { s =>
-    s.transaction.flatMap { tx =>
-      for {
-        _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
-        _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
-        _ <- tx.rollback
-      } yield ()
-    } flatMap { _ =>
-      "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
-    } map { people =>
+  it should "explicitly rollback a transaction" in executeAsFuture { s =>
+    for {
+      tx <-s.transaction
+      _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
+      _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
+      _ <- tx.rollback
+      people <- "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
+    } yield {
       assert(people == List.empty)
     }
   }

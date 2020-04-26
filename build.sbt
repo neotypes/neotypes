@@ -21,7 +21,7 @@ val refinedVersion = "0.9.14"
 
 val commonSettings = Seq(
   scalaVersion in ThisBuild := "2.12.11",
-  crossScalaVersions := Seq("2.13.1", "2.12.11"),
+  crossScalaVersions := Seq("2.13.2", "2.12.11"),
   scalacOptions += "-Ywarn-macros:after",
   scalacOptions in Test := Seq("-feature", "-deprecation"),
   autoAPIMappings := true,

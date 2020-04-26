@@ -4,17 +4,12 @@ package internal.syntax
 import java.util.concurrent.{CompletableFuture, CompletionStage}
 import neotypes.internal.syntax.stage._
 import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AsyncWordSpec
+import org.scalatest.wordspec.AsyncWordSpecLike
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the CompletionStage syntax. */
-abstract class StageSyntaxSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends AsyncWordSpec with Matchers {
-  private val effectName: String = ct.runtimeClass.getCanonicalName
-
-  def fToFuture[T](f: F[T]): Future[T]
-  def F: Async[F]
-
+abstract class StageSyntaxSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with AsyncWordSpecLike with Matchers {
   import StageSyntaxSpec.CustomException
 
   private def completionStage[T](inputEx: Option[Throwable], t: T = ()): CompletableFuture[T] =

@@ -1,43 +1,57 @@
 package neotypes
 
 import java.time.Duration
-
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.neo4j.driver.{v1 => neo4j}
+import org.scalatest.flatspec.AsyncFlatSpecLike
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
-import org.scalatest.flatspec.AsyncFlatSpec
+import scala.concurrent.Future
 
-/** Base class for simple integration specs. */
-abstract class BaseIntegrationSpec[F[_]] extends AsyncFlatSpec with ForAllTestContainer {
-  def initQuery: String
+/** Base class for writing integration specs. */
+abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with AsyncFlatSpecLike with ForAllTestContainer {
+  protected def initQuery: String
 
-  override val container = GenericContainer("neo4j:3.5.3",
+  override final val container = GenericContainer("neo4j:3.5.3",
     env = Map("NEO4J_AUTH" -> "none"),
     exposedPorts = Seq(7687),
     waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(30))
   )
 
-  lazy val driver = neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
+  private lazy final val driver =
+    neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
 
-  def execute[T](work: Session[F] => F[T])
-                (implicit F: Async[F]): F[T] =
-    (new Driver[F](driver)).writeSession(work)
+  private lazy final val session =
+    driver.session()
 
-  override def afterStart(): Unit = {
-    if (initQuery != null) {
-      val session = driver.session()
-      try {
-        session.writeTransaction(
-          new neo4j.TransactionWork[Unit] {
-            override def execute(tx: neo4j.Transaction): Unit =
-              tx.run(initQuery)
-          }
-        )
-      } finally {
-        session.close()
+  private final def runQuery(query: String): Unit = {
+    session.writeTransaction(
+      new neo4j.TransactionWork[Unit] {
+        override def execute(tx: neo4j.Transaction): Unit =
+          tx.run(query)
       }
+    )
+  }
+
+  override final def afterStart(): Unit = {
+    if (initQuery != null) {
+      runQuery(initQuery)
     }
   }
+
+  override final def beforeStop(): Unit = {
+    session.close()
+    driver.close()
+  }
+
+  protected final def cleanDb(): Unit = {
+    runQuery("MATCH (n) DETACH DELETE n")
+  }
+
+  protected final def execute[T](work: Session[F] => F[T])(implicit F: Async[F]): F[T] =
+    work((new Session[F](session)))
+
+  protected final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
+    fToFuture(execute(work))
 }
 
 object BaseIntegrationSpec {

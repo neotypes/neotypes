@@ -2,17 +2,20 @@ package neotypes
 
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
+import neotypes.internal.syntax.async._
 import org.neo4j.driver.v1.types.{Node, Relationship}
 import scala.jdk.CollectionConverters._
 import shapeless._
-
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
-class PathSessionSpec extends BaseIntegrationSpec[Future] {
+/** Base class for testing the extraction of Paths. */
+abstract class PathSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) {
+  behavior of s"Extracting a Path using: ${effectName}"
+
   import PathSessionSpec._
 
-  it should "map path to Seq" in execute { s =>
+  it should "map path to Seq" in executeAsFuture { s =>
     for {
       path <- "match path=(:Person)-[*]->() return path".query[types.Path[Node, Relationship]].list(s)
       pathHList <- "match path=(p:Person)-[*]->() return p, path limit 1".query[Person :: types.Path[Node, Relationship] :: HNil].single(s)
@@ -23,7 +26,7 @@ class PathSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  it should "assign path to case class field" in execute { s =>
+  it should "assign path to case class field" in executeAsFuture { s =>
     "match path=(_:Person)-[*]->() return { path: path }".query[Data].list(s).map { res =>
       assert(res.size == 2)
 
@@ -40,7 +43,7 @@ class PathSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
 object PathSessionSpec {
