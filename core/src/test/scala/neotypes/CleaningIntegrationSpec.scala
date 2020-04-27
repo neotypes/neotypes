@@ -7,7 +7,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 
 /** Base class for integration specs that require to clean the graph after each test. */
-abstract class CleaningIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) {
+abstract class CleaningIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
   override final def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     complete {
       super.withFixture(test)

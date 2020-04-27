@@ -8,7 +8,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Future
 
 /** Base class for testing the Async[F].guarantee method. */
-abstract class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with FixtureAsyncFlatSpecLike with Matchers {
+abstract class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with FixtureAsyncFlatSpecLike with Matchers {
   behavior of s"Async[${effectName}].guarantee"
 
   import AsyncGuaranteeSpec._

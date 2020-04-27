@@ -9,7 +9,7 @@ import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing queries which produce complex types. */
-abstract class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) {
+abstract class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
   behavior of s"Extracting complex types using: ${effectName}"
 
   import CompositeTypesSpec._

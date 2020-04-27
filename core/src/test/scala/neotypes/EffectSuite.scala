@@ -6,7 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete effect. */
-abstract class EffectTestkit[F[_]] (implicit ct: ClassTag[F[_]]) {
+abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
   final val effectName: String = ct.runtimeClass.getCanonicalName
 
   trait Behaviour {

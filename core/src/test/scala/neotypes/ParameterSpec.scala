@@ -13,7 +13,7 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
 /** Base class for testing the mapping of inserted parameters. */
-abstract class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec[F](testkit) {
+abstract class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
   behavior of s"Inserting parameters for ${effectName}"
 
   it should "convert parameters" in executeAsFuture { s =>

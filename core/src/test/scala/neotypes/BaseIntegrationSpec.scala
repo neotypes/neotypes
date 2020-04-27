@@ -8,7 +8,7 @@ import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 import scala.concurrent.Future
 
 /** Base class for writing integration specs. */
-abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with AsyncFlatSpecLike with ForAllTestContainer {
+abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncFlatSpecLike with ForAllTestContainer {
   protected def initQuery: String
 
   override final val container = GenericContainer("neo4j:3.5.3",

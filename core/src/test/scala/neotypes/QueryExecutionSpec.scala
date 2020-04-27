@@ -7,7 +7,7 @@ import scala.collection.immutable.{ListMap, ListSet, SortedMap}
 import scala.concurrent.Future
 
 /** Base classs for testing the different ways of executing queries. */
-abstract class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) {
+abstract class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
   behavior of s"Excuting queries using: ${effectName}"
 
   it should "retrieve multiple results as a List" in executeAsFuture { s =>

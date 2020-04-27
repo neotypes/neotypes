@@ -14,7 +14,7 @@ import eu.timepit.refined.numeric.Interval
 
 import scala.concurrent.Future
 
-class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
+final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   import RefinedSpec.{Level, User}
 
   it should "insert and retrieve one refined value" in execute { s =>
