@@ -33,5 +33,5 @@ abstract class BaseStreamSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends 
 
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
-  new StreamIntegrationSpec(testkit) {}
+  new StreamIntegrationSpec(testkit)
 )

@@ -34,14 +34,14 @@ abstract class BaseEffectSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncTest
 
 /** Group all the effect specs into one big suite, which can be called for each effect. */
 abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
-  new AsyncGuaranteeSpec(testkit) {},
-  new AsyncIntegrationSpec(testkit) {},
-  new BasicSessionSpec(testkit) {},
-  new BasicTransactionSpec(testkit) {},
-  new CompositeTypesSpec(testkit) {},
-  new ParameterSpec(testkit) {},
-  new PathSessionSpec(testkit) {},
-  new QueryExecutionSpec(testkit) {},
-  new StageSyntaxSpec(testkit) {},
-  new TransactIntegrationSpec(testkit) {}
+  new AsyncGuaranteeSpec(testkit),
+  new AsyncIntegrationSpec(testkit),
+  new BasicSessionSpec(testkit),
+  new BasicTransactionSpec(testkit),
+  new CompositeTypesSpec(testkit),
+  new ParameterSpec(testkit),
+  new PathSessionSpec(testkit),
+  new QueryExecutionSpec(testkit),
+  new StageSyntaxSpec(testkit),
+  new TransactIntegrationSpec(testkit)
 )

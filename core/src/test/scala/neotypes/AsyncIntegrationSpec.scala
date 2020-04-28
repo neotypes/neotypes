@@ -8,7 +8,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Async[F] instances. */
-abstract class AsyncIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class AsyncIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
   behavior of s"Async[${effectName}]"
 
   it should s"execute a simple query" in {

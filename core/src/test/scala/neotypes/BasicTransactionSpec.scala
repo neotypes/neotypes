@@ -6,7 +6,7 @@ import neotypes.internal.syntax.async._
 import scala.concurrent.Future
 
 /** Base class for testing the basic behaviour of Transaction[F] instances. */
-abstract class BasicTransactionSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
+final class BasicTransactionSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
   behavior of s"Transaction[${effectName}]"
 
   it should "explicitly commit a transaction" in executeAsFuture { s =>

@@ -8,7 +8,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Stream[S, F] instances. */
-abstract class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) {
+final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) {
   behavior of s"Stream[${streamName}, ${effectName}]"
 
   it should s"execute a streaming query" in {

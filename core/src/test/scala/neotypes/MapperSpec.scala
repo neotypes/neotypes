@@ -6,7 +6,7 @@ import org.neo4j.driver.internal.value.{IntegerValue, StringValue}
 import org.neo4j.driver.v1.Value
 import org.scalatest.freespec.AnyFreeSpec
 
-class MapperSpec extends AnyFreeSpec {
+final class MapperSpec extends AnyFreeSpec {
   import MapperSpec.MyCaseClass
 
   "ResultMapper" - {
