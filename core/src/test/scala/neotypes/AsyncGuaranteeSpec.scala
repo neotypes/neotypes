@@ -1,41 +1,46 @@
 package neotypes
 
 import neotypes.internal.syntax.async._
-import org.scalatest.{EitherValues, FlatSpec, Matchers}
+import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
-import scala.reflect.ClassTag
+import org.scalatest.flatspec.FixtureAsyncFlatSpecLike
+import org.scalatest.matchers.should.Matchers
+import scala.concurrent.Future
 
 /** Base class for testing the Async[F].guarantee method. */
-abstract class AsyncGuaranteeSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends FlatSpec with Matchers with EitherValues {
-  private val effectName: String = ct.runtimeClass.getCanonicalName
+final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with FixtureAsyncFlatSpecLike with Matchers {
   behavior of s"Async[${effectName}].guarantee"
 
-  def fToEither[T](f: F[T]): Either[Throwable, T]
-  implicit def F: Async[F]
+  import AsyncGuaranteeSpec._
 
-  trait AsyncGuaranteeFixture {
+  final class AsyncGuaranteeFixture {
     private[this] var counter = 0
 
-    final def assertFinalizerWasCalledOnlyOnce: Assertion =
+    def assertFinalizerWasCalledOnlyOnce: Assertion = {
+      withClue("Finalizer was not called") {
+        this.counter should not be 0
+      }
+
       withClue("Finalizer was called more than once -") {
         this.counter shouldBe 1
       }
+    }
 
-    final def assertFinalizerWasNotCalled: Assertion =
+    def assertFinalizerWasNotCalled: Assertion =
       withClue("Finalizer was called -") {
         this.counter shouldBe 0
       }
 
-    final def run[T](result: Either[Throwable, T],
-                     inputEx: Option[Throwable] = None,
-                     finalizerEx: Option[Throwable] = None): Either[Throwable, T] = {
+    def run[T](result: Either[Throwable, T],
+               inputEx: Option[Throwable] = None,
+               finalizerEx: Option[Throwable] = None): Future[T] = {
       def fromOption(opt: Option[Throwable]): F[Unit] =
         opt.fold(ifEmpty = F.delay(()))(ex => F.failed(ex))
 
-      fToEither(
+      fToFuture(
         F.guarantee[Unit, T](
           fa = fromOption(inputEx)
-        )(
+        ) (
           _ => result.fold(ex => F.failed(ex), t => F.delay(t))
         ) { (_, _) =>
           F.delay {
@@ -48,80 +53,84 @@ abstract class AsyncGuaranteeSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends Fl
     }
   }
 
-  it should "execute finalizer and return the result when nothing fails" in new AsyncGuaranteeFixture {
+  override final type FixtureParam = AsyncGuaranteeFixture
+
+  override final def withFixture(test: OneArgAsyncTest): FutureOutcome =
+    super.withFixture(test.toNoArgAsyncTest(new AsyncGuaranteeFixture))
+
+  it should "execute finalizer and return the result when nothing fails" in { fixture =>
     val expectedResult = "result"
 
-    val res = run(result = Right(expectedResult))
-
-    res.right.value shouldBe expectedResult
-    assertFinalizerWasCalledOnlyOnce
+    fixture.run(result = Right(expectedResult)).map { res =>
+      res shouldBe expectedResult
+      fixture.assertFinalizerWasCalledOnlyOnce
+    }
   }
 
-  it should "not execute finalizer and return input exception when input fails" in new AsyncGuaranteeFixture {
-    val inputEx = new Exception("Input failed")
-
-    val ex = run(inputEx = Some(inputEx), result = Right("result"))
-
-    ex.left.value shouldBe inputEx
-    assertFinalizerWasNotCalled
+  it should "not execute finalizer and return input exception when input fails" in { fixture =>
+    recoverToSucceededIf[InputException] {
+      fixture.run(inputEx = Some(InputException), result = Right("result"))
+    } map { _ =>
+      fixture.assertFinalizerWasNotCalled
+    }
   }
 
-  it should "execute finalizer and return use exception when use fails" in new AsyncGuaranteeFixture {
-    val useEx = new Exception("Use failed")
-
-    val ex = run(result = Left(useEx))
-
-    ex.left.value shouldBe useEx
-    assertFinalizerWasCalledOnlyOnce
+  it should "execute finalizer and return use exception when use fails" in { fixture =>
+    recoverToSucceededIf[UseException] {
+      fixture.run(result = Left(UseException))
+    } map { _ =>
+      fixture.assertFinalizerWasCalledOnlyOnce
+    }
   }
 
-  it should "not execute finalizer and return input exception when input and use fail" in new AsyncGuaranteeFixture {
-    val inputEx = new Exception("Input failed")
-    val useEx = new Exception("Use failed")
-
-    val ex = run(inputEx = Some(inputEx), result = Left(useEx))
-
-    ex.left.value shouldBe inputEx
-    assertFinalizerWasNotCalled
+  it should "not execute finalizer and return input exception when input and use fail" in { fixture =>
+    recoverToSucceededIf[InputException] {
+      fixture.run(inputEx = Some(InputException), result = Left(UseException))
+    } map { _ =>
+      fixture.assertFinalizerWasNotCalled
+    }
   }
 
-  it should "execute finalizer and return finalizer exception when finalizer fails" in new AsyncGuaranteeFixture {
-    val finalizerEx = new Exception("Finalizer failed!")
-
-    val ex = run(result = Right("result"), finalizerEx = Some(finalizerEx))
-
-    ex.left.value shouldBe finalizerEx
-    assertFinalizerWasCalledOnlyOnce
+  it should "execute finalizer and return finalizer exception when finalizer fails" in { fixture =>
+    recoverToSucceededIf[FinalizerException] {
+      fixture.run(result = Right("result"), finalizerEx = Some(FinalizerException))
+    } map { _ =>
+      fixture.assertFinalizerWasCalledOnlyOnce
+    }
   }
 
-  it should "not execute finalizer and return input exception when input and finalizer fail" in new AsyncGuaranteeFixture {
-    val inputEx = new Exception("Input failed")
-    val finalizerEx = new Exception("Finalizer failed!")
-
-    val ex = run(inputEx = Some(inputEx), result = Right("result"), finalizerEx = Some(finalizerEx))
-
-    ex.left.value shouldBe inputEx
-    assertFinalizerWasNotCalled
+  it should "not execute finalizer and return input exception when input and finalizer fail" in { fixture =>
+    recoverToSucceededIf[InputException] {
+      fixture.run(inputEx = Some(InputException), result = Right("result"), finalizerEx = Some(FinalizerException))
+    } map { _ =>
+      fixture.assertFinalizerWasNotCalled
+    }
   }
 
-  it should "execute finalizer and return use exception when use and finalizer fail" in new AsyncGuaranteeFixture {
-    val useEx = new Exception("Input failed")
-    val finalizerEx = new Exception("Finalizer failed!")
-
-    val ex = run(result = Left(useEx), finalizerEx = Some(finalizerEx))
-
-    ex.left.value shouldBe useEx
-    assertFinalizerWasCalledOnlyOnce
+  it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
+    recoverToSucceededIf[UseException] {
+      fixture.run(result = Left(UseException), finalizerEx = Some(FinalizerException))
+    } map { _ =>
+      fixture.assertFinalizerWasCalledOnlyOnce
+    }
   }
 
-  it should "not execute finalizer and return input exception when all fail" in new AsyncGuaranteeFixture {
-    val inputEx = new Exception("Input failed")
-    val useEx = new Exception("Use failed")
-    val finalizerEx = new Exception("Finalizer failed!")
-
-    val ex = run(inputEx = Some(inputEx), result = Left(useEx), finalizerEx = Some(finalizerEx))
-
-    ex.left.value shouldBe inputEx
-    assertFinalizerWasNotCalled
+  it should "not execute finalizer and return input exception when all fail" in { fixture =>
+    recoverToSucceededIf[InputException] {
+      fixture.run(inputEx = Some(InputException), result = Left(UseException), finalizerEx = Some(FinalizerException))
+    } map { _ =>
+      fixture.assertFinalizerWasNotCalled
+    }
   }
+}
+
+object AsyncGuaranteeSpec {
+  final case object InputException extends Exception("Input failed")
+  type InputException = InputException.type
+
+  final case object UseException extends Exception("Use failed")
+  type UseException = UseException.type
+
+  final case object FinalizerException extends Exception("Finalizer failed")
+  type FinalizerException = FinalizerException.type
 }

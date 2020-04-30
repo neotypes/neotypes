@@ -4,9 +4,9 @@ import neotypes.implicits.mappers.results._
 import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
 import org.neo4j.driver.internal.value.{IntegerValue, StringValue}
 import org.neo4j.driver.v1.Value
-import org.scalatest.FreeSpec
+import org.scalatest.freespec.AnyFreeSpec
 
-class MapperSpec extends FreeSpec {
+final class MapperSpec extends AnyFreeSpec {
   import MapperSpec.MyCaseClass
 
   "ResultMapper" - {

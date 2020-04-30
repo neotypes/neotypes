@@ -1,12 +1,12 @@
 package neotypes
 
-import org.scalatest.FlatSpec
 
 import neotypes.implicits.mappers.parameters._
 import neotypes.implicits.syntax.cypher._
 import neotypes.types.QueryParam
+import org.scalatest.flatspec.AnyFlatSpec
 
-class CypherQueryInterpolationSpec extends FlatSpec {
+final class CypherQueryInterpolationSpec extends AnyFlatSpec {
   it should "interpolation with one param" in {
     val name = "John"
     val query = c"create (a:Test {name: $name})"

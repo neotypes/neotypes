@@ -14,7 +14,7 @@ import org.neo4j.driver.v1.{Record, Transaction => NTransaction, Value}
 import scala.collection.compat._
 import scala.jdk.CollectionConverters._
 
-final class Transaction[F[_]](private val transaction: NTransaction) extends AnyVal {
+final class Transaction[F[_]] private[neotypes] (private val transaction: NTransaction) extends AnyVal {
   import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToList}
 
   def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
