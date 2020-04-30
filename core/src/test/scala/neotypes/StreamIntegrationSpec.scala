@@ -8,22 +8,11 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Stream[S, F] instances. */
-abstract class StreamIntegrationSpec[S[_], F[_]] (implicit ctF: ClassTag[F[_]], ctS: ClassTag[S[_]]) extends BaseIntegrationSpec[F] {
-  private val effectName: String = ctF.runtimeClass.getCanonicalName
-  private val streamName: String = ctS.runtimeClass.getCanonicalName
+final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) {
   behavior of s"Stream[${streamName}, ${effectName}]"
 
-  def fToFuture[T](f: F[T]): Future[T]
-  def streamToFList[T](stream: S[T]): F[List[T]]
-
-  implicit def F: Async[F]
-  implicit def S: Stream.Aux[S, F]
-
-  private final def executeAsFuture[T](work: Session[F] => S[T]): Future[List[T]] =
-    fToFuture(execute(work andThen streamToFList))
-
   it should s"execute a streaming query" in {
-    executeAsFuture { s =>
+    executeAsFutureList { s =>
       "match (p: Person) return p.name"
         .query[Int]
         .stream(s)
@@ -34,7 +23,7 @@ abstract class StreamIntegrationSpec[S[_], F[_]] (implicit ctF: ClassTag[F[_]], 
 
   it should s"catch exceptions inside the stream" in {
     recoverToSucceededIf[ClientException] {
-      executeAsFuture { s =>
+      executeAsFutureList { s =>
         "match test return p.name"
           .query[String]
           .stream(s)

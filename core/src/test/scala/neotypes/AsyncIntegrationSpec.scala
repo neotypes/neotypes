@@ -8,16 +8,8 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Async[F] instances. */
-abstract class AsyncIntegrationSpec[F[_]] (implicit ct: ClassTag[F[_]]) extends BaseIntegrationSpec[F] {
-  private val effectName: String = ct.runtimeClass.getCanonicalName
+final class AsyncIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
   behavior of s"Async[${effectName}]"
-
-  def fToFuture[T](f: F[T]): Future[T]
-
-  implicit def F: Async[F]
-
-  private final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
-    fToFuture(execute(work))
 
   it should s"execute a simple query" in {
     executeAsFuture { s =>

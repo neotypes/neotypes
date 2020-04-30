@@ -2,7 +2,6 @@ package neotypes
 package internal.utils
 
 import scala.collection.compat._
-import scala.collection.compat.Factory
 import scala.collection.mutable.Builder
 
 private[neotypes] object traverse {

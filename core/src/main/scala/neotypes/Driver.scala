@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters._
   *
   * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
   */
-final class Driver[F[_]](private val driver: NDriver) extends AnyVal {
+final class Driver[F[_]] private[neotypes] (private val driver: NDriver) extends AnyVal {
 
   /** Acquire a session to the database in read mode
     * @note $futinfo

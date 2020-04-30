@@ -2,19 +2,21 @@ package neotypes
 
 import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
-
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
+import neotypes.internal.syntax.async._
 import org.neo4j.driver.v1.{Value, Values}
 import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
-
 import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
-class ParameterSpec extends CleaningIntegrationSpec[Future] {
-  it should "convert parameters" in execute { s =>
+/** Base class for testing the mapping of inserted parameters. */
+final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
+  behavior of s"Inserting parameters for ${effectName}"
+
+  it should "convert parameters" in executeAsFuture { s =>
     val name: String = "test"
     val born: Int = 123
     val age1: Option[Int] = None
@@ -93,7 +95,7 @@ class ParameterSpec extends CleaningIntegrationSpec[Future] {
     }
   }
 
-  it should "convert map-like parameters" in execute { s =>
+  it should "convert map-like parameters into a node" in executeAsFuture { s =>
     val parameters = SortedMap("p1" -> 3, "p2" -> 5)
 
     for {

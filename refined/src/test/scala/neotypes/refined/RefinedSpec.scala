@@ -1,6 +1,6 @@
 package neotypes.refined
 
-import neotypes.CleaningIntegrationSpec
+import neotypes.{CleaningIntegrationSpec, FutureTestkit}
 import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
@@ -14,7 +14,7 @@ import eu.timepit.refined.numeric.Interval
 
 import scala.concurrent.Future
 
-class RefinedSpec extends CleaningIntegrationSpec[Future] {
+final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   import RefinedSpec.{Level, User}
 
   it should "insert and retrieve one refined value" in execute { s =>
