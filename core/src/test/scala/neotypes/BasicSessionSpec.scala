@@ -2,15 +2,18 @@ package neotypes
 
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
+import neotypes.internal.syntax.async._
 import org.neo4j.driver.v1.types.Node
 import shapeless._
-
 import scala.concurrent.Future
 
-class BasicSessionSpec extends BaseIntegrationSpec[Future] {
+/** Base class for testing the basic behaviour of Session[F] instances. */
+final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+  behavior of s"Session[${effectName}]"
+
   import BasicSessionSpec._
 
-  it should "map result to hlist and case classes" in execute { s =>
+  it should "map result to hlist and case classes" in executeAsFuture { s =>
     for {
       string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
       int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int].single(s)
@@ -48,7 +51,7 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  it should "map result to tuples" in execute { s =>
+  it should "map result to tuples" in executeAsFuture { s =>
     for {
       tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
       tuplePrimitives <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p.name,m.title".query[(String, String)].list(s)
@@ -60,7 +63,7 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  it should "map result to a case class with list" in execute { s =>
+  it should "map result to a case class with list" in executeAsFuture { s =>
     for {
       сс3 <-
         """
@@ -90,7 +93,7 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  it should "map result with relationship to a case class" in execute { s =>
+  it should "map result with relationship to a case class" in executeAsFuture { s =>
     for {
       hlist <-
         """
@@ -112,7 +115,7 @@ class BasicSessionSpec extends BaseIntegrationSpec[Future] {
     }
   }
 
-  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
 object BasicSessionSpec {

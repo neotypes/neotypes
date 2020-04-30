@@ -12,6 +12,9 @@ private[neotypes] object async {
     def guarantee[B](f: A => F[B])(finalizer: (A, Option[Throwable]) => F[Unit])(implicit F: Async[F]): F[B] =
       F.guarantee(fa)(f)(finalizer)
 
+    def recover[B >: A](f: PartialFunction[Throwable, B])(implicit F: Async[F]): F[B] =
+      F.recoverWith[A, B](fa)(f.andThen(b => F.delay(b)))
+
     def recoverWith[B >: A](f: PartialFunction[Throwable, F[B]])(implicit F: Async[F]): F[B] =
       F.recoverWith[A, B](fa)(f)
   }

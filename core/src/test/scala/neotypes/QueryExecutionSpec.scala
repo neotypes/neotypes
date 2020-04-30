@@ -2,12 +2,15 @@ package neotypes
 
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
-
+import neotypes.internal.syntax.async._
 import scala.collection.immutable.{ListMap, ListSet, SortedMap}
 import scala.concurrent.Future
 
-class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
-  it should "retrieve multiple results as a List" in execute { s =>
+/** Base classs for testing the different ways of executing queries. */
+final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+  behavior of s"Excuting queries using: ${effectName}"
+
+  it should "retrieve multiple results as a List" in executeAsFuture { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .list(s)
@@ -16,7 +19,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a Set" in execute { s =>
+  it should "retrieve multiple results as a Set" in executeAsFuture { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .set(s)
@@ -25,7 +28,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a Vector" in execute { s =>
+  it should "retrieve multiple results as a Vector" in executeAsFuture { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .vector(s)
@@ -34,7 +37,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a Map" in execute { s =>
+  it should "retrieve multiple results as a Map" in executeAsFuture { s =>
     "match (p:Person) return p.name, 1"
       .query[(Int, Int)]
       .map(s)
@@ -43,7 +46,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a custom collection (ListSet)" in execute { s =>
+  it should "retrieve multiple results as a custom collection (ListSet)" in executeAsFuture { s =>
     "match (p:Person) return p.name"
       .query[Int]
       .collectAs(ListSet)(s)
@@ -52,7 +55,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a custom collection (ListMap)" in execute { s =>
+  it should "retrieve multiple results as a custom collection (ListMap)" in executeAsFuture { s =>
     "match (p:Person) return p.name, 1"
       .query[(Int, Int)]
       .collectAs(ListMap)(s)
@@ -61,7 +64,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve multiple results as a custom collection (SortedMap)" in execute { s =>
+  it should "retrieve multiple results as a custom collection (SortedMap)" in executeAsFuture { s =>
     "match (p:Person) return p.name, 1"
       .query[(Int, Int)]
       .collectAs(SortedMap)(s)
@@ -70,7 +73,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve a Neo4j LIST into a Scala collection (List)" in execute { s =>
+  it should "retrieve a Neo4j LIST into a Scala collection (List)" in executeAsFuture { s =>
     "unwind [1, 2] as x return x"
       .query[Int]
       .list(s)
@@ -79,7 +82,7 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  it should "retrieve a Neo4j LIST into a Scala collection (ListSet)" in execute { s =>
+  it should "retrieve a Neo4j LIST into a Scala collection (ListSet)" in executeAsFuture { s =>
     "unwind [1, 2] as x return x"
       .query[Int]
       .collectAs(ListSet)(s)
@@ -88,5 +91,5 @@ class QueryExecutionSpec extends BaseIntegrationSpec[Future] {
       }
   }
 
-  override def initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
 }
