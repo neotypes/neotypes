@@ -4,6 +4,7 @@ import java.time.Duration
 import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
 import org.neo4j.driver.{v1 => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
+import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 import scala.concurrent.Future
 
@@ -15,7 +16,8 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
     env = Map("NEO4J_AUTH" -> "none"),
     exposedPorts = Seq(7687),
     waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(30))
-  )
+  ).configure(_.withClasspathResourceMapping("neo4j.conf", "/var/lib/neo4j/conf/", BindMode.READ_ONLY))
+   .configure(_.withClasspathResourceMapping("graph-algorithms-algo-3.5.4.0.jar", "/var/lib/neo4j/plugins/", BindMode.READ_ONLY))
 
   protected lazy final val driver =
     neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")

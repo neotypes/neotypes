@@ -4,21 +4,11 @@ import org.scalatest.Matchers
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 
-import scala.concurrent.Future
-import scala.reflect.ClassTag
+/** Base class for testing the use of the library with the Neo4j graph-data-science plugin. */
+final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) with Matchers {
+  behavior of s"The Neo4j graph-data-science plugin used with: ${effectName}"
 
-
-abstract class AlgorithmSpec[F[_]](implicit ctF: ClassTag[F[_]]) extends BaseAlgorithmIntegrationSpec[F] with Matchers {
   import AlgorithmData._
-  private val effectName: String = ctF.runtimeClass.getCanonicalName
-  behavior of s"Effect[${effectName}]"
-
-  def fToFuture[T](f: F[T]): Future[T]
-
-  implicit def F: Async[F]
-
-  private final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
-    fToFuture(execute(work))
 
   it should "execute the article rank centrality algorithm" in {
     for {
