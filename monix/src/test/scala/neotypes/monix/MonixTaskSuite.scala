@@ -16,6 +16,9 @@ object MonixTaskTestkit extends EffectTestkit[Task] {
       override final def fToFuture[T](task: Task[T]): Future[T] =
         task.runToFuture
 
+      override final def runConcurrently(a: Task[Unit], b: Task[Unit]): Task[Unit] =
+        Task.parMap2(a, b) { (_, _) => () }
+
       override final val asyncInstance: Async[Task] =
         implicitly
     }

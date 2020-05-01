@@ -11,6 +11,7 @@ abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
 
   trait Behaviour {
     def fToFuture[T](f: F[T]): Future[T]
+    def runConcurrently(a: F[Unit], b: F[Unit]): F[Unit]
     def asyncInstance: Async[F]
   }
 
@@ -28,6 +29,9 @@ abstract class BaseEffectSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncTest
   protected final def fToFuture[T](f: F[T]): Future[T] =
     behaviour.fToFuture(f)
 
+  protected final def runConcurrently(a: F[Unit], b: F[Unit]): F[Unit] =
+    behaviour.runConcurrently(a, b)
+
   protected implicit final val F: Async[F] =
     behaviour.asyncInstance
 }
@@ -39,6 +43,7 @@ abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
   new BasicSessionSpec(testkit),
   new BasicTransactionSpec(testkit),
   new CompositeTypesSpec(testkit),
+  new ConcurrentSessionSpec(testkit),
   new ParameterSpec(testkit),
   new PathSessionSpec(testkit),
   new QueryExecutionSpec(testkit),
