@@ -17,6 +17,9 @@ object ZioTaskTestkit extends EffectTestkit[Task] {
       override final def fToFuture[T](task: Task[T]): Future[T] =
         runtime.unsafeRunToFuture(task)
 
+      override final def runConcurrently(a: Task[Unit], b: Task[Unit]): Task[Unit] =
+        a.zipPar(b).map { _ => () }
+
       override final val asyncInstance: Async[Task] =
         implicitly
     }
