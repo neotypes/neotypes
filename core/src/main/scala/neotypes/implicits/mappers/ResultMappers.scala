@@ -4,15 +4,15 @@ package implicits.mappers
 import java.time._
 import java.util.UUID
 
-import mappers.{ResultMapper, TypeHint, ValueMapper}
-import types.Path
-
+import neotypes.exceptions.MultipleIncoercibleException
+import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
+import neotypes.types.Path
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Path => NPath, Point, Relationship}
-import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
+import org.neo4j.driver.v1.types.{Entity, IsoDuration, Node, Point, Relationship, Path => NPath}
 import shapeless.labelled.FieldType
+import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
 
 import scala.collection.compat.Factory
 import scala.reflect.ClassTag
@@ -100,17 +100,17 @@ trait ResultMappers extends ValueMappers {
                                              reprDecoder: Lazy[ResultMapper[R]],
                                              ct: ClassTag[A]): ResultMapper[A] =
     new ResultMapper[A] {
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: Seq[Throwable]): Either[Throwable, A] =
         reprDecoder.value.to(value, Some(TypeHint(ct))).map(gen.from)
     }
 
   implicit final def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
                                                              tailDecoder: ResultMapper[T]): ResultMapper[H :!: T] =
     new ResultMapper[H :!: T] {
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :!: T] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: Seq[Throwable]): Either[Throwable, H :!: T] = {
         val (headName, headValue) = value.head
         val head = fieldDecoder.to(headName, Some(headValue))
-        val tail = tailDecoder.to(value.tail, None)
+        val tail = tailDecoder.to(value.tail, None, errors)
 
         head.flatMap(h => tail.map(t => h :: t))
       }
@@ -123,14 +123,14 @@ trait ResultMappers extends ValueMappers {
       private def collectEntityFields(entity: Entity): List[(String, Value)] =
         (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: getKeyValuesFrom(entity).toList
 
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: Seq[Throwable]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
 
         typeHint match {
           case Some(TypeHint(true)) =>
             val index = fieldName.substring(1).toInt - 1
             val decodedHead = head.to(fieldName, if (value.size <= index) None else Some(value(index)._2))
-            decodedHead.flatMap(v => tail.to(value, typeHint).map(t => labelled.field[K](v) :: t))
+            decodedHead.flatMap(v => tail.to(value, typeHint, errors).map(t => labelled.field[K](v) :: t))
 
           case _ =>
             val convertedValue =
@@ -147,14 +147,24 @@ trait ResultMappers extends ValueMappers {
               }
 
             val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
-            decodedHead.flatMap(v => tail.to(convertedValue, typeHint).map(t => labelled.field[K](v) :: t))
+
+            tail match{
+              case HNilResultMapper if errors.nonEmpty =>
+                Left(MultipleIncoercibleException(errors.toList.reverse))
+              case _ =>
+                decodedHead match{
+                  case Left(th) =>
+                    tail.to(convertedValue, typeHint, th +: errors).map(t => labelled.field[K](null.asInstanceOf[H]) :: t)
+                  case Right(v) => tail.to(convertedValue, typeHint, errors).map(t => labelled.field[K](v) :: t)
+                }
+            }
         }
       }
     }
 
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
-      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
+      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint], errors: Seq[Throwable]): Either[Throwable, Option[T]] =
         fields match {
           case Nil => Right(None)
           case (_, v) :: Nil if (v.isNull) => Right(None)
