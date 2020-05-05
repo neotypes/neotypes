@@ -2,6 +2,7 @@ package neotypes.refined
 
 import neotypes.{CleaningIntegrationSpec, FutureTestkit}
 import neotypes.exceptions.IncoercibleException
+import neotypes.exceptions.MultipleIncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
@@ -11,10 +12,11 @@ import eu.timepit.refined.W
 import eu.timepit.refined.api.Refined
 import eu.timepit.refined.auto._
 import eu.timepit.refined.numeric.Interval
+import org.scalatest.LoneElement
 
 import scala.concurrent.Future
 
-final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
+final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) with LoneElement {
   import RefinedSpec.{Level, User}
 
   it should "insert and retrieve one refined value" in execute { s =>
@@ -85,11 +87,13 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   }
 
   it should "fail if at least one value inside a case class does not satisfy the refinement condition" in execute { s =>
-    recoverToSucceededIf[IncoercibleException] {
+    recoverToExceptionIf[MultipleIncoercibleException] {
       for {
         _ <- "CREATE (user: User { name: \"???\", level: -1 })".query[Unit].execute(s)
         user <- "MATCH (user: User { name: \"???\" }) RETURN user".query[User].single(s)
       } yield user
+    }.map{ex =>
+      assert(ex.errors.loneElement.getMessage == "Left predicate of (!(-1 < 1) && !(-1 > 99)) failed: Predicate (-1 < 1) did not fail.")
     }
   }
 }

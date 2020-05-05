@@ -1,15 +1,17 @@
 package neotypes
 
-import neotypes.exceptions.{MultipleIncoercibleException}
+import neotypes.exceptions.MultipleIncoercibleException
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.v1.Value
+import org.scalatest.LoneElement
+
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing queries which produce complex types. */
-final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) with LoneElement {
   behavior of s"Extracting complex types using: ${effectName}"
 
   import CompositeTypesSpec._
@@ -129,7 +131,7 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
           .single(s)
       }
     } map { ex =>
-      assert(ex.errors.map(_.getMessage)  == List("Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]"))
+      assert(ex.errors.loneElement.getMessage  == "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]")
     }
   }
 
@@ -141,7 +143,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
           .single(s)
       }
     } map { ex =>
-      assert(ex.errors.map(_.getMessage)  == List("Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]", "Cannot coerce INTEGER to Java boolean for field [born] with value [1975]"))
+      assert(ex.errors.map(_.getMessage)  == List(
+        "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]",
+        "Cannot coerce INTEGER to Java boolean for field [born] with value [1975]")
+      )
     }
   }
 
