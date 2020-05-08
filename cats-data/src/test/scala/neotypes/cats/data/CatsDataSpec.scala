@@ -6,9 +6,18 @@ import neotypes.exceptions.{IncoercibleException, MultipleIncoercibleException}
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
-import cats.data.{Chain, Const, NonEmptyChain, NonEmptyList, NonEmptyMap, NonEmptySet, NonEmptyVector}
-import _root_.cats.instances.string._
-import _root_.cats.instances.int._
+
+import cats.data.{
+  Chain,
+  Const,
+  NonEmptyChain,
+  NonEmptyList,
+  NonEmptyMap,
+  NonEmptySet,
+  NonEmptyVector
+}
+import _root_.cats.instances.string._ // Brings the implicit Order[String] instance into the scope.
+import _root_.cats.instances.int._ // Brings the implicit Order[Int] instance into the scope.
 
 import scala.concurrent.Future
 
