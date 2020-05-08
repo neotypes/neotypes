@@ -154,8 +154,10 @@ trait ResultMappers extends ValueMappers {
                 Left(MultipleIncoercibleException((th +: errors).reverse))
               case (HNilResultMapper, _) if errors.nonEmpty  =>
                 Left(MultipleIncoercibleException(errors.reverse))
-              case (_, Left(th)) => tail.to(convertedValue, typeHint, th +: errors).map(t => labelled.field[K](null.asInstanceOf[H]) :: t)
-              case (_, Right(v)) => tail.to(convertedValue, typeHint, errors).map(t => labelled.field[K](v) :: t)
+              case (_, Left(th)) =>
+                tail.to(convertedValue, typeHint, th +: errors).map(t => labelled.field[K](null.asInstanceOf[H]) :: t)
+              case (_, Right(v)) =>
+                tail.to(convertedValue, typeHint, errors).map(t => labelled.field[K](v) :: t)
             }
         }
       }
