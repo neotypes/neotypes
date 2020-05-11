@@ -111,9 +111,7 @@ trait ResultMappers extends ValueMappers {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, H :!: T] = {
         val (headName, headValue) = value.head
         val head = fieldDecoder.to(headName, Some(headValue))
-        val tail = tailDecoder.to(value.tail, None, errors)
-
-        head.flatMap(h => tail.map(t => h :: t))
+        accumulateErrorsIfExist[H, T, H](value.tail, typeHint, errors, head, identity)
       }
     }
 
@@ -148,24 +146,14 @@ trait ResultMappers extends ValueMappers {
               }
 
             val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
-
-            (tail, decodedHead) match{
-              case (HNilResultMapper, Left(th)) =>
-                Left(MultipleIncoercibleException((th +: errors).reverse))
-              case (HNilResultMapper, _) if errors.nonEmpty  =>
-                Left(MultipleIncoercibleException(errors.reverse))
-              case (_, Left(th)) =>
-                tail.to(convertedValue, typeHint, th +: errors).map(t => labelled.field[K](null.asInstanceOf[H]) :: t)
-              case (_, Right(v)) =>
-                tail.to(convertedValue, typeHint, errors).map(t => labelled.field[K](v) :: t)
-            }
+            accumulateErrorsIfExist[H, T, FieldType[K, H]](value, typeHint, errors, decodedHead, h => labelled.field[K](h))
         }
       }
     }
 
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
-      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint], errors: Seq[Throwable]): Either[Throwable, Option[T]] =
+      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, Option[T]] =
         fields match {
           case Nil => Right(None)
           case (_, v) :: Nil if (v.isNull) => Right(None)
@@ -175,4 +163,17 @@ trait ResultMappers extends ValueMappers {
 
   implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
     ResultMapper.fromValueMapper
+
+  def accumulateErrorsIfExist[H, T <: HList, HR](results: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable], head: Either[Throwable, H], headFunc: H => HR)(implicit resultMapper: ResultMapper[T]) = {
+    (resultMapper, head) match{
+      case (HNilResultMapper, Left(th)) =>
+        Left(MultipleIncoercibleException((th +: errors).reverse))
+      case (HNilResultMapper, _) if errors.nonEmpty  =>
+        Left(MultipleIncoercibleException(errors.reverse))
+      case (_, Left(th)) =>
+        resultMapper.to(results, typeHint, th +: errors).map(t => headFunc(null.asInstanceOf[H]) :: t)
+      case (_, Right(v)) =>
+        resultMapper.to(results, typeHint, errors).map(t => headFunc(v) :: t)
+    }
+  }
 }

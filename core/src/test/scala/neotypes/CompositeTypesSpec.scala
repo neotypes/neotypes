@@ -6,6 +6,7 @@ import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.v1.Value
 import org.scalatest.LoneElement
+import shapeless._
 
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
@@ -135,7 +136,7 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
     }
   }
 
-  it should "construct an MultipleIncoercibleException message with all failures" in {
+  it should "construct an MultipleIncoercibleException message with all case class mapping failures" in {
     recoverToExceptionIf[MultipleIncoercibleException] {
       executeAsFuture { s =>
         "match (p:Person {name: 'Charlize Theron'}) return p"
@@ -143,9 +144,24 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
           .single(s)
       }
     } map { ex =>
-      assert(ex.errors.map(_.getMessage)  == List(
+      assert(ex.errors.map(_.getMessage) == List(
         "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]",
         "Cannot coerce INTEGER to Java boolean for field [born] with value [1975]")
+      )
+    }
+  }
+
+  it should "construct an MultipleIncoercibleException message with all HList mapping failures" in {
+    recoverToExceptionIf[MultipleIncoercibleException] {
+      executeAsFuture { s =>
+        "match (p:Person {name: 'Charlize Theron'}) return p.name, p.born"
+          .query[Int :: Boolean :: HNil]
+          .single(s)
+      }
+    } map { ex =>
+      assert(ex.errors.map(_.getMessage) == List(
+        "Cannot coerce STRING to Java int for field [p.name] with value [\"Charlize Theron\"]",
+        "Cannot coerce INTEGER to Java boolean for field [p.born] with value [1975]")
       )
     }
   }
