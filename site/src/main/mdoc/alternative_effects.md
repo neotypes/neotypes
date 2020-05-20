@@ -106,14 +106,14 @@ val data: String = program.runSyncUnsafe(1.second)
 ### zio.Task _(neotypes-zio)_
 
 ```scala mdoc:compile-only
-import zio.{DefaultRuntime, Managed, Task}
+import zio.{Runtime, Managed, Task}
 import neotypes.{GraphDatabase, Session}
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import org.neo4j.driver.v1.AuthTokens
 
-val runtime = new DefaultRuntime {}
+val runtime = Runtime.default
 
 val session: Managed[Throwable, Session[Task]] = for {
   driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
