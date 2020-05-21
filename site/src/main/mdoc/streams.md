@@ -121,7 +121,7 @@ program.completedL.runSyncUnsafe(5.seconds)
 ### ZIO ZStreams _(neotypes-zio-stream)_
 
 ```scala mdoc:compile-only
-import zio.{DefaultRuntime, Managed, Task}
+import zio.{Runtime, Managed, Task}
 import zio.stream.ZStream
 import neotypes.{GraphDatabase, Session}
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
@@ -131,7 +131,7 @@ import neotypes.zio.stream.ZioStream
 import neotypes.zio.stream.implicits._ // Brings the implicit Stream[ZioStream] instance into the scope.
 import org.neo4j.driver.v1.AuthTokens
 
-val runtime = new DefaultRuntime {}
+val runtime = Runtime.default
 
 val session: Managed[Throwable, Session[Task]] = for {
   driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
