@@ -20,9 +20,9 @@ trait ZioStreams {
       override final def onComplete[T](s: ZioStream[T])(f: => Task[Unit]): ZioStream[T] =
         ZStream.bracket(Task(s)) { _ =>
           f.orDie
-        }.flatMap(identity)
+        }.flatten
 
       override final def fToS[T](f: Task[ZioStream[T]]): ZioStream[T] =
-        ZStream.fromEffect(f).flatMap(identity)
+        ZStream.fromEffect(f).flatten
     }
 }
