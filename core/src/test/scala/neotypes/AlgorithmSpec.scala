@@ -14,17 +14,27 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
   it should "execute the article rank centrality algorithm" in executeAsFuture { s =>
     for {
       _ <- articleRankingData.query[Unit].execute(s)
-      result <- """CALL algo.articleRank('Paper', 'CITES',
-                   {iterations:20, dampingFactor:0.85, write: true, writeProperty:"pagerank"})
-                   YIELD nodes, iterations, dampingFactor, write, writeProperty
-                """.query[ArticleRanking].single (s)
+      result <- """CALL gds.alpha.articleRank.stream({
+                     nodeProjection: "Paper",
+                     relationshipProjection: "CITES",
+                     maxIterations: 20,
+                     dampingFactor: 0.85,
+                     writeProperty: "pagerank"
+                   })
+                   YIELD nodeId, score AS rawScore
+                   RETURN
+                     gds.util.asNode(nodeId).name AS paper,
+                     round(100 * rawScore) AS score
+                   ORDER BY rawScore DESC
+                   LIMIT 5
+                """.query[ScoredPaper].list(s)
     } yield {
-      result shouldBe ArticleRanking(
-        nodes = 7,
-        iterations = 20,
-        dampingFactor = 0.85,
-        write = true,
-        writeProperty = "pagerank"
+      result shouldBe List(
+        ScoredPaper(paper = "Paper 0", score = 35),
+        ScoredPaper(paper = "Paper 1", score = 32),
+        ScoredPaper(paper = "Paper 4", score = 21),
+        ScoredPaper(paper = "Paper 2", score = 21),
+        ScoredPaper(paper = "Paper 3", score = 18)
       )
     }
   }
@@ -32,15 +42,34 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
   it should "execute the triangle count community detection algorithm" in executeAsFuture { s =>
     for{
       _ <- triangleCountData.query[Unit].execute(s)
-      result <- """CALL algo.triangleCount('Person', 'KNOWS',
-                   {concurrency:4, write:true, writeProperty:'triangles', clusteringCoefficientProperty:'coefficient'})
-                   YIELD loadMillis, computeMillis, writeMillis, nodeCount, triangleCount, averageClusteringCoefficient
-                """.query[TriangleCount].single(s)
+
+      result <- """CALL gds.alpha.triangleCount.stream({
+                     nodeProjection: 'Person',
+                     relationshipProjection: {
+                       KNOWS: {
+                         type: 'KNOWS',
+                         orientation: 'UNDIRECTED'
+                       }
+                     }
+                   })
+                   YIELD nodeId, triangles, coefficient
+                   RETURN
+                     gds.util.asNode(nodeId).name AS person,
+                     triangles AS triangleCount,
+                     round(coefficient * 100) AS coefficient
+                   ORDER BY
+                     coefficient DESC,
+                     triangleCount DESC,
+                     person ASC
+                   LIMIT 5
+                """.query[PersonTriangleCount].list(s)
     } yield {
-      result shouldBe TriangleCount(
-        nodeCount = 6,
-        triangleCount = 3,
-        0.6055555555555555
+      result shouldBe List(
+        PersonTriangleCount(person = "Karin", triangleCount = 1, coefficient = 100),
+        PersonTriangleCount(person = "Mark", triangleCount = 1, coefficient = 100),
+        PersonTriangleCount(person = "Chris", triangleCount = 2, coefficient = 67),
+        PersonTriangleCount(person = "Will", triangleCount = 2, coefficient = 67),
+        PersonTriangleCount(person = "Michael", triangleCount = 3, coefficient = 30)
       )
     }
   }
@@ -48,29 +77,39 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
   it should "execute the adamic adar link prediction algorithm" in executeAsFuture { s =>
     for{
       _ <- linkPredictionData.query[Unit].execute(s)
-      result <- """MATCH (p1:Person {name: 'Michael'})
-                   MATCH (p2:Person {name: 'Karin'})
-                   RETURN algo.linkprediction.adamicAdar(p1, p2) AS score
-                """.query[AdamicLink].single(s)
+      result <- """MATCH (p1: Person { name: 'Michael' })
+                   MATCH (p2: Person { name: 'Karin' })
+                   RETURN round(100 * gds.alpha.linkprediction.adamicAdar(p1, p2))
+                """.query[Int].single(s)
     } yield {
-      result shouldBe AdamicLink(
-        score = 0.9102392266268373
-      )
+      result shouldBe 91
     }
   }
 
   it should "execute the shortest path algorithm" in executeAsFuture { s =>
     for{
       _ <- shortestPathData.query[Unit].execute(s)
-      result <- """MATCH (start:Loc{name:'A'}), (end:Loc{name:'F'})
-                   CALL algo.shortestPath(start, end, 'cost', {write:true, writeProperty:'sssp'})
-                   YIELD writeMillis, loadMillis, nodeCount, totalCost
-                   RETURN writeMillis, loadMillis, nodeCount, totalCost
+      result <- """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
+                   CALL gds.alpha.shortestPath.write({
+                     nodeProjection: 'Loc',
+                     relationshipProjection: {
+                       ROAD: {
+                         type: 'ROAD',
+                         properties: 'cost',
+                         orientation: 'UNDIRECTED'
+                       }
+                     },
+                     startNode: start,
+                     endNode: end,
+                     relationshipWeightProperty: 'cost'
+                   })
+                   YIELD nodeCount, totalCost
+                   RETURN nodeCount, totalCost
                 """.query[ShortestPath].single(s)
     } yield {
       result shouldBe ShortestPath(
         nodeCount = 5,
-        totalCost = 160.0
+        totalCost = 160
       )
     }
   }
@@ -78,141 +117,137 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
   it should "execute the jaccard similarity algorithm" in executeAsFuture { s =>
     for{
       _ <- similarityData.query[Unit].execute(s)
-      result <- """MATCH (p1:Person {name: 'Karin'})-[:LIKES]->(cuisine1)
+      result <- """MATCH (p1: Person { name: 'Karin' })-[: LIKES]->(cuisine1)
                    WITH p1, collect(id(cuisine1)) AS p1Cuisine
-                   MATCH (p2:Person {name: "Arya"})-[:LIKES]->(cuisine2)
+                   MATCH (p2: Person { name: "Arya" })-[: LIKES]->(cuisine2)
                    WITH p1, p1Cuisine, p2, collect(id(cuisine2)) AS p2Cuisine
-                   RETURN
-                     p1.name AS from,
-                     p2.name AS to,
-                     algo.similarity.jaccard(p1Cuisine, p2Cuisine) AS similarity
-                """.query[JaccardSimilarity].single(s)
+                   RETURN round(100 * gds.alpha.similarity.jaccard(p1Cuisine, p2Cuisine))
+                """.query[Int].single(s)
     } yield {
-      result shouldBe JaccardSimilarity(
-        from = "Karin",
-        to = "Arya",
-        similarity = 0.6666666666666666
-      )
+      result shouldBe 67
     }
   }
 }
 
-object AlgorithmData{
-  final case class ArticleRanking(nodes: Int, iterations: Int, dampingFactor: Double, write: Boolean, writeProperty: String)
-  final case class TriangleCount(nodeCount: Int, triangleCount: Int, averageClusteringCoefficient: Double)
-  final case class AdamicLink(score: Double)
-  final case class ShortestPath(nodeCount: Int, totalCost: Double)
-  final case class JaccardSimilarity(from: String, to: String, similarity: Double)
+object AlgorithmData {
+  final case class ScoredPaper(paper:  String, score:  Int)
+  final case class PersonTriangleCount(person:  String, triangleCount:  Int, coefficient:  Int)
+  final case class ShortestPath(nodeCount: Int, totalCost: Int)
 
   val articleRankingData =
-    """MERGE (paper0:Paper {name:'Paper 0'})
-       MERGE (paper1:Paper {name:'Paper 1'})
-       MERGE (paper2:Paper {name:'Paper 2'})
-       MERGE (paper3:Paper {name:'Paper 3'})
-       MERGE (paper4:Paper {name:'Paper 4'})
-       MERGE (paper5:Paper {name:'Paper 5'})
-       MERGE (paper6:Paper {name:'Paper 6'})
-       MERGE (paper1)-[:CITES]->(paper0)
+    """CREATE
+       (paper0: Paper  { name: 'Paper 0' }),
+       (paper1: Paper  { name: 'Paper 1' }),
+       (paper2: Paper  { name: 'Paper 2' }),
+       (paper3: Paper  { name: 'Paper 3' }),
+       (paper4: Paper  { name: 'Paper 4' }),
+       (paper5: Paper  { name: 'Paper 5' }),
+       (paper6: Paper  { name: 'Paper 6' }),
+       (paper1)-[: CITES]->(paper0),
 
-       MERGE (paper2)-[:CITES]->(paper0)
-       MERGE (paper2)-[:CITES]->(paper1)
+       (paper2)-[: CITES]->(paper0),
+       (paper2)-[: CITES]->(paper1),
 
-       MERGE (paper3)-[:CITES]->(paper0)
-       MERGE (paper3)-[:CITES]->(paper1)
-       MERGE (paper3)-[:CITES]->(paper2)
+       (paper3)-[: CITES]->(paper0),
+       (paper3)-[: CITES]->(paper1),
+       (paper3)-[: CITES]->(paper2),
 
-       MERGE (paper4)-[:CITES]->(paper0)
-       MERGE (paper4)-[:CITES]->(paper1)
-       MERGE (paper4)-[:CITES]->(paper2)
-       MERGE (paper4)-[:CITES]->(paper3)
+       (paper4)-[: CITES]->(paper0),
+       (paper4)-[: CITES]->(paper1),
+       (paper4)-[: CITES]->(paper2),
+       (paper4)-[: CITES]->(paper3),
 
-       MERGE (paper5)-[:CITES]->(paper1)
-       MERGE (paper5)-[:CITES]->(paper4)
+       (paper5)-[: CITES]->(paper1),
+       (paper5)-[: CITES]->(paper4),
 
-       MERGE (paper6)-[:CITES]->(paper1)
-       MERGE (paper6)-[:CITES]->(paper4);
+       (paper6)-[: CITES]->(paper1),
+       (paper6)-[: CITES]->(paper4)
     """
 
   val triangleCountData =
-    """MERGE (alice:Person{id:"Alice"})
-       MERGE (michael:Person{id:"Michael"})
-       MERGE (karin:Person{id:"Karin"})
-       MERGE (chris:Person{id:"Chris"})
-       MERGE (will:Person{id:"Will"})
-       MERGE (mark:Person{id:"Mark"})
+    """CREATE
+       (alice: Person { name: "Alice" }),
+       (michael: Person { name: "Michael" }),
+       (karin: Person { name: "Karin" }),
+       (chris: Person { name: "Chris" }),
+       (will: Person { name: "Will" }),
+       (mark: Person { name: "Mark" }),
 
-       MERGE (michael)-[:KNOWS]->(karin)
-       MERGE (michael)-[:KNOWS]->(chris)
-       MERGE (will)-[:KNOWS]->(michael)
-       MERGE (mark)-[:KNOWS]->(michael)
-       MERGE (mark)-[:KNOWS]->(will)
-       MERGE (alice)-[:KNOWS]->(michael)
-       MERGE (will)-[:KNOWS]->(chris)
-       MERGE (chris)-[:KNOWS]->(karin);
+       (michael)-[: KNOWS]->(karin),
+       (michael)-[: KNOWS]->(chris),
+       (will)-[: KNOWS]->(michael),
+       (mark)-[: KNOWS]->(michael),
+       (mark)-[: KNOWS]->(will),
+       (alice)-[: KNOWS]->(michael),
+       (will)-[: KNOWS]->(chris),
+       (chris)-[: KNOWS]->(karin)
     """
 
   val linkPredictionData =
-    """MERGE (zhen:Person {name: "Zhen"})
-       MERGE (praveena:Person {name: "Praveena"})
-       MERGE (michael:Person {name: "Michael"})
-       MERGE (arya:Person {name: "Arya"})
-       MERGE (karin:Person {name: "Karin"})
+    """CREATE
+       (zhen: Person  { name:  "Zhen" }),
+       (praveena: Person  { name:  "Praveena" }),
+       (michael: Person  { name:  "Michael" }),
+       (arya: Person  { name:  "Arya" }),
+       (karin: Person  { name:  "Karin" }),
 
-       MERGE (zhen)-[:FRIENDS]-(arya)
-       MERGE (zhen)-[:FRIENDS]-(praveena)
-       MERGE (praveena)-[:WORKS_WITH]-(karin)
-       MERGE (praveena)-[:FRIENDS]-(michael)
-       MERGE (michael)-[:WORKS_WITH]-(karin)
-       MERGE (arya)-[:FRIENDS]-(karin)
+       (zhen)-[: FRIENDS]->(arya),
+       (zhen)-[: FRIENDS]->(praveena),
+       (praveena)-[: WORKS_WITH]->(karin),
+       (praveena)-[: FRIENDS]->(michael),
+       (michael)-[: WORKS_WITH]->(karin),
+       (arya)-[: FRIENDS]->(karin)
     """
 
   val shortestPathData =
-    """MERGE (a:Loc {name:'A'})
-       MERGE (b:Loc {name:'B'})
-       MERGE (c:Loc {name:'C'})
-       MERGE (d:Loc {name:'D'})
-       MERGE (e:Loc {name:'E'})
-       MERGE (f:Loc {name:'F'})
+    """CREATE
+       (a: Loc  { name: 'A' }),
+       (b: Loc  { name: 'B' }),
+       (c: Loc  { name: 'C' }),
+       (d: Loc  { name: 'D' }),
+       (e: Loc  { name: 'E' }),
+       (f: Loc  { name: 'F' }),
 
-       MERGE (a)-[:ROAD {cost:50}]->(b)
-       MERGE (a)-[:ROAD {cost:50}]->(c)
-       MERGE (a)-[:ROAD {cost:100}]->(d)
-       MERGE (b)-[:ROAD {cost:40}]->(d)
-       MERGE (c)-[:ROAD {cost:40}]->(d)
-       MERGE (c)-[:ROAD {cost:80}]->(e)
-       MERGE (d)-[:ROAD {cost:30}]->(e)
-       MERGE (d)-[:ROAD {cost:80}]->(f)
-       MERGE (e)-[:ROAD {cost:40}]->(f);
+       (a)-[: ROAD  { cost: 50 }]->(b),
+       (a)-[: ROAD  { cost: 50 }]->(c),
+       (a)-[: ROAD  { cost: 100 }]->(d),
+       (b)-[: ROAD  { cost: 40 }]->(d),
+       (c)-[: ROAD  { cost: 40 }]->(d),
+       (c)-[: ROAD  { cost: 80 }]->(e),
+       (d)-[: ROAD  { cost: 30 }]->(e),
+       (d)-[: ROAD  { cost: 80 }]->(f),
+       (e)-[: ROAD  { cost: 40 }]->(f)
     """
 
   val similarityData =
-    """MERGE (french:Cuisine {name:'French'})
-       MERGE (italian:Cuisine {name:'Italian'})
-       MERGE (indian:Cuisine {name:'Indian'})
-       MERGE (lebanese:Cuisine {name:'Lebanese'})
-       MERGE (portuguese:Cuisine {name:'Portuguese'})
+    """CREATE
+       (french: Cuisine  { name: 'French' }),
+       (italian: Cuisine  { name: 'Italian' }),
+       (indian: Cuisine  { name: 'Indian' }),
+       (lebanese: Cuisine  { name: 'Lebanese' }),
+       (portuguese: Cuisine  { name: 'Portuguese' }),
 
-       MERGE (zhen:Person {name: "Zhen"})
-       MERGE (praveena:Person {name: "Praveena"})
-       MERGE (michael:Person {name: "Michael"})
-       MERGE (arya:Person {name: "Arya"})
-       MERGE (karin:Person {name: "Karin"})
+       (zhen: Person  { name:  "Zhen" }),
+       (praveena: Person  { name:  "Praveena" }),
+       (michael: Person  { name:  "Michael" }),
+       (arya: Person  { name:  "Arya" }),
+       (karin: Person  { name:  "Karin" }),
 
-       MERGE (praveena)-[:LIKES]->(indian)
-       MERGE (praveena)-[:LIKES]->(portuguese)
+       (praveena)-[: LIKES]->(indian),
+       (praveena)-[: LIKES]->(portuguese),
 
-       MERGE (zhen)-[:LIKES]->(french)
-       MERGE (zhen)-[:LIKES]->(indian)
+       (zhen)-[: LIKES]->(french),
+       (zhen)-[: LIKES]->(indian),
 
-       MERGE (michael)-[:LIKES]->(french)
-       MERGE (michael)-[:LIKES]->(italian)
-       MERGE (michael)-[:LIKES]->(indian)
+       (michael)-[: LIKES]->(french),
+       (michael)-[: LIKES]->(italian),
+       (michael)-[: LIKES]->(indian),
 
-       MERGE (arya)-[:LIKES]->(lebanese)
-       MERGE (arya)-[:LIKES]->(italian)
-       MERGE (arya)-[:LIKES]->(portuguese)
+       (arya)-[: LIKES]->(lebanese),
+       (arya)-[: LIKES]->(italian),
+       (arya)-[: LIKES]->(portuguese),
 
-       MERGE (karin)-[:LIKES]->(lebanese)
-       MERGE (karin)-[:LIKES]->(italian)
+       (karin)-[: LIKES]->(lebanese),
+       (karin)-[: LIKES]->(italian)
     """
 }

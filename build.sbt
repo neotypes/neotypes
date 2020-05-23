@@ -6,6 +6,7 @@ val neo4jDriverVersion = "1.7.5"
 val scalaCollectionCompatVersion = "2.1.6"
 val shapelessVersion = "2.3.3"
 val testcontainersScalaVersion = "0.36.1"
+val testcontainersNeo4jVersion = "1.14.1"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.1.1"
 val slf4jVersion = "1.7.30"
@@ -20,10 +21,10 @@ val refinedVersion = "0.9.14"
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  scalaVersion in ThisBuild := "2.12.11",
+  ThisBuild / scalaVersion := "2.12.11",
   crossScalaVersions := Seq("2.13.2", "2.12.11"),
   scalacOptions += "-Ywarn-macros:after",
-  scalacOptions in Test := Seq("-feature", "-deprecation"),
+  Test / scalacOptions := Seq("-feature", "-deprecation"),
   autoAPIMappings := true,
 
   /**
@@ -40,15 +41,15 @@ val commonSettings = Seq(
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
-  organization in ThisBuild := "com.dimafeng",
+  ThisBuild / organization := "com.dimafeng",
 
-  parallelExecution in Global := false,
+  Global / parallelExecution := false,
 
   releaseCrossBuild := true
 )
 
 lazy val noPublishSettings = Seq(
-  skip in publish := true
+  publish / skip := true
 )
 
 lazy val root = (project in file("."))
@@ -96,6 +97,8 @@ lazy val core = (project in file("core"))
       ) ++ TEST(
         "org.scalatest" %% "scalatest" % scalaTestVersion,
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
+        "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
+        "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
         "org.mockito" % "mockito-all" % mockitoVersion,
         "org.slf4j" % "slf4j-simple" % slf4jVersion
       )
@@ -112,7 +115,7 @@ lazy val catsEffect = (project in file("cats-effect"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
-    scalacOptions in Test ++= enablePartialUnificationIn2_12(scalaVersion.value),
+    Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )
@@ -204,6 +207,8 @@ lazy val catsData = (project in file("cats-data"))
     )
   )
 
+lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
+
 lazy val microsite = (project in file("site"))
   .settings(moduleName := "site")
   .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
@@ -219,15 +224,15 @@ lazy val microsite = (project in file("site"))
     micrositeGithubRepo := "neotypes",
     micrositeBaseUrl := "/neotypes",
     ghpagesNoJekyll := false,
-    mdocIn := (sourceDirectory in Compile).value / "mdoc",
-    fork in mdoc := true,
+    mdocIn := (Compile / sourceDirectory).value / "mdoc",
+    mdoc / fork := true,
     docsMappingsAPIDir := "api",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    scalacOptions in Compile -= "-Xfatal-warnings",
-    scalacOptions in (ScalaUnidoc, unidoc) ++= Seq(
+    Compile / scalacOptions in Compile -= "-Xfatal-warnings",
+    ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",
       scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
@@ -246,5 +251,3 @@ lazy val microsite = (project in file("site"))
     monixStream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided"
   )
-
-lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
