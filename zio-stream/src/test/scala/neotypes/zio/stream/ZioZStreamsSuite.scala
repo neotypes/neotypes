@@ -4,8 +4,7 @@ import neotypes.{Stream, StreamSuite, StreamTestkit}
 import neotypes.zio.ZioTaskTestkit
 import neotypes.zio.stream.implicits._
 import scala.concurrent.ExecutionContext
-import zio.{DefaultRuntime, Task}
-import zio.internal.PlatformLive
+import zio.Task
 
 /** Implementation of the Stream Teskit for zio ZStreams. */
 object ZioZStreamsTestkit extends StreamTestkit[ZioStream, Task](ZioTaskTestkit) {
