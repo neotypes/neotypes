@@ -1,24 +1,29 @@
 package neotypes
 
 import java.time.Duration
-import com.dimafeng.testcontainers.{ForAllTestContainer, GenericContainer}
+import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import org.neo4j.driver.{v1 => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
+import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
+import org.testcontainers.images.PullPolicy
 import scala.concurrent.Future
+import com.dimafeng.testcontainers.Container
+import com.dimafeng.testcontainers.ContainerDef
+import org.testcontainers.utility.MountableFile
 
 /** Base class for writing integration specs. */
-abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncFlatSpecLike with ForAllTestContainer {
+abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncFlatSpecLike with ForAllTestContainer  {
   protected def initQuery: String
 
-  override final val container = GenericContainer("neo4j:3.5.3",
-    env = Map("NEO4J_AUTH" -> "none"),
-    exposedPorts = Seq(7687),
-    waitStrategy = new HostPortWaitStrategy().withStartupTimeout(Duration.ofSeconds(30))
-  )
+  override final val container =
+    Neo4jContainer(neo4jImageVersion = "neo4j:3.5")
+      .configure(_.withoutAuthentication())
+      .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
+      .configure(_.withImagePullPolicy(PullPolicy.alwaysPull()))
 
   protected lazy final val driver =
-    neo4j.GraphDatabase.driver(s"bolt://localhost:${container.mappedPort(7687)}")
+    neo4j.GraphDatabase.driver(container.boltUrl)
 
   protected lazy final val session =
     driver.session()
