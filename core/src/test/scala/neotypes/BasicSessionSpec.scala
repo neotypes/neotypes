@@ -115,6 +115,30 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
     }
   }
 
+  it should "catch nulls and missing fields" in {
+    val queries: List[Session[F] => F[Option[String]]] = List(
+      "RETURN NULL".query[Option[String]].single(_),
+      "RETURN NULL".query[Option[String]].list(_).map(_.headOption.flatten),
+      "RETURN NULL AS name".query[WrappedName].single(_).map(_.name),
+      "RETURN NULL AS name".query[WrappedName].list(_).map(_.headOption.flatMap(_.name)),
+      "RETURN 0".query[WrappedName].single(_).map(_.name),
+      "RETURN 0".query[WrappedName].list(_).map(_.headOption.flatMap(_.name)),
+      "RETURN NULL".query[WrappedName].single(_).map(_.name),
+      "RETURN NULL".query[WrappedName].list(_).map(_.headOption.flatMap(_.name))
+    )
+
+    // Custom Future.traverse that runs sequentially.
+    queries.foldLeft(Future.successful(List.empty[Option[String]])) {
+      case (accF, query) =>
+        for {
+          acc <- accF
+          e <- executeAsFuture(s => query(s))
+        } yield e :: acc
+    } flatMap { results =>
+      assert(results.forall(_ == None))
+    }
+  }
+
   override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
@@ -132,4 +156,6 @@ object BasicSessionSpec {
   final case class Roles(roles: List[String])
 
   final case class PersonWithRoles(person: Person, roles: Roles)
+
+  final case class WrappedName(name: Option[String])
 }
