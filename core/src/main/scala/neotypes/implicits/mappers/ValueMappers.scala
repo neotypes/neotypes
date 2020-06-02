@@ -158,11 +158,11 @@ trait ValueMappers {
     new ValueMapper[Option[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] =
         value match {
-          case None =>
-            Right(None)
-
-          case Some(value) =>
+          case Some(value) if (!value.isNull) =>
             mapper.to(fieldName, Some(value)).map(r => Option(r))
+
+          case _ =>
+            Right(None)
         }
     }
 

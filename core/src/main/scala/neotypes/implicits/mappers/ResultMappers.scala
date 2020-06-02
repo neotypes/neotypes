@@ -155,10 +155,11 @@ trait ResultMappers extends ValueMappers {
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
       override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
-        if (fields.isEmpty)
-          Right(None)
-        else
-          mapper.to(fields, typeHint).map(r => Option(r))
+        fields match {
+          case Nil => Right(None)
+          case (_, v) :: Nil if (v.isNull) => Right(None)
+          case _ => mapper.to(fields, typeHint).map(r => Option(r))
+        }
     }
 
   implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
