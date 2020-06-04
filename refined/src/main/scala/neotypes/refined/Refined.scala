@@ -5,7 +5,7 @@ import exceptions.{PropertyNotFoundException, IncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, TypeHint, ValueMapper}
 
 import eu.timepit.refined.api.{Refined, RefinedType}
-import org.neo4j.driver.v1.Value
+import org.neo4j.driver.Value
 
 trait RefinedMappers {
   implicit final def refinedValueMapper[T, P](implicit mapper: ValueMapper[T], rt: RefinedType.AuxT[Refined[T, P], T]): ValueMapper[Refined[T, P]] =
