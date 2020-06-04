@@ -22,7 +22,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
       .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
       .configure(_.withImagePullPolicy(PullPolicy.alwaysPull()))
 
-  private lazy final val driver =
+  protected lazy final val driver =
     neo4j.GraphDatabase.driver(container.boltUrl)
 
   private lazy final val neo4jSession =
