@@ -2,7 +2,7 @@ package neotypes
 
 import mappers.ParameterMapper
 
-import org.neo4j.driver.v1.types.{Path => NPath}
+import org.neo4j.driver.types.{Path => NPath}
 
 object types {
   final case class Path[N, R](nodes: Seq[N], relationships: Seq[R], path: NPath)

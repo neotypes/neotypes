@@ -11,8 +11,8 @@ import types.Path
 
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{MapValue, NodeValue, RelationshipValue}
-import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
+import org.neo4j.driver.Value
+import org.neo4j.driver.types.{IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
 import shapeless.HNil
 
 import scala.collection.compat._

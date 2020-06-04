@@ -1,6 +1,6 @@
 package neotypes
 
-import org.neo4j.driver.v1.exceptions.value.Uncoercible
+import org.neo4j.driver.exceptions.value.Uncoercible
 
 object exceptions {
   sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull)

@@ -3,9 +3,9 @@ package neotypes
 import internal.syntax.async._
 import internal.syntax.stage._
 
-import org.neo4j.driver.v1.{Session => NSession}
+import org.neo4j.driver.async.{AsyncSession => NeoAsyncSession}
 
-final class Session[F[_]] private[neotypes] (private val session: NSession) extends AnyVal {
+final class Session[F[_]] private[neotypes] (private val session: NeoAsyncSession) extends AnyVal {
   def transaction(implicit F: Async[F]): F[Transaction[F]] =
     F.async { cb =>
       session.beginTransactionAsync().accept(cb) { tx =>

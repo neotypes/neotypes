@@ -3,18 +3,19 @@ package neotypes
 import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
-import internal.utils.traverse.{traverseAs, traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
+import internal.utils.traverse._
 import internal.syntax.stage._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
-import org.neo4j.driver.v1.exceptions.NoSuchRecordException
-import org.neo4j.driver.v1.{Record, Transaction => NTransaction, Value}
+import org.neo4j.driver.{Record, Value}
+import org.neo4j.driver.async.{AsyncTransaction => NeoAsyncTransaction}
+import org.neo4j.driver.exceptions.NoSuchRecordException
 
 import scala.collection.compat._
 import scala.jdk.CollectionConverters._
 
-final class Transaction[F[_]] private[neotypes] (private val transaction: NTransaction) extends AnyVal {
+final class Transaction[F[_]] private[neotypes] (private val transaction: NeoAsyncTransaction) extends AnyVal {
   import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToList}
 
   def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
@@ -104,7 +105,7 @@ object Transaction {
       }
     }
 
-  private def collectAsImpl[F[_], T, C](transaction: NTransaction)
+  private def collectAsImpl[F[_], T, C](transaction: NeoAsyncTransaction)
                                        (query: String, params: Map[String, QueryParam])
                                        (traverseFun: Iterator[Record] => (Record => Either[Throwable, T]) => Either[Throwable, C])
                                        (implicit F: Async[F], resultMapper: ResultMapper[T]): F[C] =
