@@ -3,7 +3,7 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
-import org.neo4j.driver.v1.types.{Node, Relationship}
+import org.neo4j.driver.types.{Node, Relationship}
 import scala.jdk.CollectionConverters._
 import shapeless._
 import scala.concurrent.Future

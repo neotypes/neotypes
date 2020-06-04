@@ -6,8 +6,8 @@ import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
-import org.neo4j.driver.v1.{Value, Values}
-import org.neo4j.driver.v1.types.{IsoDuration, Node, Point}
+import org.neo4j.driver.{Value, Values}
+import org.neo4j.driver.types.{IsoDuration, Node, Point}
 import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
 import scala.concurrent.Future

@@ -4,7 +4,7 @@ import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
-import org.neo4j.driver.v1.Value
+import org.neo4j.driver.Value
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
