@@ -26,7 +26,7 @@ import neotypes.akkastreams.AkkaStream
 import neotypes.akkastreams.implicits._ // Brings the implicit Stream[AkkaStream] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -61,7 +61,7 @@ import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2IOStream] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 val session: Resource[IO, Session[IO]] = for {
   driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -99,7 +99,7 @@ import neotypes.implicits.syntax.string._ // Provides the query[T] extension met
 import neotypes.monix.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.monix.stream.MonixStream
 import neotypes.monix.stream.implicits._ // Brings the implicit Stream[MonixStream] instance into the scope.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 import scala.concurrent.duration._
 
 val session: Resource[Task, Session[Task]] = for {
@@ -129,7 +129,7 @@ import neotypes.implicits.syntax.string._ // Provides the query[T] extension met
 import neotypes.zio.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.zio.stream.ZioStream
 import neotypes.zio.stream.implicits._ // Brings the implicit Stream[ZioStream] instance into the scope.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 val runtime = Runtime.default
 
