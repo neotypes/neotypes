@@ -1,6 +1,5 @@
 package neotypes
 
-import java.util.{Map => JMap}
 import java.util.concurrent.CompletionStage
 
 import internal.utils.traverse._
@@ -15,14 +14,14 @@ import org.neo4j.driver.exceptions.NoSuchRecordException
 import scala.collection.compat._
 import scala.jdk.CollectionConverters._
 
-final class Transaction[F[_]] private[neotypes] (private val transaction: NeoAsyncTransaction) extends AnyVal {
-  import Transaction.{collectAsImpl, convertParams, nextAsyncToF, recordToList}
+final class Transaction[F[_]] private[neotypes] (private val transaction: NeoAsyncTransaction) {
+  import Transaction._
 
   def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
                 (implicit F: Async[F], executionMapper: ExecutionMapper[T]): F[T] =
     F.async { cb =>
       transaction
-        .runAsync(query, convertParams(params))
+        .runAsync(query, QueryParam.toJavaMap(params))
         .thenCompose(_.consumeAsync())
         .accept(cb)(executionMapper.to)
     }
@@ -52,7 +51,7 @@ final class Transaction[F[_]] private[neotypes] (private val transaction: NeoAsy
                (implicit F: Async[F], resultMapper: ResultMapper[T]): F[T] =
     F.async { cb =>
       transaction
-        .runAsync(query, convertParams(params))
+        .runAsync(query, QueryParam.toJavaMap(params))
         .thenCompose(_.singleAsync())
         .acceptExceptionally(cb) { record =>
           resultMapper.to(recordToList(record), None)
@@ -66,7 +65,7 @@ final class Transaction[F[_]] private[neotypes] (private val transaction: NeoAsy
     S.fToS(
       F.async { cb =>
         transaction
-          .runAsync(query, convertParams(params))
+          .runAsync(query, QueryParam.toJavaMap(params))
           .accept(cb) { statementResultCursor =>
             Right(S.init(() => nextAsyncToF(statementResultCursor.nextAsync())))
           }
@@ -88,9 +87,6 @@ object Transaction {
   private def recordToList(record: Record): List[(String, Value)] =
     record.fields.asScala.iterator.map(p => p.key -> p.value).toList
 
-  private def convertParams(params: Map[String, QueryParam]): JMap[String, Object] =
-    params.view.mapValues(_.underlying).toMap.asJava
-
   private def nextAsyncToF[F[_], T](cs: CompletionStage[Record])
                                    (implicit F: Async[F], resultMapper: ResultMapper[T]): F[Option[T]] =
     F.async { cb =>
@@ -111,7 +107,7 @@ object Transaction {
                                        (implicit F: Async[F], resultMapper: ResultMapper[T]): F[C] =
     F.async { cb =>
       transaction
-        .runAsync(query, convertParams(params))
+        .runAsync(query, QueryParam.toJavaMap(params))
         .thenCompose(_.listAsync())
         .accept(cb) { records =>
           traverseFun(records.asScala.iterator) { record =>
