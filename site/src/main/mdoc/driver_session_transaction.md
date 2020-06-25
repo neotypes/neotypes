@@ -47,7 +47,7 @@ You can use `Session.transact` method.
 
 ```scala mdoc:compile-only
 import neotypes.Session
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMappers instances in scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
 def result(session: Session[F]): F[(String, String)] = session.transact { tx =>
@@ -77,4 +77,47 @@ def result(session: Session[F]): F[Unit] = session.transaction.flatMap { tx =>
     _ <- tx.rollback // Nothing will be done.
   } yield ()
 }
+```
+
+### Transaction configuration.
+
+If you want to configure the timeout of a `Transaction` or add add custom metadata to it, you can use a custom [`TransactionConfig`](https://neo4j.com/docs/api/java-driver/current/org/neo4j/driver/TransactionConfig.html).
+
+**neotypes** provides a Scala friendly factory for creating instances of `TransactionConfig`.
+
+
+```scala mdoc
+import neotypes.TransactionConfig
+import neotypes.implicits.mappers.parameters._
+import neotypes.types.QueryParam
+import scala.concurrent.duration._
+
+val config = TransactionConfig(
+  timeout = 2.seconds,
+  metadata = Map("foo" -> QueryParam("bar"), "baz" -> QueryParam(10))
+)
+```
+
+Which you can use in operations that explicitly or implicitly create `Transactions`.
+
+
+```scala mdoc:compile-only
+import neotypes.{Session, Transaction}
+import neotypes.implicits.mappers.results._ // Brings the implicit ResultMappers instances in scope.
+import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+
+def customTransaction(session: Session[F]): F[Transaction[F]] =
+  session.transaction(config)
+
+def result1(session: Session[F]): F[(String, String)] = session.transact(config) { tx =>
+  for {
+    r1 <-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(tx)
+    r2 <-"MATCH (p:Person {name: 'Tom Hanks'}) RETURN p.name".query[String].single(tx)
+  } yield (r1, r2)
+}
+
+def result2(session: Session[F]): F[String] =
+  "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name"
+    .query[String]
+    .single(session, config)
 ```

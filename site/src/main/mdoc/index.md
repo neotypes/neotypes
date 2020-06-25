@@ -67,3 +67,10 @@ Await.result(peopleCC, 1.second)
 session.close
 driver.close
 ```
+
+## Compatibility matrix
+
+| Neo4j version | Neotypes version |
+| :-----------: | :--------------: |
+| 3.5.x         | 0.13.x           |
+| 4.x.y         | 0.14.x           |
