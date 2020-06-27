@@ -72,5 +72,5 @@ driver.close
 
 | Neo4j version | Neotypes version |
 | :-----------: | :--------------: |
-| 3.5.x         | 0.13.x           |
-| 4.x.y         | 0.14.x           |
+| 3.5.x         | <= 0.13          |
+| 4.y.x         | >= 0.14          |
