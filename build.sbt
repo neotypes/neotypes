@@ -15,7 +15,7 @@ val catsEffectsVersion = "2.1.3"
 val monixVersion = "3.2.2"
 val akkaStreamVersion = "2.6.6"
 val fs2Version = "2.4.2"
-val zioVersion = "1.0.0-RC21-1"
+val zioVersion = "1.0.0-RC21-2"
 val refinedVersion = "0.9.14"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
