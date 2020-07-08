@@ -1,15 +1,18 @@
 package neotypes
 
-import neotypes.exceptions.IncoercibleException
+import neotypes.exceptions.MultipleIncoercibleException
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.v1.Value
+import org.scalatest.LoneElement
+import shapeless._
+
 import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing queries which produce complex types. */
-final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) with LoneElement {
   behavior of s"Extracting complex types using: ${effectName}"
 
   import CompositeTypesSpec._
@@ -122,14 +125,44 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
   }
 
   it should "construct an IncoercibleException message with a field name and value" in {
-    recoverToExceptionIf[IncoercibleException] {
+    recoverToExceptionIf[MultipleIncoercibleException] {
       executeAsFuture { s =>
         "match (p:Person {name: 'Charlize Theron'}) return p"
           .query[PersonIntName]
           .single(s)
       }
     } map { ex =>
-      assert(ex.getMessage  == "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]")
+      assert(ex.errors.loneElement.getMessage  == "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]")
+    }
+  }
+
+  it should "construct an MultipleIncoercibleException message with all case class mapping failures" in {
+    recoverToExceptionIf[MultipleIncoercibleException] {
+      executeAsFuture { s =>
+        "match (p:Person {name: 'Charlize Theron'}) return p"
+          .query[PersonIntNameBornBool]
+          .single(s)
+      }
+    } map { ex =>
+      assert(ex.errors.map(_.getMessage) == List(
+        "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]",
+        "Cannot coerce INTEGER to Java boolean for field [born] with value [1975]")
+      )
+    }
+  }
+
+  it should "construct an MultipleIncoercibleException message with all HList mapping failures" in {
+    recoverToExceptionIf[MultipleIncoercibleException] {
+      executeAsFuture { s =>
+        "match (p:Person {name: 'Charlize Theron'}) return p.name, p.born"
+          .query[Int :: Boolean :: HNil]
+          .single(s)
+      }
+    } map { ex =>
+      assert(ex.errors.map(_.getMessage) == List(
+        "Cannot coerce STRING to Java int for field [p.name] with value [\"Charlize Theron\"]",
+        "Cannot coerce INTEGER to Java boolean for field [p.born] with value [1975]")
+      )
     }
   }
 
@@ -140,6 +173,8 @@ object CompositeTypesSpec {
   final case class Person(name: String, born: Int, extra: Option[Int])
 
   final case class PersonIntName(name: Int, born: Int, extra: Option[Int])
+
+  final case class PersonIntNameBornBool(name: Int, born: Boolean, extra: Option[Int])
 
   final case class PersonWithNestedMap(name: String, map: Map[String, Int])
 

@@ -24,7 +24,7 @@ trait RefinedMappers {
 
   implicit final def refinedResultMapper[T, P](implicit marshallable: ValueMapper[Refined[T, P]]): ResultMapper[Refined[T, P]] =
     new ResultMapper[Refined[T, P]] {
-      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Refined[T, P]] =
+      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable] = Nil): Either[Throwable, Refined[T, P]] =
         fields
           .headOption
           .fold(ifEmpty = marshallable.to("", None)) {

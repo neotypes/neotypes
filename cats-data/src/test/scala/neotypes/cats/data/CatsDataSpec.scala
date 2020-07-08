@@ -2,7 +2,7 @@ package neotypes.cats.data
 
 import neotypes.{CleaningIntegrationSpec, FutureTestkit}
 import neotypes.cats.data.implicits._
-import neotypes.exceptions.IncoercibleException
+import neotypes.exceptions.{IncoercibleException, MultipleIncoercibleException}
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
@@ -64,7 +64,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
   }
 
   it should "fail if retrieving an empty list as a NonEmptyChain" in execute { s =>
-    recoverToSucceededIf[IncoercibleException] {
+    recoverToSucceededIf[MultipleIncoercibleException] {
       for {
         _ <- "CREATE (stackTrace: StackTrace { line: 1, errors: [] })".query[Unit].execute(s)
         stackTrace <- "MATCH (stackTrace: StackTrace) RETURN stackTrace".query[StackTrace].single(s)
@@ -86,7 +86,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
   }
 
   it should "fail if retrieving an empty list as a NonEmptyList" in execute { s =>
-    recoverToSucceededIf[IncoercibleException] {
+    recoverToSucceededIf[MultipleIncoercibleException] {
       for {
         _ <- "CREATE (player: Player { name: \"Luis\", items: [] })".query[Unit].execute(s)
         player <- "MATCH (player: Player) RETURN player".query[Player].single(s)
@@ -129,7 +129,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
   }
 
   it should "fail if retrieving an empty list as a NonEmptySet" in execute { s =>
-    recoverToSucceededIf[IncoercibleException] {
+    recoverToSucceededIf[MultipleIncoercibleException] {
       for {
         _ <- "CREATE (set: Set { name: \"favourites\", numbers: [] })".query[Unit].execute(s)
         set <- "MATCH (set: Set) RETURN set".query[MySet].single(s)
@@ -151,7 +151,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
   }
 
   it should "fail if retrieving an empty list as a NonEmptyVector" in execute { s =>
-    recoverToSucceededIf[IncoercibleException] {
+    recoverToSucceededIf[MultipleIncoercibleException] {
       for {
         _ <- "CREATE (purchase: Purchase { total: 12.5, groceries: [] })".query[Unit].execute(s)
         purchase <- "MATCH (purchase: Purchase) RETURN purchase".query[Purchase].single(s)

@@ -5,6 +5,7 @@ import java.time._
 import java.util.UUID
 
 import mappers.{ResultMapper, TypeHint, ValueMapper}
+import exceptions.MultipleIncoercibleException
 import types.Path
 
 import org.neo4j.driver.internal.types.InternalTypeSystem
@@ -100,19 +101,17 @@ trait ResultMappers extends ValueMappers {
                                              reprDecoder: Lazy[ResultMapper[R]],
                                              ct: ClassTag[A]): ResultMapper[A] =
     new ResultMapper[A] {
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
-        reprDecoder.value.to(value, Some(TypeHint(ct))).map(gen.from)
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, A] =
+        reprDecoder.value.to(value, Some(TypeHint(ct)), Nil).map(gen.from)
     }
 
   implicit final def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
                                                              tailDecoder: ResultMapper[T]): ResultMapper[H :!: T] =
     new ResultMapper[H :!: T] {
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :!: T] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, H :!: T] = {
         val (headName, headValue) = value.head
         val head = fieldDecoder.to(headName, Some(headValue))
-        val tail = tailDecoder.to(value.tail, None)
-
-        head.flatMap(h => tail.map(t => h :: t))
+        accumulateErrorsIfExist[H, T, H](value.tail, typeHint, errors, head, identity)
       }
     }
 
@@ -123,14 +122,14 @@ trait ResultMappers extends ValueMappers {
       private def collectEntityFields(entity: Entity): List[(String, Value)] =
         (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: getKeyValuesFrom(entity).toList
 
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
+      override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name
 
         typeHint match {
           case Some(TypeHint(true)) =>
             val index = fieldName.substring(1).toInt - 1
             val decodedHead = head.to(fieldName, if (value.size <= index) None else Some(value(index)._2))
-            decodedHead.flatMap(v => tail.to(value, typeHint).map(t => labelled.field[K](v) :: t))
+            decodedHead.flatMap(v => tail.to(value, typeHint, errors).map(t => labelled.field[K](v) :: t))
 
           case _ =>
             val convertedValue =
@@ -147,14 +146,14 @@ trait ResultMappers extends ValueMappers {
               }
 
             val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
-            decodedHead.flatMap(v => tail.to(convertedValue, typeHint).map(t => labelled.field[K](v) :: t))
+            accumulateErrorsIfExist[H, T, FieldType[K, H]](value, typeHint, errors, decodedHead, h => labelled.field[K](h))
         }
       }
     }
 
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {
-      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
+      override def to(fields: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, Option[T]] =
         fields match {
           case Nil => Right(None)
           case (_, v) :: Nil if (v.isNull) => Right(None)
@@ -164,4 +163,17 @@ trait ResultMappers extends ValueMappers {
 
   implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
     ResultMapper.fromValueMapper
+
+  def accumulateErrorsIfExist[H, T <: HList, HR](results: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable], head: Either[Throwable, H], headFunc: H => HR)(implicit resultMapper: ResultMapper[T]) = {
+    (resultMapper, head) match{
+      case (HNilResultMapper, Left(th)) =>
+        Left(MultipleIncoercibleException((th +: errors).reverse))
+      case (HNilResultMapper, _) if errors.nonEmpty  =>
+        Left(MultipleIncoercibleException(errors.reverse))
+      case (_, Left(th)) =>
+        resultMapper.to(results, typeHint, th +: errors).map(t => headFunc(null.asInstanceOf[H]) :: t)
+      case (_, Right(v)) =>
+        resultMapper.to(results, typeHint, errors).map(t => headFunc(v) :: t)
+    }
+  }
 }

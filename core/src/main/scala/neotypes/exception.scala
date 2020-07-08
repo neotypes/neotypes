@@ -12,4 +12,6 @@ object exceptions {
   final case class NoFieldsDefinedException(message: String) extends NeotypesException(message)
 
   final case class IncoercibleException(message: String, cause: Uncoercible) extends NeotypesException(message, Option(cause))
+
+  final case class MultipleIncoercibleException(errors: List[Throwable]) extends NeotypesException("Multiple type errors")
 }

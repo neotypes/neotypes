@@ -35,7 +35,7 @@ final class MapperSpec extends AnyFreeSpec {
     }
     "should allow defining a secondary mapper" in {
       val failingMapper = new ResultMapper[String] {
-        override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, String] =
+        override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable] = Nil): Either[Throwable, String] =
           Left(new Exception)
       }
       val result = failingMapper.or(StringResultMapper).to(List(("value", new StringValue("string"))), None)
@@ -51,7 +51,7 @@ final class MapperSpec extends AnyFreeSpec {
     "should be flatmappable" in {
       val flatMappedMapper = ResultMapper[String].flatMap { str =>
         new ResultMapper[Int] {
-          override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Int] =
+          override def to(value: List[(String, Value)], typeHint: Option[TypeHint], errors: List[Throwable]): Either[Throwable, Int] =
             Right(str.length)
         }
       }
