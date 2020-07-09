@@ -2,7 +2,7 @@ package neotypes
 
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
-import org.neo4j.driver.v1.exceptions.ClientException
+import org.neo4j.driver.exceptions.ClientException
 
 /** Base class for testing the concurrent use of a session. */
 final class ConcurrentSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) {

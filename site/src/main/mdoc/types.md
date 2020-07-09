@@ -36,11 +36,11 @@ position: 30
 | `java.time.OffsetTime                    ` | ✓            | ✓                     | ✓ |
 | `java.time.ZonedDateTime                 ` | ✓            | ✓                     | ✓ |
 | `java.util.UUID                          ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.v1.Value               ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.v1.types.IsoDuration   ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.v1.types.Point         ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.v1.types.Node          ` | ✓            | ✓                     | |
-| `org.neo4j.driver.v1.types.Relationship  ` | ✓            | ✓                     | |
+| `org.neo4j.driver.Value                  ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.types.IsoDuration      ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.types.Point            ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.types.Node             ` | ✓            | ✓                     | |
+| `org.neo4j.driver.types.Relationship     ` | ✓            | ✓                     | |
 | `neotypes.types.Path                     ` | ✓            | ✓                     | |
 | `shapeless.HList                         ` | ✓            | ✓                     | |
 | `Tuple (1-22)                            ` | ✓            | ✓                     | |

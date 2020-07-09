@@ -3,9 +3,9 @@ package neotypes
 import exceptions.{PropertyNotFoundException, IncoercibleException}
 import types.QueryParam
 
-import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.exceptions.value.Uncoercible
-import org.neo4j.driver.v1.summary.ResultSummary
+import org.neo4j.driver.Value
+import org.neo4j.driver.exceptions.value.Uncoercible
+import org.neo4j.driver.summary.ResultSummary
 
 import scala.reflect.ClassTag
 import scala.util.Try

@@ -46,7 +46,7 @@ The project aims to provide seamless integration with most popular scala infrast
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
 import neotypes.implicits.all._
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -67,3 +67,10 @@ Await.result(peopleCC, 1.second)
 session.close
 driver.close
 ```
+
+## Compatibility matrix
+
+| Neo4j version | Neotypes version |
+| :-----------: | :--------------: |
+| 3.5.x         | <= 0.13          |
+| 4.y.x         | >= 0.14          |

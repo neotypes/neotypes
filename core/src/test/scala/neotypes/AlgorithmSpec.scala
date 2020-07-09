@@ -42,21 +42,27 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
   it should "execute the triangle count community detection algorithm" in executeAsFuture { s =>
     for{
       _ <- triangleCountData.query[Unit].execute(s)
-
-      result <- """CALL gds.alpha.triangleCount.stream({
-                     nodeProjection: 'Person',
-                     relationshipProjection: {
-                       KNOWS: {
-                         type: 'KNOWS',
-                         orientation: 'UNDIRECTED'
-                       }
-                     }
-                   })
-                   YIELD nodeId, triangles, coefficient
-                   RETURN
+      _ <- """CALL gds.graph.create(
+                'myGraph',
+                'Person',
+                {
+                  KNOWS: {
+                    orientation: 'UNDIRECTED'
+                  }
+                }
+              )
+           """.query[Unit].execute(s)
+      result <- """CALL gds.triangleCount.mutate('myGraph', {mutateProperty: 'tc'})
+                   YIELD globalTriangleCount
+                   CALL gds.localClusteringCoefficient.stream(
+                     'myGraph', {
+                     triangleCountProperty: 'tc'
+                   }) YIELD nodeId, localClusteringCoefficient
+                   WITH
+                     round(100 * localClusteringCoefficient) AS coefficient,
                      gds.util.asNode(nodeId).name AS person,
-                     triangles AS triangleCount,
-                     round(coefficient * 100) AS coefficient
+                     gds.util.nodeProperty('myGraph', nodeId, 'tc') AS triangleCount
+                   RETURN person, triangleCount, coefficient
                    ORDER BY
                      coefficient DESC,
                      triangleCount DESC,

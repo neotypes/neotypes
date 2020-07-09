@@ -2,7 +2,7 @@ package neotypes
 
 import java.time.Duration
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
-import org.neo4j.driver.{v1 => neo4j}
+import org.neo4j.{driver => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
@@ -17,7 +17,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
   protected def initQuery: String
 
   override final val container =
-    Neo4jContainer(neo4jImageVersion = "neo4j:3.5")
+    Neo4jContainer(neo4jImageVersion = "neo4j:latest")
       .configure(_.withoutAuthentication())
       .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
       .configure(_.withImagePullPolicy(PullPolicy.alwaysPull()))
@@ -25,11 +25,14 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
   protected lazy final val driver =
     neo4j.GraphDatabase.driver(container.boltUrl)
 
-  protected lazy final val session =
+  private lazy final val neo4jSession =
     driver.session()
 
+  private lazy final val neotypesSession =
+    new Session[F](driver.asyncSession())
+
   private final def runQuery(query: String): Unit = {
-    session.writeTransaction(
+    neo4jSession.writeTransaction(
       new neo4j.TransactionWork[Unit] {
         override def execute(tx: neo4j.Transaction): Unit =
           tx.run(query)
@@ -44,7 +47,6 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
   }
 
   override final def beforeStop(): Unit = {
-    session.close()
     driver.close()
   }
 
@@ -53,7 +55,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
   }
 
   protected final def execute[T](work: Session[F] => F[T])(implicit F: Async[F]): F[T] =
-    work((new Session[F](session)))
+    work(neotypesSession)
 
   protected final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
     fToFuture(execute(work))

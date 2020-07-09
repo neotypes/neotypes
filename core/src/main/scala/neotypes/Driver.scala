@@ -3,9 +3,7 @@ package neotypes
 import internal.syntax.async._
 import internal.syntax.stage._
 
-import org.neo4j.driver.v1.{AccessMode, Driver => NDriver}
-
-import scala.jdk.CollectionConverters._
+import org.neo4j.driver.{AccessMode, Driver => NeoDriver, SessionConfig}
 
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
@@ -18,39 +16,33 @@ import scala.jdk.CollectionConverters._
   *
   * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
   */
-final class Driver[F[_]] private[neotypes] (private val driver: NDriver) extends AnyVal {
+final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) extends AnyVal {
 
-  /** Acquire a session to the database in read mode
+  /** Acquire a session to the database with the default config.
     * @note $futinfo
     *
-    * @param F asynchronous effect type with resource type defined
-    * @tparam R resource type dependant on effect type F
-    * @return Session[F] in effect type R
+    * @param F asynchronous effect type with resource type defined.
+    * @tparam R resource type dependant on effect type F.
+    * @return Session[F] in effect type R.
     */
   def session[R[_]](implicit F: Async.Aux[F, R]): R[Session[F]] =
-    session[R](accessMode = AccessMode.READ)
+    session(SessionConfig.defaultConfig)
 
-  /** Acquire a session to the database in read or write mode
+  /** Acquire a session to the database.
     * @note $futinfo
     *
-    * @param accessMode read or write mode
-    * @param bookmarks bookmarks passed between transactions for neo4j casual chaining
-    * @param F asynchronous effect type with resource type defined
-    * @tparam R resource type dependant on effect type F
-    * @return Session[F] in effect type R
+    * @param accessMode read or write mode.
+    * @param bookmarks bookmarks passed between transactions for neo4j casual chaining.
+    * @param F asynchronous effect type with resource type defined.
+    * @tparam R resource type dependant on effect type F.
+    * @return Session[F] in effect type R.
     */
-  def session[R[_]](accessMode: AccessMode, bookmarks: String*)
+  def session[R[_]](config: SessionConfig)
                    (implicit F: Async.Aux[F, R]): R[Session[F]] =
-    F.resource(createSession(accessMode, bookmarks))(session => session.close)
+    F.resource(createSession(config))(session => session.close)
 
-  private[this] def createSession(accessMode: AccessMode, bookmarks: Seq[String] = Seq.empty): Session[F] =
-    new Session(
-      bookmarks match {
-        case Seq()         => driver.session(accessMode)
-        case Seq(bookmark) => driver.session(accessMode, bookmark)
-        case _             => driver.session(accessMode, bookmarks.asJava)
-      }
-    )
+  private[this] def createSession(config: SessionConfig): Session[F] =
+    new Session(driver.asyncSession(config))
 
   /** Apply a unit of work to a read session
     *
@@ -77,7 +69,7 @@ final class Driver[F[_]] private[neotypes] (private val driver: NDriver) extends
   private[this] def withSession[T](accessMode: AccessMode)
                                   (sessionWork: Session[F] => F[T])
                                   (implicit F: Async[F]): F[T] =
-    F.delay(createSession(accessMode)).guarantee(sessionWork) {
+    F.delay(createSession(SessionConfig.builder.withDefaultAccessMode(accessMode).build())).guarantee(sessionWork) {
       case (session, _) => session.close
     }
 

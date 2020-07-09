@@ -6,8 +6,8 @@ import java.util.UUID
 
 import mappers.ParameterMapper
 
-import org.neo4j.driver.v1.Value
-import org.neo4j.driver.v1.types.{IsoDuration, Point}
+import org.neo4j.driver.Value
+import org.neo4j.driver.types.{IsoDuration, Point}
 
 import scala.collection.Iterable
 import scala.jdk.CollectionConverters._

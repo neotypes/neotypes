@@ -2,7 +2,7 @@ package neotypes
 
 import java.net.URI
 
-import org.neo4j.driver.v1.{AuthToken, AuthTokens, Config, Driver => NDriver, GraphDatabase => NFactory}
+import org.neo4j.driver.{AuthToken, AuthTokens, Config, Driver => NDriver, GraphDatabase => NFactory}
 
 import scala.jdk.CollectionConverters._
 

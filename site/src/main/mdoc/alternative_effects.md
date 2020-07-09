@@ -18,7 +18,7 @@ import neotypes.implicits.syntax.string._ // Provides the query[T] extension met
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._ // Provides the second extension method.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 val session = driver.session
@@ -42,7 +42,7 @@ import neotypes.{GraphDatabase, Session}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 val session: Resource[IO, Session[IO]] = for {
   driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -64,7 +64,7 @@ import neotypes.{GraphDatabase, Session}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 def session[F[_] : Async]: Resource[F, Session[F]] = for {
   driver <- GraphDatabase.driver[F]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -89,7 +89,7 @@ import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.monix.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import scala.concurrent.duration._ // Provides the second extension method.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 val session: Resource[Task, Session[Task]] = for {
   driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -111,7 +111,7 @@ import neotypes.{GraphDatabase, Session}
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 
 val runtime = Runtime.default
 

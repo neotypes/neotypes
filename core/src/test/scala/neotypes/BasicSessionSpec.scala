@@ -3,7 +3,7 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
-import org.neo4j.driver.v1.types.Node
+import org.neo4j.driver.types.Node
 import shapeless._
 import scala.concurrent.Future
 
@@ -69,7 +69,7 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
         """
           MATCH (movie:Movie {title: 'That Thing You Do'})
                  OPTIONAL MATCH (movie)<-[r]-(person:Person)
-                 RETURN movie.title as title, collect({name:person.name, job:head(split(lower(type(r)),'_')), role:head(r.roles)}) as cast
+                 RETURN movie.title as title, collect({name:person.name, job:head(split(toLower(type(r)),'_')), role:head(r.roles)}) as cast
                  LIMIT 1
         """.query[Movie2].single(s)
 
@@ -77,7 +77,7 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
         """
           MATCH (movie:Movie {title: 'That Thing You Do'})
                  OPTIONAL MATCH (movie)<-[r]-(person:Person)
-                 RETURN movie.title as title, collect({name:person.name, job:head(split(lower(type(r)),'_')), role:head(r.roles)}) as cast
+                 RETURN movie.title as title, collect({name:person.name, job:head(split(toLower(type(r)),'_')), role:head(r.roles)}) as cast
                  LIMIT 1
         """.query[Option[Movie2]].single(s)
     } yield {

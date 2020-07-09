@@ -3,7 +3,7 @@ package neotypes
 import neotypes.implicits.mappers.results._
 import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
 import org.neo4j.driver.internal.value.{IntegerValue, StringValue}
-import org.neo4j.driver.v1.Value
+import org.neo4j.driver.Value
 import org.scalatest.freespec.AnyFreeSpec
 
 final class MapperSpec extends AnyFreeSpec {

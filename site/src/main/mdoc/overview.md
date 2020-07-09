@@ -11,7 +11,7 @@ position: 10
 
 + Scala 2.13 / 2.12
 + Java 8+
-+ Neo4j 3+
++ Neo4j 4+
 
 ## Session creation
 
@@ -24,7 +24,7 @@ The implementation for `scala.concurrent.Future` is built-in in the core module 
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
-import org.neo4j.driver.v1.AuthTokens
+import org.neo4j.driver.AuthTokens
 import scala.concurrent.Future
 import scala.concurrent.ExecutionContext.Implicits.global
 
@@ -95,7 +95,7 @@ If you need to support your return types for this type of queries, you can provi
 _(for more information, please read [streaming](streams))_.
 
 ```scala mdoc:compile-only
-import org.neo4j.driver.v1.Value
+import org.neo4j.driver.Value
 import shapeless.{::, HNil}
 import scala.collection.immutable.{ListMap, ListSet}
 final case class Movie(title: String, released: Int)

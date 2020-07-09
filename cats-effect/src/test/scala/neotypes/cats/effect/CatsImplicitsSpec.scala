@@ -7,7 +7,7 @@ import cats.implicits._
 import neotypes.{BaseIntegrationSpec, Driver, Session}
 import neotypes.cats.effect.implicits._
 import neotypes.implicits.all._
-import org.neo4j.driver.v1.exceptions.ClientException
+import org.neo4j.driver.exceptions.ClientException
 
 /** Ensures the neotypes implicits does not collide with the cats ones. */
 final class CatsImplicitsSpec extends BaseIntegrationSpec[IO](IOTestkit) {
@@ -21,17 +21,17 @@ final class CatsImplicitsSpec extends BaseIntegrationSpec[IO](IOTestkit) {
         .flatMap(_.session)
 
     def useSession[F[_]: Async]: F[String] = makeSession[F].use { s =>
-      (test1[F] *> test2[F]).flatMap { _=>
+      (test1[F] *> test2[F]).flatMap { _ =>
         """match (p:Person {name: "Charlize Theron"}) return p.name"""
           .query[String]
           .single(s)
       }
     }
 
-    useSession[IO].unsafeToFuture().map {
-      name => assert(name == "Charlize Theron")
+    useSession[IO].unsafeToFuture().map { name =>
+      assert(name == "Charlize Theron")
     }
   }
 
-  override val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }

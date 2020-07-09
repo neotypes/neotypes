@@ -5,7 +5,7 @@ import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, tr
 import exceptions.{PropertyNotFoundException, IncoercibleException}
 import mappers.{ParameterMapper, ResultMapper, ValueMapper}
 
-import org.neo4j.driver.v1.Value
+import org.neo4j.driver.Value
 import _root_.cats.Order
 import _root_.cats.data.{
   Chain,
