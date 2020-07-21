@@ -29,7 +29,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
     driver.session()
 
   private lazy final val neotypesSession =
-    new Session[F](driver.asyncSession())
+    Session[F](driver.asyncSession())
 
   private final def runQuery(query: String): Unit = {
     neo4jSession.writeTransaction(

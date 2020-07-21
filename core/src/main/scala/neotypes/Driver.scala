@@ -16,7 +16,7 @@ import org.neo4j.driver.{AccessMode, Driver => NeoDriver, SessionConfig}
   *
   * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
   */
-final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) extends AnyVal {
+final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
 
   /** Acquire a session to the database with the default config.
     * @note $futinfo
@@ -41,8 +41,9 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) exten
                    (implicit F: Async.Aux[F, R]): R[Session[F]] =
     F.resource(createSession(config))(session => session.close)
 
-  private[this] def createSession(config: SessionConfig): Session[F] =
-    new Session(driver.asyncSession(config))
+  private[this] def createSession(config: SessionConfig)
+                                 (implicit F: Async[F]): Session[F] =
+    Session(driver.asyncSession(config))
 
   /** Apply a unit of work to a read session
     *
