@@ -2,15 +2,14 @@ package neotypes
 
 import java.time.Duration
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
+import neotypes.internal.utils.toJavaDuration
 import org.neo4j.{driver => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 import org.testcontainers.images.PullPolicy
 import scala.concurrent.Future
-import com.dimafeng.testcontainers.Container
-import com.dimafeng.testcontainers.ContainerDef
-import org.testcontainers.utility.MountableFile
+import scala.concurrent.duration._
 
 /** Base class for writing integration specs. */
 abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncFlatSpecLike with ForAllTestContainer  {
@@ -20,7 +19,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
     Neo4jContainer(neo4jImageVersion = "neo4j:latest")
       .configure(_.withoutAuthentication())
       .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
-      .configure(_.withImagePullPolicy(PullPolicy.alwaysPull()))
+      .configure(_.withImagePullPolicy(PullPolicy.ageBased(toJavaDuration(1.day))))
 
   protected lazy final val driver =
     neo4j.GraphDatabase.driver(container.boltUrl)
