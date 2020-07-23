@@ -21,8 +21,8 @@ val refinedVersion = "0.9.15"
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  ThisBuild / scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.13.3", "2.12.11"),
+  ThisBuild / scalaVersion := "2.12.12",
+  crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
   Test / scalacOptions := Seq("-feature", "-deprecation"),
   autoAPIMappings := true,
