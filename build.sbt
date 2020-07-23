@@ -2,7 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.1.0"
+val neo4jDriverVersion = "4.1.1"
 val scalaCollectionCompatVersion = "2.1.6"
 val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.14.3"
@@ -16,13 +16,13 @@ val monixVersion = "3.2.2"
 val akkaStreamVersion = "2.6.8"
 val fs2Version = "2.4.2"
 val zioVersion = "1.0.0-RC21-2"
-val refinedVersion = "0.9.14"
+val refinedVersion = "0.9.15"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 val commonSettings = Seq(
-  ThisBuild / scalaVersion := "2.12.11",
-  crossScalaVersions := Seq("2.13.3", "2.12.11"),
+  ThisBuild / scalaVersion := "2.12.12",
+  crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
   Test / scalacOptions := Seq("-feature", "-deprecation"),
   autoAPIMappings := true,
