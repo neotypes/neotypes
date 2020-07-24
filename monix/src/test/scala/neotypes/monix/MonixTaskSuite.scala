@@ -13,6 +13,9 @@ object MonixTaskTestkit extends EffectTestkit[Task] {
       implicit val scheduler: Scheduler =
         Scheduler(ec)
 
+      override final def fToT[T](task: Task[T]): T =
+        task.runSyncUnsafe()
+
       override final def fToFuture[T](task: Task[T]): Future[T] =
         task.runToFuture
 
