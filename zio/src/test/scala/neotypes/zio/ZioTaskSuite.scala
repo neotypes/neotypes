@@ -12,6 +12,9 @@ object ZioTaskTestkit extends EffectTestkit[Task] {
     new Behaviour {
       val runtime = Runtime.default.mapPlatform(_ => Platform.fromExecutionContext(ec))
 
+      override final def fToT[T](task: Task[T]): T =
+        runtime.unsafeRun(task)
+
       override final def fToFuture[T](task: Task[T]): Future[T] =
         runtime.unsafeRunToFuture(task)
 

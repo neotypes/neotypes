@@ -1,6 +1,6 @@
 package neotypes.zio
 
-import zio.{Exit, Managed, Task}
+import zio.{Exit, Managed, Queue, Task}
 
 trait Zio {
   implicit final def zioAsync: neotypes.Async.Aux[Task, Zio.ZioResource] =
@@ -27,6 +27,17 @@ object Zio {
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
 
+      override final def makeLock: Task[Lock] =
+        Queue.bounded[Unit](requestedCapacity = 1).map { q =>
+          new Lock {
+            override final def acquire: zio.Task[Unit] =
+              q.offer(()).unit
+
+            override final def release: zio.Task[Unit] =
+              q.take
+          }
+        }
+
       override final def map[T, U](m: Task[T])(f: T => U): Task[U] =
         m.map(f)
 
@@ -47,7 +58,7 @@ object Zio {
       override final def failed[T](e: Throwable): Task[T] =
         Task.fail(e)
 
-      override def resource[A](input: => A)(close: A => Task[Unit]): Managed[Throwable, A] =
-        Managed.make(Task.effectTotal(input))(a => close(a).orDie)
+      override def resource[A](input: Task[A])(close: A => Task[Unit]): Managed[Throwable, A] =
+        Managed.make(input)(a => close(a).orDie)
     }
 }
