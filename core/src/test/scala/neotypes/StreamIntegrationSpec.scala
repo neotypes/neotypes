@@ -3,12 +3,12 @@ package neotypes
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.exceptions.ClientException
-import org.scalatest.compatible.Assertion
+import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Stream[S, F] instances. */
-final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) {
+final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) with Matchers {
   behavior of s"Stream[${streamName}, ${effectName}]"
 
   it should s"execute a streaming query" in {
@@ -17,7 +17,7 @@ final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) exte
         .query[Int]
         .stream(s)
     } map { names =>
-      assert(names == (0 to 10).toList)
+      names should contain theSameElementsAs (0 to 10)
     }
   }
 

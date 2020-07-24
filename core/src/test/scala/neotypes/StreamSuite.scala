@@ -25,7 +25,7 @@ abstract class BaseStreamSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends 
     testkit.createBehaviour(self.executionContext)
 
   protected final def executeAsFutureList[T](work: Session[F] => S[T]): Future[List[T]] =
-    this.fToFuture(this.execute(work andThen behaviour.streamToFList))
+    this.executeAsFuture(work andThen behaviour.streamToFList)
 
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance

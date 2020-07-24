@@ -24,7 +24,7 @@ import scala.concurrent.Future
 final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   import CatsDataSpec._
 
-  it should "work with Chain" in execute { s =>
+  it should "work with Chain" in executeAsFuture { s =>
     val messages: Messages = Chain("a", "b")
 
     for {
@@ -37,7 +37,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "work with Const" in execute { s =>
+  it should "work with Const" in executeAsFuture { s =>
     val name: Name = Const("Balmung")
 
     for {
@@ -50,7 +50,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "work with NonEmptyChain" in execute { s =>
+  it should "work with NonEmptyChain" in executeAsFuture { s =>
     val errors: Errors = NonEmptyChain("a", "b")
 
     for {
@@ -63,7 +63,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyChain" in execute { s =>
+  it should "fail if retrieving an empty list as a NonEmptyChain" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (stackTrace: StackTrace { line: 1, errors: [] })".query[Unit].execute(s)
@@ -72,7 +72,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "work with NonEmptyList" in execute { s =>
+  it should "work with NonEmptyList" in executeAsFuture { s =>
     val items: Items = NonEmptyList.of("a", "b")
 
     for {
@@ -85,7 +85,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyList" in execute { s =>
+  it should "fail if retrieving an empty list as a NonEmptyList" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (player: Player { name: \"Luis\", items: [] })".query[Unit].execute(s)
@@ -94,7 +94,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "work with NonEmptyMap" in execute { s =>
+  it should "work with NonEmptyMap" in executeAsFuture { s =>
     val properties: Properties = NonEmptyMap.of("a" -> true, "b" -> false)
 
     for {
@@ -107,7 +107,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "fail if retrieving an empty map as a NonEmptyMap" in execute { s =>
+  it should "fail if retrieving an empty map as a NonEmptyMap" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         properties <- "RETURN {}".query[Properties].single(s)
@@ -115,7 +115,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "work with NonEmptySet" in execute { s =>
+  it should "work with NonEmptySet" in executeAsFuture { s =>
     val numbers: Numbers = NonEmptySet.of(1, 3, 5)
 
     for {
@@ -128,7 +128,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptySet" in execute { s =>
+  it should "fail if retrieving an empty list as a NonEmptySet" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (set: Set { name: \"favourites\", numbers: [] })".query[Unit].execute(s)
@@ -137,7 +137,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "work with NonEmptyVector" in execute { s =>
+  it should "work with NonEmptyVector" in executeAsFuture { s =>
     val groceries: Groceries = NonEmptyVector.of("a", "b")
 
     for {
@@ -150,7 +150,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyVector" in execute { s =>
+  it should "fail if retrieving an empty list as a NonEmptyVector" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (purchase: Purchase { total: 12.5, groceries: [] })".query[Unit].execute(s)

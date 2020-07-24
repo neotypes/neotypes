@@ -17,7 +17,7 @@ import scala.concurrent.Future
 final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   import RefinedSpec.{Level, User}
 
-  it should "insert and retrieve one refined value" in execute { s =>
+  it should "insert and retrieve one refined value" in executeAsFuture { s =>
     val L1: Level = 1
 
     for {
@@ -26,7 +26,7 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
     } yield assert(level == L1)
   }
 
-  it should "insert and retrieve multiple refined values" in execute { s =>
+  it should "insert and retrieve multiple refined values" in executeAsFuture { s =>
     val L1: Level = 1
     val L2: Level = 2
 
@@ -37,7 +37,7 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
     } yield assert(levels == List(L1, L2))
   }
 
-  it should "insert and retrieve wrapped refined values" in execute { s =>
+  it should "insert and retrieve wrapped refined values" in executeAsFuture { s =>
     val L1: Level = 1
     val L2: Level = 2
     val levels = List(Option(L1), Option(L2))
@@ -48,14 +48,14 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
     } yield assert(levels == levels)
   }
 
-  it should "retrieve refined values inside a case class" in execute { s =>
+  it should "retrieve refined values inside a case class" in executeAsFuture { s =>
     for {
       _ <- "CREATE (user: User { name: \"Balmung\",  level: 99 })".query[Unit].execute(s)
       user <- "MATCH (user: User { name: \"Balmung\" }) RETURN user".query[User].single(s)
     } yield assert(user == User(name = "Balmung", level = 99))
   }
 
-  it should "fail if a single value does not satisfy the refinement condition" in execute { s =>
+  it should "fail if a single value does not satisfy the refinement condition" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (level: Level { value: -1 })".query[Unit].execute(s)
@@ -64,7 +64,7 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
     }
   }
 
-  it should "fail if at least one of multiple values does not satisfy the refinement condition" in execute { s =>
+  it should "fail if at least one of multiple values does not satisfy the refinement condition" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (level: Level { value: 3 })".query[Unit].execute(s)
@@ -75,7 +75,7 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
     }
   }
 
-  it should "fail if at least one wrapped value does not satisfy the refinement condition" in execute { s =>
+  it should "fail if at least one wrapped value does not satisfy the refinement condition" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (levels: Levels { values: [3, -1, 5] })".query[Unit].execute(s)
@@ -84,7 +84,7 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
     }
   }
 
-  it should "fail if at least one value inside a case class does not satisfy the refinement condition" in execute { s =>
+  it should "fail if at least one value inside a case class does not satisfy the refinement condition" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
         _ <- "CREATE (user: User { name: \"???\", level: -1 })".query[Unit].execute(s)
