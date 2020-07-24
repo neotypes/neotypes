@@ -9,6 +9,9 @@ private[neotypes] object async {
     def flatMap[B](f: A => F[B])(implicit F: Async[F]): F[B] =
       F.flatMap(fa)(f)
 
+    def >>[B](fb: F[B])(implicit F: Async[F]): F[B] =
+      F.flatMap(fa)(_ => fb)
+
     def guarantee[B](f: A => F[B])(finalizer: (A, Option[Throwable]) => F[Unit])(implicit F: Async[F]): F[B] =
       F.guarantee(fa)(f)(finalizer)
 

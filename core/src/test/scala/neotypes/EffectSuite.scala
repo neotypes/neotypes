@@ -10,6 +10,7 @@ abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
   final val effectName: String = ct.runtimeClass.getCanonicalName
 
   trait Behaviour {
+    def fToT[T](f: F[T]): T
     def fToFuture[T](f: F[T]): Future[T]
     def runConcurrently(a: F[Unit], b: F[Unit]): F[Unit]
     def asyncInstance: Async[F]
@@ -25,6 +26,9 @@ abstract class BaseEffectSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncTest
 
   private final val behaviour: testkit.Behaviour =
     testkit.createBehaviour(self.executionContext)
+
+  protected final def fToT[T](f: F[T]): T =
+    behaviour.fToT(f)
 
   protected final def fToFuture[T](f: F[T]): Future[T] =
     behaviour.fToFuture(f)

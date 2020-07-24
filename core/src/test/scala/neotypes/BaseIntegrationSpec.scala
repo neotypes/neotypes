@@ -28,7 +28,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
     driver.session()
 
   private lazy final val neotypesSession =
-    Session[F](driver.asyncSession())
+    Session[F](F, driver.asyncSession())(fToT(F.makeLock))
 
   private final def runQuery(query: String): Unit = {
     neo4jSession.writeTransaction(
@@ -53,11 +53,8 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
     runQuery("MATCH (n) DETACH DELETE n")
   }
 
-  protected final def execute[T](work: Session[F] => F[T])(implicit F: Async[F]): F[T] =
-    work(neotypesSession)
-
   protected final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
-    fToFuture(execute(work))
+    fToFuture(work(neotypesSession))
 }
 
 object BaseIntegrationSpec {

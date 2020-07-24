@@ -19,15 +19,17 @@ sealed trait Session[F[_]] {
 }
 
 object Session {
-  private[neotypes] def apply[F[_]](session: NeoAsyncSession)
-                                   (implicit F: Async[F]): Session[F] = new Session[F] {
+  private[neotypes] def apply[F[_]](F: Async[F], session: NeoAsyncSession)
+                                   (lock: F.Lock): Session[F] = new Session[F] {
+    private implicit final val FF: Async[F] = F
+
     override final def transaction: F[Transaction[F]] =
       transaction(NeoTransactionConfig.empty)
 
     override final def transaction(config: NeoTransactionConfig): F[Transaction[F]] =
-      F.async { cb =>
+      lock.acquire >> F.async { cb =>
         session.beginTransactionAsync(config).accept(cb) { tx =>
-          Right(Transaction(tx))
+          Right(Transaction(F, tx)(lock))
         }
       }
 

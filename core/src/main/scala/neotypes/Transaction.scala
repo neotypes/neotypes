@@ -3,6 +3,7 @@ package neotypes
 import java.util.concurrent.CompletionStage
 
 import internal.utils.traverse._
+import internal.syntax.async._
 import internal.syntax.stage._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
@@ -46,8 +47,10 @@ sealed trait Transaction[F[_]] {
 }
 
 object Transaction {
-  private[neotypes] def apply[F[_]](transaction: NeoAsyncTransaction)
-                                   (implicit F: Async[F]): Transaction[F] = new Transaction[F] {
+  private[neotypes] def apply[F[_]](F: Async[F], transaction: NeoAsyncTransaction)
+                                   (lock: F.Lock): Transaction[F] = new Transaction[F] {
+    private implicit final val FF: Async[F] = F
+
     private def recordToList(record: Record): List[(String, Value)] =
       record.fields.asScala.iterator.map(p => p.key -> p.value).toList
 
@@ -135,13 +138,13 @@ object Transaction {
       )
 
     override final def commit: F[Unit] =
-      F.async { cb =>
+      F.async[Unit] { cb =>
         transaction.commitAsync().acceptVoid(cb)
-      }
+      } >> lock.release
 
     override final def rollback: F[Unit] =
-      F.async { cb =>
+      F.async[Unit] { cb =>
         transaction.rollbackAsync().acceptVoid(cb)
-      }
+      } >> lock.release
   }
 }

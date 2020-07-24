@@ -11,7 +11,6 @@ import org.neo4j.driver.{AccessMode, Driver => NeoDriver, SessionConfig}
   *    val driver = GraphDatabase[F]("bolt://localhost:7687").driver
   * }}}
   *
-  * @param driver neo4j driver
   * @tparam F effect type for driver
   *
   * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
@@ -42,8 +41,11 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
     F.resource(createSession(config))(session => session.close)
 
   private[this] def createSession(config: SessionConfig)
-                                 (implicit F: Async[F]): Session[F] =
-    Session(driver.asyncSession(config))
+                                 (implicit F: Async[F]): F[Session[F]] =
+    F.makeLock.map { lock =>
+      val session = driver.asyncSession(config)
+      Session(F, session)(lock)
+    }
 
   /** Apply a unit of work to a read session
     *
@@ -69,10 +71,12 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
 
   private[this] def withSession[T](accessMode: AccessMode)
                                   (sessionWork: Session[F] => F[T])
-                                  (implicit F: Async[F]): F[T] =
-    F.delay(createSession(SessionConfig.builder.withDefaultAccessMode(accessMode).build())).guarantee(sessionWork) {
+                                  (implicit F: Async[F]): F[T] = {
+    val config =  SessionConfig.builder.withDefaultAccessMode(accessMode).build()
+    createSession(config).guarantee(sessionWork) {
       case (session, _) => session.close
     }
+  }
 
   /** Close the resources assigned to the neo4j driver
     *
