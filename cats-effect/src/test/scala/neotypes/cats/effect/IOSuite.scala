@@ -13,6 +13,9 @@ object IOTestkit extends EffectTestkit[IO] {
       implicit val cs: ContextShift[IO] =
         IO.contextShift(ec)
 
+      override final def fToT[T](io: IO[T]): T =
+        io.unsafeRunSync()
+
       override final def fToFuture[T](io: IO[T]): Future[T] =
         io.unsafeToFuture()
 
