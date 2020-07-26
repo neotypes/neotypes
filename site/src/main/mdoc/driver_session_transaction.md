@@ -13,9 +13,18 @@ A `Driver` is basically the connection with the Database. Usually, you would onl
 A `Session` provides a context for performing operations _(`Transactions`)_ over the database. You may need as many as concurrent operations you want to have.
 A `Transaction` is a logical container for an atomic unit of work. Only one transaction may exist in a `Session` at any point in time.
 
-## Transaction managment
+## Session thread safety
 
-Each `Transaction` has to be started, used and finally either, committed or rolled back.
+Unlike its **Java** counterpart, `neotypes.Session` is thread safe.
+We achieve that by using a simple locking mechanism that ensures only one `Transaction` can be created `Session`.
+If you want / need to run multiple queries concurrently then you need to create multiple `Sessions` and load-balance the petitions across them yourself.
+
+> **Note**: For all _pure_ effects, the blocking of the locks is semantic _(meaning no real thread was blocked)_.
+For `Future` we do a _best effort_ by using `scala.concurrent.blocking` to notify the EC that the following action will block.
+
+## Transaction management
+
+Each `Transaction` has to be started, used and finally, either committed or rolled back.
 
 **neotypes** provides 3 ways of interacting with `Transactions`, designed for different use cases.
 
@@ -58,7 +67,7 @@ def result(session: Session[F]): F[(String, String)] = session.transact { tx =>
 }
 ```
 
-> Note: under the hood, the previous method uses this one. Thus, they are equivalent for single-query transactions.
+> **Note**: under the hood, the previous method uses this one. Thus, they are equivalent for single-query transactions.
 
 ### Multiple queries + explicit commit / rollback.
 
@@ -78,6 +87,10 @@ def result(session: Session[F]): F[Unit] = session.transaction.flatMap { tx =>
   } yield ()
 }
 ```
+
+> **Note**: It is mandatory to only call either `commit` or `rollback` once.
+Calling both or one of them but more than once will leave the system in an unstable state.
+_(probably an error or a deadlock)_
 
 ### Transaction configuration.
 

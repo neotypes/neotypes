@@ -44,6 +44,8 @@ import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+
 val session: Resource[IO, Session[IO]] = for {
   driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
   session <- driver.session
@@ -59,23 +61,24 @@ val data: String = program.unsafeRunSync()
 ### cats.effect.neotypes.Async[F] _(neotypes-cats-effect)_
 
 ```scala mdoc:compile-only
-import cats.effect.{Async, Resource}
+import cats.effect.{Concurrent, IO, Resource}
 import neotypes.{GraphDatabase, Session}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
 import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
-def session[F[_] : Async]: Resource[F, Session[F]] = for {
+def session[F[_] : Concurrent]: Resource[F, Session[F]] = for {
   driver <- GraphDatabase.driver[F]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
   session <- driver.session
 } yield session
 
-def program[F[_] : Async]: F[String] = session[F].use { s =>
+def program[F[_] : Concurrent]: F[String] = session[F].use { s =>
   "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(s)
 }
 
-val data: String = program[cats.effect.IO].unsafeRunSync()
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+val data: String = program[IO].unsafeRunSync()
 ```
 
 ### monix.eval.Task _(neotypes-monix)_

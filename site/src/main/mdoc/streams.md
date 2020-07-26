@@ -63,6 +63,8 @@ import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+
 val session: Resource[IO, Session[IO]] = for {
   driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
   session <- driver.session
@@ -159,6 +161,7 @@ import cats.effect.IO
 import neotypes.implicits.all._
 import neotypes.cats.effect.implicits._
 import neotypes.fs2.implicits._
+implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
 def query: neotypes.DeferredQuery[String] = ???
 def session: neotypes.Session[IO] = ???
 ```
