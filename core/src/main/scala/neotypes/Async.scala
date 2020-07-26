@@ -8,32 +8,32 @@ import scala.util.{Failure, Success}
 
 @annotation.implicitNotFound("The effect type ${F} is not supported by neotypes")
 trait Async[F[_]] {
-  type R[A]
+  private[neotypes] type R[A]
 
-  trait Lock {
+  private[neotypes] trait Lock {
     def acquire: F[Unit]
     def release: F[Unit]
   }
 
-  def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A]
+  private[neotypes] def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A]
 
-  def delay[A](a: => A): F[A]
+  private[neotypes] def delay[A](a: => A): F[A]
 
-  def failed[A](e: Throwable): F[A]
+  private[neotypes] def failed[A](e: Throwable): F[A]
 
-  def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+  private[neotypes] def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
 
-  def guarantee[A, B](fa: F[A])
-                     (f: A => F[B])
-                     (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
+  private[neotypes] def guarantee[A, B](fa: F[A])
+                                       (f: A => F[B])
+                                       (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
 
-  def makeLock: F[Lock]
+  private[neotypes] def makeLock: F[Lock]
 
-  def map[A, B](fa: F[A])(f: A => B): F[B]
+  private[neotypes] def map[A, B](fa: F[A])(f: A => B): F[B]
 
-  def recoverWith[A, B >: A](fa: F[A])(f: PartialFunction[Throwable, F[B]]): F[B]
+  private[neotypes] def recoverWith[A, B >: A](fa: F[A])(f: PartialFunction[Throwable, F[B]]): F[B]
 
-  def resource[A](input: F[A])(close: A => F[Unit]): R[A]
+  private[neotypes] def resource[A](input: F[A])(close: A => F[Unit]): R[A]
 }
 
 object Async {
