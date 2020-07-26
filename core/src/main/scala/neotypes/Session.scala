@@ -27,9 +27,11 @@ object Session {
       transaction(NeoTransactionConfig.empty)
 
     override final def transaction(config: NeoTransactionConfig): F[Transaction[F]] =
-      lock.acquire >> F.async { cb =>
-        session.beginTransactionAsync(config).accept(cb) { tx =>
-          Right(Transaction(F, tx)(lock))
+      lock.acquire.flatMap { _ =>
+        F.async { cb =>
+          session.beginTransactionAsync(config).accept(cb) { tx =>
+            Right(Transaction(F, tx)(lock))
+          }
         }
       }
 

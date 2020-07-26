@@ -11,8 +11,11 @@ import scala.concurrent.ExecutionContext
 final class ConcurrentSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) with Matchers {
   behavior of s"Concurrent use of Session[${effectName}]"
 
-  // Use the global ec to ensure the tasks run concurrently.
-  override implicit final def executionContext: ExecutionContext = ExecutionContext.global
+  // Use a custom ec to ensure the tasks run concurrently.
+  override implicit final def executionContext: ExecutionContext =
+    ExecutionContext.fromExecutorService(
+      java.util.concurrent.Executors.newFixedThreadPool(2)
+    )
 
   it should "work and not throw an exception when a single session is used concurrently" in {
     executeAsFuture { s =>

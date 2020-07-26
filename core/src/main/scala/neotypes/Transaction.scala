@@ -140,11 +140,15 @@ object Transaction {
     override final def commit: F[Unit] =
       F.async[Unit] { cb =>
         transaction.commitAsync().acceptVoid(cb)
-      } >> lock.release
+      } flatMap { _=>
+        lock.release
+      }
 
     override final def rollback: F[Unit] =
       F.async[Unit] { cb =>
         transaction.rollbackAsync().acceptVoid(cb)
-      } >> lock.release
+      } flatMap { _ =>
+        lock.release
+      }
   }
 }
