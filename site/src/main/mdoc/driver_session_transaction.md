@@ -10,14 +10,14 @@ position: 100
 These three classes are the main points of interactions with a **Neo4j** database.
 
 A `Driver` is basically the connection with the Database. Usually, you would only need one instance per application, unless you need to connect to two different databases.<br>
-A `Session` provides a context for performing operations _(`Transactions`)_ over the database. You may need as many as concurrent operations you want to have.
+A `Session` provides a context for performing operations _(`Transaction`s)_ over the database. You may need as many as concurrent operations you want to have.
 A `Transaction` is a logical container for an atomic unit of work. Only one transaction may exist in a `Session` at any point in time.
 
 ## Session thread safety
 
 Unlike its **Java** counterpart, `neotypes.Session` is thread safe.
-We achieve that by using a simple locking mechanism that ensures only one `Transaction` can be created `Session`.
-If you want / need to run multiple queries concurrently then you need to create multiple `Sessions` and load-balance the petitions across them yourself.
+We achieve that by using a simple locking mechanism that ensures only one `Transaction` at a time for each `Session`.
+If you want / need to run multiple queries concurrently, then you need to create multiple `Session`s and load-balance the queries across them yourself.
 
 > **Note**: For all _pure_ effects, the blocking of the locks is semantic _(meaning no real thread was blocked)_.
 For `Future` we do a _best effort_ by using `scala.concurrent.blocking` to notify the EC that the following action will block.
@@ -26,7 +26,7 @@ For `Future` we do a _best effort_ by using `scala.concurrent.blocking` to notif
 
 Each `Transaction` has to be started, used and finally, either committed or rolled back.
 
-**neotypes** provides 3 ways of interacting with `Transactions`, designed for different use cases.
+**neotypes** provides 3 ways of interacting with `Transaction`s, designed for different use cases.
 
 ### Single query + automatic commit / rollback.
 
@@ -111,7 +111,7 @@ val config = TransactionConfig(
 )
 ```
 
-Which you can use in operations that explicitly or implicitly create `Transactions`.
+Which you can use in operations that explicitly or implicitly create `Transaction`s.
 
 
 ```scala mdoc:compile-only
