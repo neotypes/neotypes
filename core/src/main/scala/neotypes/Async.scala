@@ -3,7 +3,7 @@ package neotypes
 import java.util.concurrent.ArrayBlockingQueue
 
 import scala.concurrent.{Await, ExecutionContext, Future, Promise, blocking}
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration._ // Provides the second extension method.
 import scala.util.{Failure, Success}
 
 @annotation.implicitNotFound("The effect type ${F} is not supported by neotypes")
@@ -93,6 +93,6 @@ object Async {
         fa.recoverWith(f)
 
       override final def resource[A](input: Future[A])(close: A => Future[Unit]): A =
-        Await.result(input, Duration.Inf)
+        Await.result(input, 1.second)
     }
 }
