@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import neotypes.{FutureTestkit, Stream, StreamSuite, StreamTestkit}
 import neotypes.akkastreams.implicits._
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.concurrent.duration.Duration
 
 /** Implementation of the Stream Teskit for akka streams. */
@@ -19,7 +19,7 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
           Future {
             // Delaying the answer a little seems to fix:
             // https://github.com/neotypes/neotypes/issues/47
-            Thread.sleep(1000)
+            blocking(Thread.sleep(1000))
             result
           }
         }

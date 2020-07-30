@@ -1,8 +1,10 @@
 package neotypes
 package cats
 
+import _root_.cats.effect.{ContextShift, IO}
+
 package object effect {
   final object implicits extends CatsEffect {
-    implicit final val IOAsync: Async.Aux[_root_.cats.effect.IO, FResource[_root_.cats.effect.IO]#R] = catsAsync
+    implicit final def IOAsync(implicit cs: ContextShift[IO]): Async.Aux[IO, FResource[IO]#R] = catsAsync
   }
 }

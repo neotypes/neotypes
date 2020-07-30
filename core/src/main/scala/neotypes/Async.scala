@@ -1,34 +1,43 @@
 package neotypes
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import java.util.concurrent.ArrayBlockingQueue
+
+import scala.concurrent.{Await, ExecutionContext, Future, Promise, blocking}
+import scala.concurrent.duration._ // Provides the second extension method.
 import scala.util.{Failure, Success}
 
 @annotation.implicitNotFound("The effect type ${F} is not supported by neotypes")
 trait Async[F[_]] {
-  type R[A]
+  private[neotypes] type R[A]
 
-  def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A]
+  private[neotypes] trait Lock {
+    def acquire: F[Unit]
+    def release: F[Unit]
+  }
 
-  def delay[A](a: => A): F[A]
+  private[neotypes] def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A]
 
-  def failed[A](e: Throwable): F[A]
+  private[neotypes] def delay[A](a: => A): F[A]
 
-  def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
+  private[neotypes] def failed[A](e: Throwable): F[A]
 
-  def guarantee[A, B](fa: F[A])
-                     (f: A => F[B])
-                     (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
+  private[neotypes] def flatMap[A, B](fa: F[A])(f: A => F[B]): F[B]
 
-  def map[A, B](fa: F[A])(f: A => B): F[B]
+  private[neotypes] def guarantee[A, B](fa: F[A])
+                                       (f: A => F[B])
+                                       (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
 
-  def recoverWith[A, B >: A](fa: F[A])(f: PartialFunction[Throwable, F[B]]): F[B]
+  private[neotypes] def makeLock: F[Lock]
 
-  def resource[A](input: => A)(close: A => F[Unit]): R[A]
+  private[neotypes] def map[A, B](fa: F[A])(f: A => B): F[B]
+
+  private[neotypes] def recoverWith[A, B >: A](fa: F[A])(f: PartialFunction[Throwable, F[B]]): F[B]
+
+  private[neotypes] def resource[A](input: F[A])(close: A => F[Unit]): R[A]
 }
 
 object Async {
   type Aux[F[_], _R[_]] = Async[F] { type R[A] = _R[A] }
-
   private[neotypes] type Id[A] = A
 
   implicit def futureAsync(implicit ec: ExecutionContext): Async.Aux[Future, Id] =
@@ -64,13 +73,26 @@ object Async {
           }
         }
 
+      override final def makeLock: Future[Lock] =
+        Future.successful {
+          val q = new ArrayBlockingQueue[Unit](1)
+
+          new Lock {
+            override final def acquire: Future[Unit] =
+              Future(blocking(q.put(())))
+
+            override final def release: Future[Unit] =
+              Future(blocking(q.take()))
+          }
+        }
+
       override final def map[A, B](fa: Future[A])(f: A => B): Future[B] =
         fa.map(f)
 
       override final def recoverWith[A, B >: A](fa: Future[A])(f: PartialFunction[Throwable, Future[B]]): Future[B] =
         fa.recoverWith(f)
 
-      override final def resource[A](input: => A)(close: A => Future[Unit]): A =
-        input
+      override final def resource[A](input: Future[A])(close: A => Future[Unit]): A =
+        Await.result(input, 1.second)
     }
 }

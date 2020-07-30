@@ -37,7 +37,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a List of T elements.
     */
   def list[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
+                (implicit rm: ResultMapper[T]): F[List[T]] =
     session.transact(config)(tx => list(tx))
 
   /** Executes the query and returns a Map[K,V] of values.
@@ -60,7 +60,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a Map of key-value pairs.
     */
   def map[F[_], K, V](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+                     (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
     session.transact(config)(tx => map(tx))
 
   /** Executes the query and returns a Set of values.
@@ -80,7 +80,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a Set of T elements.
     */
   def set[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-               (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
+               (implicit rm: ResultMapper[T]): F[Set[T]] =
     session.transact(config)(tx => set(tx))
 
   /** Executes the query and returns a Vector of values.
@@ -100,7 +100,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a Vector of T elements.
     */
   def vector[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                  (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
+                  (implicit rm: ResultMapper[T]): F[Vector[T]] =
     session.transact(config)(tx => vector(tx))
 
   /** Executes the query and returns the unique record in the result.
@@ -122,7 +122,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a single T element.
     */
   def single[F[_]](session: Session[F],config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                  (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
+                  (implicit rm: ResultMapper[T]): F[T] =
     session.transact(config)(tx => single(tx))
 
   /** Executes the query and ignores its output.
@@ -141,7 +141,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will execute the query.
     */
   def execute[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                   (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
+                   (implicit rm: ExecutionMapper[T]): F[T] =
     session.transact(config)(tx => execute(tx))
 
   /** Executes the query and returns a List of values.
@@ -161,7 +161,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a List of T elements.
     */
   def list[F[_]](tx: Transaction[F])
-                (implicit F: Async[F], rm: ResultMapper[T]): F[List[T]] =
+                (implicit rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
 
   /** Executes the query and returns a Map of values.
@@ -184,7 +184,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a Map of key-value pairs.
     */
   def map[F[_], K, V](tx: Transaction[F])
-                     (implicit ev: T <:< (K, V), F: Async[F], rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
+                     (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
     internal.utils.void(ev)
     tx.map(query, params)
   }
@@ -206,7 +206,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a Set of T elements.
     */
   def set[F[_]](tx: Transaction[F])
-               (implicit F: Async[F], rm: ResultMapper[T]): F[Set[T]] =
+               (implicit rm: ResultMapper[T]): F[Set[T]] =
     tx.set(query, params)
 
   /** Executes the query and returns a Vector of values.
@@ -226,7 +226,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a Vector of T elements.
     */
   def vector[F[_]](tx: Transaction[F])
-                  (implicit F: Async[F], rm: ResultMapper[T]): F[Vector[T]] =
+                  (implicit rm: ResultMapper[T]): F[Vector[T]] =
     tx.vector(query, params)
 
   /** Executes the query and returns the unique record in the result.
@@ -248,7 +248,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will compute a single T element.
     */
   def single[F[_]](tx: Transaction[F])
-                  (implicit F: Async[F], rm: ResultMapper[T]): F[T] =
+                  (implicit rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
 
   /** Executes the query and ignores its output.
@@ -267,7 +267,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will execute the query.
     */
   def execute[F[_]](tx: Transaction[F])
-                   (implicit F: Async[F], rm: ExecutionMapper[T]): F[T] =
+                   (implicit rm: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
   /** Executes the query and returns a custom collection of values.
@@ -312,13 +312,13 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
 private[neotypes] object DeferredQuery {
   private[neotypes] final class CollectAsPartiallyApplied[T, C](private val factoryAndDq: (Factory[T, C], DeferredQuery[T])) extends AnyVal {
     def apply[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] = {
+                   (implicit rm: ResultMapper[T]): F[C] = {
       val (factory, dq) = factoryAndDq
       session.transact(config)(tx => tx.collectAs(factory)(dq.query, dq.params))
     }
 
     def apply[F[_]](tx: Transaction[F])
-                   (implicit F: Async[F], rm: ResultMapper[T]): F[C] = {
+                   (implicit rm: ResultMapper[T]): F[C] = {
       val (factory, dq) = factoryAndDq
       tx.collectAs(factory)(dq.query, dq.params)
     }
@@ -326,16 +326,15 @@ private[neotypes] object DeferredQuery {
 
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
     def apply[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                   (implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
+                   (implicit rm: ResultMapper[T], F: Async[F], S: Stream.Aux[S, F]): S[T] =
       S.fToS(
-        session.transaction(config).flatMap { tx =>
-          F.delay(
-            S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
-          )
+        session.transaction(config).map { tx =>
+          S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
         }
       )
 
-    def apply[F[_]](tx: Transaction[F])(implicit F: Async[F], rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
+    def apply[F[_]](tx: Transaction[F])
+                   (implicit rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
       tx.stream(dq.query, dq.params)
   }
 }

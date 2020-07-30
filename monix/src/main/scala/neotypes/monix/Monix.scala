@@ -1,6 +1,7 @@
 package neotypes.monix
 
 import cats.effect.{ExitCase, Resource}
+import monix.catnap.MVar
 import monix.eval.Task
 
 trait Monix {
@@ -35,13 +36,24 @@ object Monix {
           case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
         }.use(f)
 
+      override final def makeLock: Task[Lock] =
+        MVar.apply[Task].empty[Unit]().map { mvar =>
+          new Lock {
+            override final def acquire: Task[Unit] =
+              mvar.put(())
+
+            override final def release: Task[Unit] =
+              mvar.take
+          }
+        }
+
       override final def map[T, U](m: Task[T])(f: T => U): Task[U] =
         m.map(f)
 
       override final def recoverWith[T, U >: T](m: Task[T])(f: PartialFunction[Throwable, Task[U]]): Task[U] =
         m.onErrorRecoverWith(f)
 
-      override final def resource[A](input: => A)(close: A => Task[Unit]): Resource[Task, A] =
-        Resource.make(Task.delay(input))(close)
+      override final def resource[A](input: Task[A])(close: A => Task[Unit]): Resource[Task, A] =
+        Resource.make(input)(close)
     }
 }

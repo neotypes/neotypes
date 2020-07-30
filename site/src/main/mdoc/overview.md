@@ -61,7 +61,6 @@ The import `neotypes.implicits.all._` adds an extension method `query[T]` to eac
 
 ```scala mdoc:invisible
 import neotypes.implicits.all._
-import scala.concurrent.ExecutionContext.Implicits.global
 def session: neotypes.Session[scala.concurrent.Future] = ???
 ```
 
