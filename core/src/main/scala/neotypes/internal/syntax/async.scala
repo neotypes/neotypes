@@ -22,5 +22,8 @@ private[neotypes] object async {
 
     def recoverWith[B >: A](f: PartialFunction[Throwable, F[B]])(implicit F: Async[F]): F[B] =
       F.recoverWith[A, B](fa)(f)
+
+    def widden[B >: A](implicit F: Async[F]): F[B] =
+      F.map(fa)(identity[B])
   }
 }

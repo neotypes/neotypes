@@ -16,54 +16,49 @@ import org.neo4j.driver.{AccessMode, Driver => NeoDriver, SessionConfig}
   * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
   */
 final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
-
-  /** Acquire a session to the database with the default config.
+  /** Acquire an async session to the database with the default config.
     * @note $futinfo
     *
     * @param F asynchronous effect type with resource type defined.
-    * @tparam R resource type dependant on effect type F.
-    * @return Session[F] in effect type R.
+    * @tparam R resource type dependant on the effect type F.
+    * @return a resource with the [[Session]].
+    *
+    * @see [[SessionConfig]].
     */
   def session[R[_]](implicit F: Async.Aux[F, R]): R[Session[F]] =
     session(SessionConfig.defaultConfig)
 
-  /** Acquire a session to the database.
+  /** Acquire an async session to the database.
     * @note $futinfo
     *
-    * @param accessMode read or write mode.
-    * @param bookmarks bookmarks passed between transactions for neo4j casual chaining.
+    * @param config the [[SessionConfig]] used to initialize the session.
     * @param F asynchronous effect type with resource type defined.
-    * @tparam R resource type dependant on effect type F.
-    * @return Session[F] in effect type R.
+    * @tparam R resource type dependant on the effect type F.
+    * @return a resource with the [[Session]].
     */
   def session[R[_]](config: SessionConfig)
                    (implicit F: Async.Aux[F, R]): R[Session[F]] =
     F.resource(createSession(config))(session => session.close)
 
-  private[this] def createSession(config: SessionConfig)
-                                 (implicit F: Async[F]): F[Session[F]] =
-    F.makeLock.map { lock =>
-      val session = driver.asyncSession(config)
-      Session(F, session)(lock)
-    }
-
-  /** Apply a unit of work to a read session
+  /** Apply a unit of work to a read session.
+    * @note ensures the session is properly closed after its use.
     *
-    * @param sessionWork function that takes a Session[F] and returns an F[T]
-    * @param F the effect type
-    * @tparam T the type of the value that will be returned when the query is executed.
-    * @return an effect F of type T
+    * @param sessionWork a function that takes a Session[F] and returns an F[T].
+    * @param F the effect type.
+    * @tparam T the type of the value that will be returned when the work is executed.
+    * @return an effectual value that will compute the result of the function.
     */
   def readSession[T](sessionWork: Session[F] => F[T])
                     (implicit F: Async[F]): F[T] =
     withSession(AccessMode.READ)(sessionWork)
 
-  /** Apply a unit to a write session
+  /** Apply a unit of work to a write session.
+    * @note ensures the session is properly closed after its use.
     *
-    * @param sessionWork function that takes a Session[F] and returns an F[T]
-    * @param F the effect type
-    * @tparam T the type of the value that will be returned when the query is executed.
-    * @return an effect F of type T
+    * @param sessionWork a function that takes a Session[F] and returns an F[T].
+    * @param F the effect type.
+    * @tparam T the type of the value that will be returned when the work is executed.
+    * @return an effectual value that will compute the result of the function.
     */
   def writeSession[T](sessionWork: Session[F] => F[T])
                      (implicit F: Async[F]): F[T] =
@@ -78,7 +73,45 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
     }
   }
 
-  /** Close the resources assigned to the neo4j driver
+  private[this] def createSession(config: SessionConfig)
+                                 (implicit F: Async[F]): F[Session[F]] =
+    F.makeLock.flatMap { lock =>
+      F.delay {
+        Session(F, driver.asyncSession(config))(lock)
+      }
+    }
+
+  /** Acquire a streaming session to the database with the default config.
+    * @note ensures the session is properly closed after its use.
+    *
+    * @param F asynchronous effect type.
+    * @tparam S streaming type dependant on the effect type F.
+    * @return a single element streaming with the [[StreamingSession]].
+    *
+    * @see [[SessionConfig]].
+    */
+  def streamingSession[S[_]](implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[S, F]] =
+    streamingSession(SessionConfig.defaultConfig)
+
+  /** Acquire a streaming session to the database.
+    * @note ensures the session is properly closed after its use.
+    *
+    * @param config the [[SessionConfig]] used to initialize the session.
+    * @param F asynchronous effect type.
+    * @tparam S streaming type dependant on the effect type F.
+    * @return a single element streaming with the [[StreamingSession]].
+    */
+  def streamingSession[S[_]](config: SessionConfig)
+                            (implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[S, F]] = {
+    val session = F.makeLock.flatMap { lock =>
+      F.delay {
+        Session(F, S, driver.rxSession(config))(lock)
+      }
+    }
+    S.resource(session)((s, _) => s.close)
+  }
+
+  /** Close the resources assigned by the neo4j driver
     *
     * @param F the effect type
     * @return an effect F of Unit
