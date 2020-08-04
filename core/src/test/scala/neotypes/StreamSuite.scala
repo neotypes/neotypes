@@ -24,8 +24,11 @@ abstract class BaseStreamSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends 
   private final val behaviour: testkit.Behaviour =
     testkit.createBehaviour(self.executionContext)
 
-  protected final def executeAsFutureList[T](work: Session[F] => S[T]): Future[List[T]] =
-    this.executeAsFuture(work andThen behaviour.streamToFList)
+  override protected final lazy val neotypesSession =
+    Session[S, F](F, S, driver.rxSession())(fToT(F.makeLock))
+
+  protected final def executeAsFutureList[T](work: StreamingSession[S, F] => S[T]): Future[List[T]] =
+    fToFuture(behaviour.streamToFList(work(neotypesSession)))
 
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance
@@ -33,5 +36,7 @@ abstract class BaseStreamSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends 
 
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
-  new StreamIntegrationSpec(testkit)
+  new OldStreamIntegrationSpec(testkit),
+  new NewStreamIntegrationSpec(testkit),
+  new EffectSuite[F](testkit.effectTestkit) {}
 )

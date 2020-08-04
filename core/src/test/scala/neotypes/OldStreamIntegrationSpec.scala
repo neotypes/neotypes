@@ -7,9 +7,9 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-/** Base class for testing the basic behavoir of Stream[S, F] instances. */
-final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) with Matchers {
-  behavior of s"Stream[${streamName}, ${effectName}]"
+/** Base class for testing the basic behaviour of Stream[S, F] instances - old API. */
+final class OldStreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) with Matchers {
+  behavior of s"Stream[${streamName}, ${effectName}] (Old API)"
 
   it should s"execute a streaming query" in {
     executeAsFutureList { s =>
