@@ -21,6 +21,7 @@ abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
 
 /** Base class for writing effect specs. */
 abstract class BaseEffectSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncTestSuite { self =>
+  val testKit = FutureTestkit
   protected final val effectName: String =
     testkit.effectName
 

@@ -31,6 +31,22 @@ abstract class BaseStreamSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends 
     behaviour.streamInstance
 }
 
+//-------------REMOVE ONCE REFACTOR TO WORDSPEC COMPLETE----------------
+/** Base class for writing stream specs. */
+abstract class BaseStreamWordSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseIntegrationWordSpec[F](testkit.effectTestkit) { self =>
+  protected final val streamName: String =
+    testkit.streamName
+
+  private final val behaviour: testkit.Behaviour =
+    testkit.createBehaviour(self.executionContext)
+
+  protected final def executeAsFutureList[T](work: Session[F] => S[T]): Future[List[T]] =
+    this.executeAsFuture(work andThen behaviour.streamToFList)
+
+  protected implicit final val S: Stream.Aux[S, F] =
+    behaviour.streamInstance
+}
+
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
   new StreamIntegrationSpec(testkit)

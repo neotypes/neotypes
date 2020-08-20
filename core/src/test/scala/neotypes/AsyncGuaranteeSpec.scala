@@ -3,14 +3,13 @@ package neotypes
 import neotypes.internal.syntax.async._
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
-import org.scalatest.flatspec.FixtureAsyncFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.FixtureAsyncWordSpecLike
+
 import scala.concurrent.Future
 
 /** Base class for testing the Async[F].guarantee method. */
-final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with FixtureAsyncFlatSpecLike with Matchers {
-  behavior of s"Async[${effectName}].guarantee"
-
+final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with FixtureAsyncWordSpecLike with Matchers {
   import AsyncGuaranteeSpec._
 
   final class AsyncGuaranteeFixture {
@@ -58,68 +57,70 @@ final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffe
   override final def withFixture(test: OneArgAsyncTest): FutureOutcome =
     super.withFixture(test.toNoArgAsyncTest(new AsyncGuaranteeFixture))
 
-  it should "execute finalizer and return the result when nothing fails" in { fixture =>
-    val expectedResult = "result"
+  s"Async[${effectName}].guarantee" should{
+    "execute finalizer and return the result when nothing fails" in { fixture =>
+      val expectedResult = "result"
 
-    fixture.run(result = Right(expectedResult)).map { res =>
-      res shouldBe expectedResult
-      fixture.assertFinalizerWasCalledOnlyOnce
+      fixture.run(result = Right(expectedResult)).map { res =>
+        res shouldBe expectedResult
+        fixture.assertFinalizerWasCalledOnlyOnce
+      }
     }
-  }
 
-  it should "not execute finalizer and return input exception when input fails" in { fixture =>
-    recoverToSucceededIf[InputException] {
-      fixture.run(inputEx = Some(InputException), result = Right("result"))
-    } map { _ =>
-      fixture.assertFinalizerWasNotCalled
+    "not execute finalizer and return input exception when input fails" in { fixture =>
+      recoverToSucceededIf[InputException] {
+        fixture.run(inputEx = Some(InputException), result = Right("result"))
+      } map { _ =>
+        fixture.assertFinalizerWasNotCalled
+      }
     }
-  }
 
-  it should "execute finalizer and return use exception when use fails" in { fixture =>
-    recoverToSucceededIf[UseException] {
-      fixture.run(result = Left(UseException))
-    } map { _ =>
-      fixture.assertFinalizerWasCalledOnlyOnce
+    "execute finalizer and return use exception when use fails" in { fixture =>
+      recoverToSucceededIf[UseException] {
+        fixture.run(result = Left(UseException))
+      } map { _ =>
+        fixture.assertFinalizerWasCalledOnlyOnce
+      }
     }
-  }
 
-  it should "not execute finalizer and return input exception when input and use fail" in { fixture =>
-    recoverToSucceededIf[InputException] {
-      fixture.run(inputEx = Some(InputException), result = Left(UseException))
-    } map { _ =>
-      fixture.assertFinalizerWasNotCalled
+    "not execute finalizer and return input exception when input and use fail" in { fixture =>
+      recoverToSucceededIf[InputException] {
+        fixture.run(inputEx = Some(InputException), result = Left(UseException))
+      } map { _ =>
+        fixture.assertFinalizerWasNotCalled
+      }
     }
-  }
 
-  it should "execute finalizer and return finalizer exception when finalizer fails" in { fixture =>
-    recoverToSucceededIf[FinalizerException] {
-      fixture.run(result = Right("result"), finalizerEx = Some(FinalizerException))
-    } map { _ =>
-      fixture.assertFinalizerWasCalledOnlyOnce
+    "execute finalizer and return finalizer exception when finalizer fails" in { fixture =>
+      recoverToSucceededIf[FinalizerException] {
+        fixture.run(result = Right("result"), finalizerEx = Some(FinalizerException))
+      } map { _ =>
+        fixture.assertFinalizerWasCalledOnlyOnce
+      }
     }
-  }
 
-  it should "not execute finalizer and return input exception when input and finalizer fail" in { fixture =>
-    recoverToSucceededIf[InputException] {
-      fixture.run(inputEx = Some(InputException), result = Right("result"), finalizerEx = Some(FinalizerException))
-    } map { _ =>
-      fixture.assertFinalizerWasNotCalled
+    "not execute finalizer and return input exception when input and finalizer fail" in { fixture =>
+      recoverToSucceededIf[InputException] {
+        fixture.run(inputEx = Some(InputException), result = Right("result"), finalizerEx = Some(FinalizerException))
+      } map { _ =>
+        fixture.assertFinalizerWasNotCalled
+      }
     }
-  }
 
-  it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
-    recoverToSucceededIf[UseException] {
-      fixture.run(result = Left(UseException), finalizerEx = Some(FinalizerException))
-    } map { _ =>
-      fixture.assertFinalizerWasCalledOnlyOnce
+    "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
+      recoverToSucceededIf[UseException] {
+        fixture.run(result = Left(UseException), finalizerEx = Some(FinalizerException))
+      } map { _ =>
+        fixture.assertFinalizerWasCalledOnlyOnce
+      }
     }
-  }
 
-  it should "not execute finalizer and return input exception when all fail" in { fixture =>
-    recoverToSucceededIf[InputException] {
-      fixture.run(inputEx = Some(InputException), result = Left(UseException), finalizerEx = Some(FinalizerException))
-    } map { _ =>
-      fixture.assertFinalizerWasNotCalled
+    "not execute finalizer and return input exception when all fail" in { fixture =>
+      recoverToSucceededIf[InputException] {
+        fixture.run(inputEx = Some(InputException), result = Left(UseException), finalizerEx = Some(FinalizerException))
+      } map { _ =>
+        fixture.assertFinalizerWasNotCalled
+      }
     }
   }
 }

@@ -1,18 +1,68 @@
 package neotypes
 
 import java.time.Duration
+
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import neotypes.internal.utils.toJavaDuration
 import org.neo4j.{driver => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
+import org.scalatest.wordspec.AsyncWordSpecLike
 import org.testcontainers.containers.BindMode
 import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 import org.testcontainers.images.PullPolicy
+
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 /** Base class for writing integration specs. */
 abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncFlatSpecLike with ForAllTestContainer  {
+  protected def initQuery: String
+
+  override final val container =
+    Neo4jContainer(neo4jImageVersion = "neo4j:latest")
+      .configure(_.withoutAuthentication())
+      .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
+      .configure(_.withImagePullPolicy(PullPolicy.ageBased(toJavaDuration(1.day))))
+
+  protected lazy final val driver =
+    neo4j.GraphDatabase.driver(container.boltUrl)
+
+  private lazy final val neo4jSession =
+    driver.session()
+
+  private lazy final val neotypesSession =
+    Session[F](F, driver.asyncSession())(fToT(F.makeLock))
+
+  private final def runQuery(query: String): Unit = {
+    neo4jSession.writeTransaction(
+      new neo4j.TransactionWork[Unit] {
+        override def execute(tx: neo4j.Transaction): Unit =
+          tx.run(query)
+      }
+    )
+  }
+
+  override final def afterStart(): Unit = {
+    if (initQuery != null) {
+      runQuery(initQuery)
+    }
+  }
+
+  override final def beforeStop(): Unit = {
+    driver.close()
+  }
+
+  protected final def cleanDb(): Unit = {
+    runQuery("MATCH (n) DETACH DELETE n")
+  }
+
+  protected final def executeAsFuture[T](work: Session[F] => F[T]): Future[T] =
+    fToFuture(work(neotypesSession))
+}
+
+//-------------REMOVE ONCE REFACTOR TO WORDSPEC COMPLETE----------------
+/** Base class for writing integration specs. */
+abstract class BaseIntegrationWordSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncWordSpecLike with ForAllTestContainer  {
   protected def initQuery: String
 
   override final val container =

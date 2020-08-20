@@ -23,3 +23,4 @@ object FutureTestkit extends EffectTestkit[Future] {
 
 /** Execute all the effect specs using Future. */
 final class FutureSuite extends EffectSuite(FutureTestkit)
+final class BasicTestSpec extends BasicSessionSpec(FutureTestkit)

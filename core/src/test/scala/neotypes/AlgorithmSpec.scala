@@ -6,15 +6,14 @@ import neotypes.internal.syntax.async._
 import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the use of the library with the Neo4j graph-data-science plugin. */
-final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) with Matchers {
-  behavior of s"The Neo4j graph-data-science plugin used with: ${effectName}"
+final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationWordSpec(testkit) with Matchers {
 
   import AlgorithmData._
-
-  it should "execute the article rank centrality algorithm" in executeAsFuture { s =>
-    for {
-      _ <- articleRankingData.query[Unit].execute(s)
-      result <- """CALL gds.alpha.articleRank.stream({
+  s"The Neo4j graph-data-science plugin used with: ${effectName}" should {
+    "execute the article rank centrality algorithm" in executeAsFuture { s =>
+      for {
+        _ <- articleRankingData.query[Unit].execute(s)
+        result <- """CALL gds.alpha.articleRank.stream({
                      nodeProjection: "Paper",
                      relationshipProjection: "CITES",
                      maxIterations: 20,
@@ -28,21 +27,21 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
                    ORDER BY rawScore DESC
                    LIMIT 5
                 """.query[ScoredPaper].list(s)
-    } yield {
-      result shouldBe List(
-        ScoredPaper(paper = "Paper 0", score = 35),
-        ScoredPaper(paper = "Paper 1", score = 32),
-        ScoredPaper(paper = "Paper 4", score = 21),
-        ScoredPaper(paper = "Paper 2", score = 21),
-        ScoredPaper(paper = "Paper 3", score = 18)
-      )
+      } yield {
+        result shouldBe List(
+          ScoredPaper(paper = "Paper 0", score = 35),
+          ScoredPaper(paper = "Paper 1", score = 32),
+          ScoredPaper(paper = "Paper 4", score = 21),
+          ScoredPaper(paper = "Paper 2", score = 21),
+          ScoredPaper(paper = "Paper 3", score = 18)
+        )
+      }
     }
-  }
 
-  it should "execute the triangle count community detection algorithm" in executeAsFuture { s =>
-    for{
-      _ <- triangleCountData.query[Unit].execute(s)
-      _ <- """CALL gds.graph.create(
+    "execute the triangle count community detection algorithm" in executeAsFuture { s =>
+      for{
+        _ <- triangleCountData.query[Unit].execute(s)
+        _ <- """CALL gds.graph.create(
                 'myGraph',
                 'Person',
                 {
@@ -52,7 +51,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
                 }
               )
            """.query[Unit].execute(s)
-      result <- """CALL gds.triangleCount.mutate('myGraph', {mutateProperty: 'tc'})
+        result <- """CALL gds.triangleCount.mutate('myGraph', {mutateProperty: 'tc'})
                    YIELD globalTriangleCount
                    CALL gds.localClusteringCoefficient.stream(
                      'myGraph', {
@@ -69,33 +68,33 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
                      person ASC
                    LIMIT 5
                 """.query[PersonTriangleCount].list(s)
-    } yield {
-      result shouldBe List(
-        PersonTriangleCount(person = "Karin", triangleCount = 1, coefficient = 100),
-        PersonTriangleCount(person = "Mark", triangleCount = 1, coefficient = 100),
-        PersonTriangleCount(person = "Chris", triangleCount = 2, coefficient = 67),
-        PersonTriangleCount(person = "Will", triangleCount = 2, coefficient = 67),
-        PersonTriangleCount(person = "Michael", triangleCount = 3, coefficient = 30)
-      )
+      } yield {
+        result shouldBe List(
+          PersonTriangleCount(person = "Karin", triangleCount = 1, coefficient = 100),
+          PersonTriangleCount(person = "Mark", triangleCount = 1, coefficient = 100),
+          PersonTriangleCount(person = "Chris", triangleCount = 2, coefficient = 67),
+          PersonTriangleCount(person = "Will", triangleCount = 2, coefficient = 67),
+          PersonTriangleCount(person = "Michael", triangleCount = 3, coefficient = 30)
+        )
+      }
     }
-  }
 
-  it should "execute the adamic adar link prediction algorithm" in executeAsFuture { s =>
-    for{
-      _ <- linkPredictionData.query[Unit].execute(s)
-      result <- """MATCH (p1: Person { name: 'Michael' })
+    "execute the adamic adar link prediction algorithm" in executeAsFuture { s =>
+      for{
+        _ <- linkPredictionData.query[Unit].execute(s)
+        result <- """MATCH (p1: Person { name: 'Michael' })
                    MATCH (p2: Person { name: 'Karin' })
                    RETURN round(100 * gds.alpha.linkprediction.adamicAdar(p1, p2))
                 """.query[Int].single(s)
-    } yield {
-      result shouldBe 91
+      } yield {
+        result shouldBe 91
+      }
     }
-  }
 
-  it should "execute the shortest path algorithm" in executeAsFuture { s =>
-    for{
-      _ <- shortestPathData.query[Unit].execute(s)
-      result <- """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
+    "execute the shortest path algorithm" in executeAsFuture { s =>
+      for{
+        _ <- shortestPathData.query[Unit].execute(s)
+        result <- """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
                    CALL gds.alpha.shortestPath.write({
                      nodeProjection: 'Loc',
                      relationshipProjection: {
@@ -112,25 +111,26 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
                    YIELD nodeCount, totalCost
                    RETURN nodeCount, totalCost
                 """.query[ShortestPath].single(s)
-    } yield {
-      result shouldBe ShortestPath(
-        nodeCount = 5,
-        totalCost = 160
-      )
+      } yield {
+        result shouldBe ShortestPath(
+          nodeCount = 5,
+          totalCost = 160
+        )
+      }
     }
-  }
 
-  it should "execute the jaccard similarity algorithm" in executeAsFuture { s =>
-    for{
-      _ <- similarityData.query[Unit].execute(s)
-      result <- """MATCH (p1: Person { name: 'Karin' })-[: LIKES]->(cuisine1)
+    "execute the jaccard similarity algorithm" in executeAsFuture { s =>
+      for{
+        _ <- similarityData.query[Unit].execute(s)
+        result <- """MATCH (p1: Person { name: 'Karin' })-[: LIKES]->(cuisine1)
                    WITH p1, collect(id(cuisine1)) AS p1Cuisine
                    MATCH (p2: Person { name: "Arya" })-[: LIKES]->(cuisine2)
                    WITH p1, p1Cuisine, p2, collect(id(cuisine2)) AS p2Cuisine
                    RETURN round(100 * gds.alpha.similarity.jaccard(p1Cuisine, p2Cuisine))
                 """.query[Int].single(s)
-    } yield {
-      result shouldBe 67
+      } yield {
+        result shouldBe 67
+      }
     }
   }
 }
