@@ -93,5 +93,5 @@ final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
     }
   }
 
-  override final val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationWordSpec.MULTIPLE_VALUES_INIT_QUERY
 }

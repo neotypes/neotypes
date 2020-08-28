@@ -30,5 +30,5 @@ final class ConcurrentSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseI
     }
   }
 
-  override final val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationWordSpec.EMPTY_INIT_QUERY
 }

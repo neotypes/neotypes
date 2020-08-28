@@ -31,5 +31,5 @@ final class StreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) exte
     }
  }
 
-  override final val initQuery: String = BaseIntegrationSpec.MULTIPLE_VALUES_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationWordSpec.MULTIPLE_VALUES_INIT_QUERY
 }

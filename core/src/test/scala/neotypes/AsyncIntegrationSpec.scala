@@ -33,5 +33,5 @@ final class AsyncIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIn
     }
   }
 
-  override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationWordSpec.DEFAULT_INIT_QUERY
 }

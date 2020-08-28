@@ -43,7 +43,7 @@ final class PathSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegra
     }
   }
 
-  override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationWordSpec.DEFAULT_INIT_QUERY
 }
 
 object PathSessionSpec {

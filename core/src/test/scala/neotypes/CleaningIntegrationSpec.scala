@@ -7,21 +7,6 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.Duration
 
 /** Base class for integration specs that require to clean the graph after each test. */
-abstract class CleaningIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
-  override final def withFixture(test: NoArgAsyncTest): FutureOutcome = {
-    complete {
-      super.withFixture(test)
-    } lastly {
-      this.cleanDb()
-    }
-  }
-
-  override final val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
-}
-
-
-//-------------REMOVE ONCE REFACTOR TO WORDSPEC COMPLETE--------------
-/** Base class for integration specs that require to clean the graph after each test. */
 abstract class CleaningIntegrationWordSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationWordSpec(testkit) {
   override final def withFixture(test: NoArgAsyncTest): FutureOutcome = {
     complete {
@@ -31,5 +16,5 @@ abstract class CleaningIntegrationWordSpec[F[_]](testkit: EffectTestkit[F]) exte
     }
   }
 
-  override final val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
+  override final val initQuery: String = BaseIntegrationWordSpec.EMPTY_INIT_QUERY
 }
