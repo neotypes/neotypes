@@ -2,7 +2,7 @@ package neotypes.cats.effect
 
 import cats.{Applicative, Monad}
 import cats.effect.{Concurrent, ContextShift, IO, Resource}
-import cats.effect.implicits._
+import cats.syntax.all._
 import neotypes.{BaseIntegrationSpec, Driver, Session}
 import neotypes.cats.effect.implicits._
 import neotypes.implicits.all._
