@@ -8,8 +8,8 @@ import shapeless._
 import scala.concurrent.Future
 
 /** Base class for testing the basic behaviour of Session[F] instances. */
-final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
-  behavior of s"Session[${effectName}]"
+trait BasicSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvider[F] =>
+  behavior of s"${sessionType}[${effectName}]"
 
   import BasicSessionSpec._
 

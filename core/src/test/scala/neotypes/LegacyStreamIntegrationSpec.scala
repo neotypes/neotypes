@@ -8,8 +8,8 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the basic behaviour of Stream[S, F] instances - old API. */
-final class OldStreamIntegrationSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) with Matchers {
-  behavior of s"Stream[${streamName}, ${effectName}] (Old API)"
+trait LegacyStreamIntegrationSpec[S[_], F[_]] extends BaseIntegrationSpec[F] with Matchers { self: LegacyStreamSessionProvider[S, F] =>
+  behavior of s"Stream[${streamName}, ${effectName}] (old API)"
 
   it should s"execute a streaming query" in {
     executeAsFutureList { s =>

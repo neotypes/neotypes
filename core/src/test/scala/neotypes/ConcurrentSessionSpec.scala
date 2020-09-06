@@ -8,8 +8,8 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
 
 /** Base class for testing the concurrent use of a session. */
-final class ConcurrentSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) with Matchers {
-  behavior of s"Concurrent use of Session[${effectName}]"
+trait ConcurrentSessionSpec[F[_]] extends BaseIntegrationSpec[F] with Matchers { self: SessionProvider[F] =>
+  behavior of s"Concurrent use of ${sessionType}[${effectName}]"
 
   // Use a custom ec to ensure the tasks run concurrently.
   override implicit final def executionContext: ExecutionContext =

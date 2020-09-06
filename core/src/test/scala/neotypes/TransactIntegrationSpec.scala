@@ -9,8 +9,8 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the Session[F].transact method. */
-final class TransactIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
-  behavior of s"Session[${effectName}].transact"
+trait TransactIntegrationSpec[F[_]] extends CleaningIntegrationSpec[F] { self: SessionProvider[F] =>
+  behavior of s"${sessionType}[${effectName}].transact"
 
   import TransactIntegrationSpec.CustomException
 

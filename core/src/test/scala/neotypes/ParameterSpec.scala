@@ -13,8 +13,8 @@ import scala.jdk.CollectionConverters._
 import scala.concurrent.Future
 
 /** Base class for testing the mapping of inserted parameters. */
-final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
-  behavior of s"Inserting parameters for ${effectName}"
+trait ParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: SessionProvider[F] =>
+  behavior of s"Inserting parameters using: ${sessionType}[${effectName}]"
 
   it should "convert parameters" in executeAsFuture { s =>
     val name: String = "test"

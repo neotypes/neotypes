@@ -1,6 +1,7 @@
 package neotypes
 
 import neotypes.internal.syntax.StageSyntaxSpec
+import org.neo4j.{driver => neo4j}
 import org.scalatest.{AsyncTestSuite, Suites}
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
@@ -20,38 +21,46 @@ abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
 }
 
 /** Base class for writing effect specs. */
-abstract class BaseEffectSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncTestSuite { self =>
+abstract class BaseEffectSpec[F[_]](protected val effectTestkit: EffectTestkit[F]) extends AsyncTestSuite {
   protected final val effectName: String =
-    testkit.effectName
+    effectTestkit.effectName
 
-  private final val behaviour: testkit.Behaviour =
-    testkit.createBehaviour(self.executionContext)
+  protected final val effectBehaviour: effectTestkit.Behaviour =
+    effectTestkit.createBehaviour(this.executionContext)
 
   protected final def fToT[T](f: F[T]): T =
-    behaviour.fToT(f)
+    effectBehaviour.fToT(f)
 
   protected final def fToFuture[T](f: F[T]): Future[T] =
-    behaviour.fToFuture(f)
+    effectBehaviour.fToFuture(f)
 
   protected final def runConcurrently(a: F[Unit], b: F[Unit]): F[Unit] =
-    behaviour.runConcurrently(a, b)
+    effectBehaviour.runConcurrently(a, b)
 
   protected implicit final val F: Async[F] =
-    behaviour.asyncInstance
+    effectBehaviour.asyncInstance
+}
+
+/** Provides an asynchronous session for effectual tests. */
+abstract class EffectSessionProvider[F[_]] (testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with SessionProvider[F] { self: BaseIntegrationSpec[F] =>
+  override protected final val sessionType: String = "AsyncSession"
+
+  override protected final lazy val neotypesSession: Session[F] =
+    Session[F](F, self.driver.asyncSession())(fToT(F.makeLock))
 }
 
 /** Group all the effect specs into one big suite, which can be called for each effect. */
 abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
-  new AlgorithmSpec(testkit),
+  new EffectSessionProvider(testkit) with AlgorithmSpec[F],
   new AsyncGuaranteeSpec(testkit),
-  new AsyncIntegrationSpec(testkit),
-  new BasicSessionSpec(testkit),
-  new BasicTransactionSpec(testkit),
-  new CompositeTypesSpec(testkit),
-  new ConcurrentSessionSpec(testkit),
-  new ParameterSpec(testkit),
-  new PathSessionSpec(testkit),
-  new QueryExecutionSpec(testkit),
+  new EffectSessionProvider(testkit) with AsyncIntegrationSpec[F],
+  new EffectSessionProvider(testkit) with BasicSessionSpec[F],
+  new EffectSessionProvider(testkit) with BasicTransactionSpec[F],
+  new EffectSessionProvider(testkit) with CompositeTypesSpec[F],
+  new EffectSessionProvider(testkit) with ConcurrentSessionSpec[F],
+  new EffectSessionProvider(testkit) with ParameterSpec[F],
+  new EffectSessionProvider(testkit) with PathSessionSpec[F],
+  new EffectSessionProvider(testkit) with QueryExecutionSpec[F],
   new StageSyntaxSpec(testkit),
-  new TransactIntegrationSpec(testkit)
+  new EffectSessionProvider(testkit) with TransactIntegrationSpec[F]
 )

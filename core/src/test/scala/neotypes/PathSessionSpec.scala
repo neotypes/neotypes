@@ -10,8 +10,8 @@ import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing the extraction of Paths. */
-final class PathSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
-  behavior of s"Extracting a Path using: ${effectName}"
+trait PathSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvider[F] =>
+  behavior of s"Extracting a Path using: ${sessionType}[${effectName}]"
 
   import PathSessionSpec._
 

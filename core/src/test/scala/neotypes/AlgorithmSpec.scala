@@ -6,8 +6,8 @@ import neotypes.internal.syntax.async._
 import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the use of the library with the Neo4j graph-data-science plugin. */
-final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) with Matchers {
-  behavior of s"The Neo4j graph-data-science plugin used with: ${effectName}"
+trait AlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: SessionProvider[F] =>
+  behavior of s"The Neo4j graph-data-science plugin used with: ${sessionType}[${effectName}]"
 
   import AlgorithmData._
 

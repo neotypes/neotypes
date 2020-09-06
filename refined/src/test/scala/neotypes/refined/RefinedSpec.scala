@@ -1,6 +1,6 @@
 package neotypes.refined
 
-import neotypes.{CleaningIntegrationSpec, FutureTestkit}
+import neotypes.{EffectSessionProvider, CleaningIntegrationSpec, FutureTestkit}
 import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
@@ -14,7 +14,7 @@ import eu.timepit.refined.numeric.Interval
 
 import scala.concurrent.Future
 
-final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
+final class RefinedSpec extends EffectSessionProvider(FutureTestkit) with CleaningIntegrationSpec[Future] {
   import RefinedSpec.{Level, User}
 
   it should "insert and retrieve one refined value" in executeAsFuture { s =>
@@ -50,8 +50,8 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
 
   it should "retrieve refined values inside a case class" in executeAsFuture { s =>
     for {
-      _ <- "CREATE (user: User { name: \"Balmung\",  level: 99 })".query[Unit].execute(s)
-      user <- "MATCH (user: User { name: \"Balmung\" }) RETURN user".query[User].single(s)
+      _ <- "CREATE (user: User { name: 'Balmung',  level: 99 })".query[Unit].execute(s)
+      user <- "MATCH (user: User { name: 'Balmung' }) RETURN user".query[User].single(s)
     } yield assert(user == User(name = "Balmung", level = 99))
   }
 
@@ -87,8 +87,8 @@ final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
   it should "fail if at least one value inside a case class does not satisfy the refinement condition" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
-        _ <- "CREATE (user: User { name: \"???\", level: -1 })".query[Unit].execute(s)
-        user <- "MATCH (user: User { name: \"???\" }) RETURN user".query[User].single(s)
+        _ <- "CREATE (user: User { name: 'Luis', level: -1 })".query[Unit].execute(s)
+        user <- "MATCH (user: User { name: 'Luis' }) RETURN user".query[User].single(s)
       } yield user
     }
   }

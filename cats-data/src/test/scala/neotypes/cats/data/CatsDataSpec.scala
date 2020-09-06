@@ -1,6 +1,6 @@
 package neotypes.cats.data
 
-import neotypes.{CleaningIntegrationSpec, FutureTestkit}
+import neotypes.{EffectSessionProvider, CleaningIntegrationSpec, FutureTestkit}
 import neotypes.cats.data.implicits._
 import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._
@@ -21,14 +21,14 @@ import _root_.cats.instances.int._ // Brings the implicit Order[Int] instance in
 
 import scala.concurrent.Future
 
-final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
+final class CatsDataSpec extends EffectSessionProvider(FutureTestkit) with CleaningIntegrationSpec[Future] {
   import CatsDataSpec._
 
   it should "work with Chain" in executeAsFuture { s =>
     val messages: Messages = Chain("a", "b")
 
     for {
-      _ <- c"CREATE (chat: Chat { user1: ${"Balmung"}, user2: ${"Luis"}, messages: ${messages} })".query[Unit].execute(s)
+      _ <- c"CREATE (chat: Chat { user1: 'Balmung', user2: 'Luis', messages: ${messages} })".query[Unit].execute(s)
       r1 <- "MATCH (chat: Chat) RETURN chat.messages".query[Messages].single(s)
       r2 <- "MATCH (chat: Chat) RETURN chat".query[Chat].single(s)
     } yield {
@@ -76,7 +76,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     val items: Items = NonEmptyList.of("a", "b")
 
     for {
-      _ <- c"CREATE (player: Player { name: ${"Luis"}, items: ${items} })".query[Unit].execute(s)
+      _ <- c"CREATE (player: Player { name: 'Luis', items: ${items} })".query[Unit].execute(s)
       r1 <- "MATCH (player: Player) RETURN player.items".query[Items].single(s)
       r2 <- "MATCH (player: Player) RETURN player".query[Player].single(s)
     } yield {
@@ -88,7 +88,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
   it should "fail if retrieving an empty list as a NonEmptyList" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
-        _ <- "CREATE (player: Player { name: \"Luis\", items: [] })".query[Unit].execute(s)
+        _ <- "CREATE (player: Player { name: 'Luis', items: [] })".query[Unit].execute(s)
         player <- "MATCH (player: Player) RETURN player".query[Player].single(s)
       } yield player
     }
@@ -100,7 +100,7 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     for {
       _ <- c"CREATE (config: Config ${properties})".query[Unit].execute(s)
       r1 <- "MATCH (config: Config) RETURN config { .* }".query[Properties].single(s)
-      r2 <- "MATCH (config: Config) RETURN \"dev\" AS env, config { .* } AS properties".query[Config].single(s)
+      r2 <- "MATCH (config: Config) RETURN 'dev' AS env, config { .* } AS properties".query[Config].single(s)
     } yield {
       assert(r1 == properties)
       assert(r2 == Config("dev", properties))
@@ -119,19 +119,19 @@ final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) 
     val numbers: Numbers = NonEmptySet.of(1, 3, 5)
 
     for {
-      _ <- c"CREATE (set: Set { name: ${"favourites"}, numbers: ${numbers} })".query[Unit].execute(s)
+      _ <- c"CREATE (set: Set { name: 'favorites', numbers: ${numbers} })".query[Unit].execute(s)
       r1 <- "MATCH (set: Set) RETURN set.numbers".query[Numbers].single(s)
       r2 <- "MATCH (set: Set) RETURN set".query[MySet].single(s)
     } yield {
       assert(r1 == numbers)
-      assert(r2 == MySet("favourites", numbers))
+      assert(r2 == MySet("favorites", numbers))
     }
   }
 
   it should "fail if retrieving an empty list as a NonEmptySet" in executeAsFuture { s =>
     recoverToSucceededIf[IncoercibleException] {
       for {
-        _ <- "CREATE (set: Set { name: \"favourites\", numbers: [] })".query[Unit].execute(s)
+        _ <- "CREATE (set: Set { name: 'favorites', numbers: [] })".query[Unit].execute(s)
         set <- "MATCH (set: Set) RETURN set".query[MySet].single(s)
       } yield set
     }

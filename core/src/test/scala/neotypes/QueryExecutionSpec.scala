@@ -7,8 +7,8 @@ import scala.collection.immutable.{ListMap, ListSet, SortedMap}
 import scala.concurrent.Future
 
 /** Base classs for testing the different ways of executing queries. */
-final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
-  behavior of s"Excuting queries using: ${effectName}"
+trait QueryExecutionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvider[F] =>
+  behavior of s"Executing queries using: ${sessionType}[${effectName}]"
 
   it should "retrieve multiple results as a List" in executeAsFuture { s =>
     "match (p:Person) return p.name"

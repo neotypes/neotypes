@@ -9,7 +9,7 @@ import scala.concurrent.Future
 import scala.reflect.ClassTag
 
 /** Base class for testing the CompletionStage syntax. */
-final class StageSyntaxSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with AsyncWordSpecLike with Matchers {
+final class StageSyntaxSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncWordSpecLike with Matchers {
   import StageSyntaxSpec.CustomException
 
   private def completionStage[T](inputEx: Option[Throwable], t: T = ()): CompletableFuture[T] =
