@@ -150,31 +150,29 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
       node3 <- "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".query[(WithId, Int)].single(s)
       node4 <- "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".query[(WithId, Int)].single(s)
     } yield {
-      // Node 1 doesn't have a custom id property.
-      // Thus the id field should contains the neo4j id.
+      // Node 1 doesn't have any custom id property.
+      // Thus the id field should contain the neo4j id.
+      // and the _id field should also contain the neo4j id.
       assert(node1._1.id == node1._2)
-      assert(node1._1._id.isEmpty)
+      assert(node1._1._id == node1._2)
 
       // Node 2 has a custom id property.
       // Thus the id field should contain the custom id,
       // and the _id field should contain the neo4j id.
       assert(node2._1.id == 135)
-      assert(node2._1._id.isDefined)
-      assert(node2._1._id.get == node2._2)
+      assert(node2._1._id == node2._2)
 
       // Node 3 has a custom _id property.
       // Thus the id field should contain the neo4j id,
       // and the _id field should contain the custom id.
       assert(node3._1.id == node3._2)
-      assert(node3._1._id.isDefined)
-      assert(node3._1._id.get == 135)
+      assert(node3._1._id == 135)
 
       // Node 4 has both a custom id & _id properties.
       // Thus both properties should contain the custom ids,
       // and the system id is unreachable.
       assert(node4._1.id == 135)
-      assert(node4._1._id.isDefined)
-      assert(node4._1._id.get == 531)
+      assert(node4._1._id == 531)
     }
   }
 
@@ -198,5 +196,5 @@ object BasicSessionSpec {
 
   final case class WrappedName(name: Option[String])
 
-  final case class WithId(id: Int, name: String, _id: Option[Int])
+  final case class WithId(id: Int, name: String, _id: Int)
 }
