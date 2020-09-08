@@ -153,6 +153,7 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
       // Node 1 doesn't have a custom id property.
       // Thus the id field should contains the neo4j id.
       assert(node1._1.id == node1._2)
+      assert(node1._1._id.isEmpty)
 
       // Node 2 has a custom id property.
       // Thus the id field should contain the custom id,
@@ -176,7 +177,6 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
       assert(node4._1._id.get == 531)
     }
   }
-
 
   override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
