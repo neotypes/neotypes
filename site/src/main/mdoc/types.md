@@ -56,16 +56,28 @@ position: 30
 
 If you want to support your own types, then you would need to create your own _implicits_.
 
-* For **fields of a case class**, you need an instance of `neotypes.mappers.ValueMapper[T]`. You can create a new instace:
+* For **fields of a case class**, you need an instance of `neotypes.mappers.ValueMapper[T]`. You can create a new instance:
   + From scratch by instantiating it `new ValueMapper[T] { ... }`.
   + Using the helper methods on the companion object like `fromCast` or `instance`.
   + Casting an already existing mapper using `map` or `flatMap`.
 
-* For **query results**, you need an instance of `neotypes.mappers.ResultMapper[T]`. You can create a new instace:
+* For **query results**, you need an instance of `neotypes.mappers.ResultMapper[T]`. You can create a new instance:
   + From scratch by instantiating it `new ResultMapper[T] { ... }`.
   + From a **ValueMapper** `ResultMapper.fromValueMapper[T]`.
-  + Using the helper methods on the companion object like `instace`.
+  + Using the helper methods on the companion object like `instance`.
   + Casting an already existing mapper using `map` or `flatMap`.
 
-* For **query parameters**, you need an instance of `neotypes.mappers.ParameterMapper[T]`. You can create a new instace:
+* For **query parameters**, you need an instance of `neotypes.mappers.ParameterMapper[T]`. You can create a new instance:
   + Casting an already existing mapper using `contramap`.
+
+# Neo4j Id
+
+Even if [**neo4j** does not recommend the use of the of the system id](https://neo4j.com/blog/dark-side-neo4j-worst-practices/), **neotypes** allows you to easily retrieve it.
+You only need to ask for a property named `id` on your case classes.
+
+Note: If your model also defines a custom `id` property, then your property will take precedence and we will return you that one instead of the system one.
+If you also need the system one then you can ask for the `_id` property.
+If you have a custom `_id` property, then yours will take precedence and the system id will be available in the `id` property.
+If you define both `id` and `_id` as custom properties, then both will take precedence and the system id would be unreachable.
+
+> Disclaimer: we also discourage you from using the system id; we only allow you to access it because the Java driver does.
