@@ -16,7 +16,6 @@ import _root_.cats.data.{
   NonEmptySet,
   NonEmptyVector
 }
-import _root_.cats.instances.string._ // Brings the implicit Order[String] instance into the scope.
 
 import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
