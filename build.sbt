@@ -117,6 +117,7 @@ lazy val catsEffect = (project in file("cats-effect"))
     name := "neotypes-cats-effect",
     Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )
   )
@@ -127,6 +128,8 @@ lazy val monix = (project in file("monix"))
   .settings(
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
@@ -158,6 +161,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
   .settings(
     name := "neotypes-fs2-stream",
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "co.fs2" %% "fs2-core" % fs2Version
     )
@@ -170,6 +174,8 @@ lazy val monixStream = (project in file("monix-stream"))
   .settings(
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
@@ -249,5 +255,7 @@ lazy val microsite = (project in file("site"))
     akkaStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
     monixStream % "compile->compile;provided->provided",
-    zioStream % "compile->compile;provided->provided"
+    zioStream % "compile->compile;provided->provided",
+    catsData % "compile->compile;provided->provided",
+    refined % "compile->compile;provided->provided"
   )
