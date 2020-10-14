@@ -120,8 +120,11 @@ trait ResultMappers extends ValueMappers {
                                                                   head: ValueMapper[H],
                                                                   tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :!: T] =
     new ResultMapper[FieldType[K, H] :!: T] {
-      private def collectEntityFields(entity: Entity): List[(String, Value)] =
-        (Constants.ID_FIELD_NAME -> new IntegerValue(entity.id)) :: getKeyValuesFrom(entity).toList
+      private def collectEntityFields(entity: Entity): List[(String, Value)] = {
+        val entityId = new IntegerValue(entity.id())
+        val ids = ("id" -> entityId) :: ("_id" -> entityId) :: Nil
+        (getKeyValuesFrom(entity) ++ ids).toList
+      }
 
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
         val fieldName = key.value.name

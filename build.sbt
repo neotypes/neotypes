@@ -3,20 +3,20 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.1.1"
-val scalaCollectionCompatVersion = "2.1.6"
+val scalaCollectionCompatVersion = "2.2.0"
 val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.14.3"
-val testcontainersScalaVersion = "0.38.1"
+val testcontainersScalaVersion = "0.38.4"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.2"
 val slf4jVersion = "1.7.30"
-val catsVersion = "2.1.1"
-val catsEffectsVersion = "2.1.4"
+val catsVersion = "2.2.0"
+val catsEffectsVersion = "2.2.0"
 val monixVersion = "3.2.2"
-val akkaStreamVersion = "2.6.8"
+val akkaStreamVersion = "2.6.10"
 val fs2Version = "2.4.4"
-val zioVersion = "1.0.1"
-val refinedVersion = "0.9.15"
+val zioVersion = "1.0.3"
+val refinedVersion = "0.9.17"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
@@ -117,6 +117,7 @@ lazy val catsEffect = (project in file("cats-effect"))
     name := "neotypes-cats-effect",
     Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion
     )
   )
@@ -127,6 +128,8 @@ lazy val monix = (project in file("monix"))
   .settings(
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
@@ -158,6 +161,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
   .settings(
     name := "neotypes-fs2-stream",
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "co.fs2" %% "fs2-core" % fs2Version
     )
@@ -170,6 +174,8 @@ lazy val monixStream = (project in file("monix-stream"))
   .settings(
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
+      "org.typelevel" %% "cats-core" % catsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
@@ -249,5 +255,7 @@ lazy val microsite = (project in file("site"))
     akkaStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
     monixStream % "compile->compile;provided->provided",
-    zioStream % "compile->compile;provided->provided"
+    zioStream % "compile->compile;provided->provided",
+    catsData % "compile->compile;provided->provided",
+    refined % "compile->compile;provided->provided"
   )
