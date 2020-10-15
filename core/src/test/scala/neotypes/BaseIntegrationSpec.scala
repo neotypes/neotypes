@@ -38,7 +38,7 @@ trait BaseIntegrationSpec[F[_]] extends BaseEffectSpec[F] with AsyncFlatSpecLike
   }
 
   private final var initWasRun = false
-  private final def run[T](f: => Future[T]): Future[T] =
+  protected final def run[T](f: => Future[T]): Future[T] =
     if (initWasRun || initQuery == null) f
     else {
       initWasRun = true

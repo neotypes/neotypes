@@ -164,13 +164,17 @@ object Transaction {
     private implicit final val FF: Async[F] = F
     private implicit final val SS: Stream.Aux[S, F] = S
 
-    override final def execute[T](query: String, params: Map[String, QueryParam])(implicit executionMapper: ExecutionMapper[T]): F[T] =
-      transaction
-        .run(query, QueryParam.toJavaMap(params))
-        .consume()
-        .toStream
-        .single[F]
-        .flatMap(rs => F.fromEither(executionMapper.to(rs)))
+    override final def execute[T](query: String, params: Map[String, QueryParam])
+                                 (implicit executionMapper: ExecutionMapper[T]): F[T] = {
+      val rxResult = transaction.run(query, QueryParam.toJavaMap(params))
+
+      for {
+        // Ensure to process all records before asking for the result summary.
+        _ <- rxResult.records.toStream[S].void[F]
+        r <- rxResult.consume.toStream[S].single[F]
+        t <- F.fromEither(executionMapper.to(r))
+      } yield t
+    }
 
     override final def collectAs[C, T](factory: Factory[T, C])
                                       (query: String, params: Map[String, QueryParam])
@@ -195,7 +199,9 @@ object Transaction {
 
     override final def single[T](query: String, params: Map[String, QueryParam])
                                 (implicit resultMapper: ResultMapper[T]): F[T] =
-      streamRx(query, params).single[F]
+      streamRx(query, params).single[F].recoverWith {
+        case _: NoSuchElementException => F.fromEither(resultMapper.to(List.empty, None))
+      }
 
     override final def stream[T, S1[_]](query: String, params: Map[String, QueryParam])
                                        (implicit S1: Stream.Aux[S1, F], resultMapper: ResultMapper[T]): S1[T] =
@@ -205,20 +211,20 @@ object Transaction {
                                   (implicit resultMapper: ResultMapper[T]): S[T] =
       transaction
         .run(query, QueryParam.toJavaMap(params))
-        .records()
-        .toStream
+        .records
+        .toStream[S]
         .evalMap(r => F.fromEither(resultMapper.to(recordToList(r), None)))
 
     override final def commit: F[Unit] =
       transaction
-        .commit()
+        .commit[Unit]
         .toStream[S]
         .void[F]
         .guarantee(_ => lock.release)
 
     override final def rollback: F[Unit] =
       transaction
-        .rollback()
+        .rollback[Unit]
         .toStream[S]
         .void[F]
         .guarantee(_ => lock.release)

@@ -40,10 +40,10 @@ trait AlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { sel
   }
 
   it should "execute the triangle count community detection algorithm" in executeAsFuture { s =>
-    for{
+    for {
       _ <- triangleCountData.query[Unit].execute(s)
       _ <- """CALL gds.graph.create(
-                'myGraph',
+                'my-graph',
                 'Person',
                 {
                   KNOWS: {
@@ -52,16 +52,16 @@ trait AlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { sel
                 }
               )
            """.query[Unit].execute(s)
-      result <- """CALL gds.triangleCount.mutate('myGraph', {mutateProperty: 'tc'})
+      result <- """CALL gds.triangleCount.mutate('my-graph', {mutateProperty: 'tc'})
                    YIELD globalTriangleCount
                    CALL gds.localClusteringCoefficient.stream(
-                     'myGraph', {
+                     'my-graph', {
                      triangleCountProperty: 'tc'
                    }) YIELD nodeId, localClusteringCoefficient
                    WITH
                      round(100 * localClusteringCoefficient) AS coefficient,
                      gds.util.asNode(nodeId).name AS person,
-                     gds.util.nodeProperty('myGraph', nodeId, 'tc') AS triangleCount
+                     gds.util.nodeProperty('my-graph', nodeId, 'tc') AS triangleCount
                    RETURN person, triangleCount, coefficient
                    ORDER BY
                      coefficient DESC,
@@ -81,7 +81,7 @@ trait AlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { sel
   }
 
   it should "execute the adamic adar link prediction algorithm" in executeAsFuture { s =>
-    for{
+    for {
       _ <- linkPredictionData.query[Unit].execute(s)
       result <- """MATCH (p1: Person { name: 'Michael' })
                    MATCH (p2: Person { name: 'Karin' })
@@ -93,7 +93,7 @@ trait AlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { sel
   }
 
   it should "execute the shortest path algorithm" in executeAsFuture { s =>
-    for{
+    for {
       _ <- shortestPathData.query[Unit].execute(s)
       result <- """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
                    CALL gds.alpha.shortestPath.write({
@@ -121,7 +121,7 @@ trait AlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { sel
   }
 
   it should "execute the jaccard similarity algorithm" in executeAsFuture { s =>
-    for{
+    for {
       _ <- similarityData.query[Unit].execute(s)
       result <- """MATCH (p1: Person { name: 'Karin' })-[: LIKES]->(cuisine1)
                    WITH p1, collect(id(cuisine1)) AS p1Cuisine

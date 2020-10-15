@@ -20,14 +20,14 @@ trait BasicSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvi
       long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long].single(s)
       double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double].single(s)
       float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float].single(s)
-      notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover { case ex => ex.toString }
       cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
       cc2 <- "match (p:Person {name: 'Charlize Theron'}) return p.born as born, p.name as name".query[Person2].single(s)
+      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
+      node <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Node].list(s)
+      notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover { case ex => ex.toString }
       emptyResult <- "match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
       emptyResultList <- "match (p:Person {name: '1243'}) return p.born".query[Int].list(s)
       emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover { case ex => ex.toString }
-      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
-      node <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Node].list(s)
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)
@@ -43,11 +43,11 @@ trait BasicSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvi
       assert(hlist.size == 1)
       assert(hlist.head.head.name.contains("Charlize Theron"))
       assert(hlist.head.last.title == "That Thing You Do")
+      assert(node.head.get("name").asString() == "Charlize Theron")
+      assert(notString == "neotypes.exceptions$IncoercibleException: Cannot coerce INTEGER to Java String for field [p.born] with value [1975]") // TODO test separately
       assert(emptyResult.isEmpty)
       assert(emptyResultList.isEmpty)
       assert(emptyResultEx == "neotypes.exceptions$PropertyNotFoundException: Property  not found") // TODO test separately
-      assert(notString == "neotypes.exceptions$IncoercibleException: Cannot coerce INTEGER to Java String for field [p.born] with value [1975]") // TODO test separately
-      assert(node.head.get("name").asString() == "Charlize Theron")
     }
   }
 
