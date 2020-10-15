@@ -6,7 +6,7 @@ import neotypes.{Async, EffectSuite, EffectTestkit}
 import neotypes.cats.effect.implicits._
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Implementation of the Effect Teskit for cats-effect IO. */
+/** Implementation of the Effect Testkit for cats-effect IO. */
 object IOTestkit extends EffectTestkit[IO] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {

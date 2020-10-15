@@ -19,6 +19,9 @@ trait CatsEffect {
       override final def failed[T](e: Throwable): F[T] =
         F.raiseError(e)
 
+      override final def fromEither[A](either: Either[Throwable,A]): F[A] =
+        F.fromEither(either)
+
       override final def guarantee[A, B](fa: F[A])
                                         (f: A => F[B])
                                         (finalizer: (A, Option[Throwable]) => F[Unit]): F[B] =
