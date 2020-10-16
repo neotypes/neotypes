@@ -1,10 +1,11 @@
 package neotypes
 
+import java.util.concurrent.{CompletableFuture, CompletionStage}
+
 import internal.syntax.async._
 import internal.syntax.stage._
-
 import org.neo4j.driver.{TransactionConfig => NeoTransactionConfig}
-import org.neo4j.driver.async.{AsyncSession => NeoAsyncSession}
+import org.neo4j.driver.async.{AsyncTransaction, AsyncTransactionWork, AsyncSession => NeoAsyncSession}
 
 sealed trait Session[F[_]] {
   def transaction: F[Transaction[F]]
@@ -14,6 +15,10 @@ sealed trait Session[F[_]] {
   def transact[T](txF: Transaction[F] => F[T]): F[T]
 
   def transact[T](config: NeoTransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+
+  def readOnlyTransact[T](config: NeoTransactionConfig)(txf: Transaction[F] => F[T]): F[T]
+
+  def readOnlyTransact[T](txf: Transaction[F] => F[T]): F[T]
 
   def close: F[Unit]
 }
@@ -42,6 +47,29 @@ object Session {
       transaction(config).guarantee(txF) {
         case (tx, None)    => tx.commit
         case (tx, Some(_)) => tx.rollback
+      }
+
+    override final def readOnlyTransact[T](txf: Transaction[F] => F[T]): F[T] =
+      readOnlyTransact(NeoTransactionConfig.empty())(txf)
+
+    override final def readOnlyTransact[T](config: NeoTransactionConfig)(txf: Transaction[F] => F[T]): F[T] =
+      lock.acquire.flatMap { _ =>
+        F.async { cb =>
+          session.readTransactionAsync(new AsyncTransactionWork[CompletionStage[T]] {
+            override def execute(tx: AsyncTransaction): CompletionStage[T] = {
+              val completableF = new CompletableFuture[T]()
+              txf(Transaction(F, tx)(lock)).map {
+                completableF.complete
+              }.recover{
+                case th: Throwable => completableF.completeExceptionally(th)
+              }
+              completableF
+            }
+          }, config).accept(cb){
+            case t: Throwable => Left(t)
+            case v => Right(v)
+          }
+        }
       }
 
     override final def close: F[Unit] =

@@ -125,6 +125,28 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
                   (implicit rm: ResultMapper[T]): F[T] =
     session.transact(config)(tx => single(tx))
 
+  /** Executes the query as read async and returns the unique record in the result.
+    *
+    * @example
+    * {{{
+    * val result: F[(Person, Movie)] =
+    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
+    *     .query[(Person, Movie)]
+    *     .readOnlySingle(session)
+    * }}}
+    *
+    * @note This will fail if the query returned more than a single result.
+    *
+    * @param session neotypes session.
+    * @param config neo4j transaction config (optional).
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a single T element.
+    */
+  def readOnlySingle[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty())
+                          (implicit rm: ResultMapper[T]): F[T] =
+    session.readOnlyTransact(config)(tx => single(tx))
+
   /** Executes the query and ignores its output.
     *
     * @example
