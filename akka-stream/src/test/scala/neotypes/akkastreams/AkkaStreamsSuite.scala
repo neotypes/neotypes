@@ -15,14 +15,7 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
         ActorSystem("QuickStart")
 
       override def streamToFList[T](stream: AkkaStream[T]): Future[List[T]] =
-        stream.runWith(Sink.seq[T]).map(_.toList).flatMap { result =>
-          Future {
-            // Delaying the answer a little seems to fix:
-            // https://github.com/neotypes/neotypes/issues/47
-            blocking(Thread.sleep(1000))
-            result
-          }
-        }
+        stream.runWith(Sink.seq).map(_.toList)
 
       override final val streamInstance: Stream.Aux[AkkaStream, Future] =
         implicitly

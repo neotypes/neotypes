@@ -1,11 +1,10 @@
 package neotypes
 
+import akka.NotUsed
 import akka.stream.scaladsl.Source
 
-import scala.concurrent.Future
-
 package object akkastreams {
-  type AkkaStream[T] = Source[T, Future[Unit]]
+  type AkkaStream[T] = Source[T, NotUsed]
 
   final object implicits extends AkkaStreams
 }
