@@ -6,7 +6,7 @@ import neotypes.monix.MonixTaskTestkit
 import neotypes.monix.stream.implicits._
 import scala.concurrent.ExecutionContext
 
-/** Implementation of the Stream Teskit for monix observables. */
+/** Implementation of the Stream Testkit for monix observables. */
 object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTaskTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {

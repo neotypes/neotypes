@@ -28,6 +28,9 @@ object Monix {
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
 
+      override final def fromEither[A](either: Either[Throwable, A]): Task[A] =
+        Task.fromEither(either)
+
       override final def guarantee[A, B](fa: Task[A])
                                         (f: A => Task[B])
                                         (finalizer: (A, Option[Throwable]) => Task[Unit]): Task[B] =
