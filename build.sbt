@@ -16,6 +16,7 @@ val monixVersion = "3.2.2"
 val akkaStreamVersion = "2.6.10"
 val fs2Version = "2.4.4"
 val zioVersion = "1.0.3"
+val zioInteropReactiveStreamsVersion = "1.0.3.5"
 val refinedVersion = "0.9.17"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
@@ -189,8 +190,9 @@ lazy val zioStream = (project in file("zio-stream"))
   .settings(
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion
+      "dev.zio" %% "zio" % zioVersion,
+      "dev.zio" %% "zio-streams" % zioVersion,
+      "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
 

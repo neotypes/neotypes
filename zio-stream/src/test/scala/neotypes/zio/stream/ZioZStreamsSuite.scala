@@ -6,7 +6,7 @@ import neotypes.zio.stream.implicits._
 import scala.concurrent.ExecutionContext
 import zio.Task
 
-/** Implementation of the Stream Teskit for zio ZStreams. */
+/** Implementation of the Stream Testkit for zio ZStreams. */
 object ZioZStreamsTestkit extends StreamTestkit[ZioStream, Task](ZioTaskTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {

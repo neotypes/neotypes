@@ -27,6 +27,9 @@ object Zio {
       override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
         m.flatMap(f)
 
+      override final def fromEither[A](either: Either[Throwable,A]): zio.Task[A] =
+        Task.fromEither(either)
+
       override final def makeLock: Task[Lock] =
         Queue.bounded[Unit](requestedCapacity = 1).map { q =>
           new Lock {
