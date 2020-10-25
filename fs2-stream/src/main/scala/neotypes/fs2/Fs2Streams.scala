@@ -31,7 +31,7 @@ trait Fs2Streams {
         Stream.eval(fa)
 
       override final def resource[A](r: F[A])(finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, A] =
-        Stream.bracketCase(r) {
+        Stream.bracketCase(acquire = r) {
           case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
           case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
         }

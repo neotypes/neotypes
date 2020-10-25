@@ -6,7 +6,7 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.reactivestreams.Publisher
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.collection.compat.Factory
+import scala.collection.compat._
 
 /**
   * neotypes Akka Streams
@@ -86,13 +86,8 @@ trait AkkaStreams {
       override final def evalMap[A, B](sa: AkkaStream[A])(f: A => F[B]): AkkaStream[B] =
         sa.mapAsync(parallelism = 1)(f)
 
-      override final def collectAs[C, A](sa: AkkaStream[A])(factory: Factory[A, C]): Future[C] = {
-        // Thanks to Jasper Moeys (@Jasper-M) for providing this workaround.
-        // We are still not sure this is totally safe, if you find a bug please let's us know.
-        type CC[x] = C
-        val f: Factory[A, CC[A]] = factory
-        sa.runWith(Sink.seq).map(seq => seq.to(f))
-      }
+      override final def collectAs[C, A](sa: AkkaStream[A])(factory: Factory[A, C]): Future[C] =
+        sa.runWith(Sink.fold(factory.newBuilder)(_ += _)).map(_.result())
 
       override final def single[A](sa: AkkaStream[A]): Future[A] =
         sa.take(1).runWith(Sink.last)
