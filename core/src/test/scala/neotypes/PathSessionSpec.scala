@@ -1,12 +1,12 @@
 package neotypes
 
+import neotypes.generic.auto.all._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.types.{Node, Relationship}
-import scala.jdk.CollectionConverters._
 import shapeless._
-import scala.concurrent.Future
+
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing the extraction of Paths. */

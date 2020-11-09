@@ -6,16 +6,10 @@ import java.util.UUID
 
 import mappers.{ResultMapper, TypeHint, ValueMapper}
 import types.Path
-
-import org.neo4j.driver.internal.types.InternalTypeSystem
-import org.neo4j.driver.internal.value.IntegerValue
 import org.neo4j.driver.Value
-import org.neo4j.driver.types.{Entity, IsoDuration, Node, Path => NPath, Point, Relationship}
-import shapeless.{HList, HNil, LabelledGeneric, Lazy, Witness, labelled, :: => :!:}
-import shapeless.labelled.FieldType
+import org.neo4j.driver.types.{IsoDuration, Node, Point, Relationship, Path => NPath}
 
 import scala.collection.compat.Factory
-import scala.reflect.ClassTag
 
 trait ResultMappers extends ValueMappers {
   implicit final val BooleanResultMapper: ResultMapper[Boolean] =
@@ -31,9 +25,6 @@ trait ResultMappers extends ValueMappers {
     ResultMapper.fromValueMapper
 
   implicit final val FloatResultMapper: ResultMapper[Float] =
-    ResultMapper.fromValueMapper
-
-  implicit final val HNilResultMapper: ResultMapper[HNil] =
     ResultMapper.fromValueMapper
 
   implicit final val IntResultMapper: ResultMapper[Int] =
@@ -95,65 +86,6 @@ trait ResultMappers extends ValueMappers {
 
   implicit final def mapResultMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ResultMapper[M[String, V]] =
     ResultMapper.fromValueMapper
-
-  implicit final def ccMarshallable[A, R <: HList](implicit gen: LabelledGeneric.Aux[A, R],
-                                             reprDecoder: Lazy[ResultMapper[R]],
-                                             ct: ClassTag[A]): ResultMapper[A] =
-    new ResultMapper[A] {
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] =
-        reprDecoder.value.to(value, Some(TypeHint(ct))).map(gen.from)
-    }
-
-  implicit final def hlistMarshallable[H, T <: HList, LR <: HList](implicit fieldDecoder: ValueMapper[H],
-                                                             tailDecoder: ResultMapper[T]): ResultMapper[H :!: T] =
-    new ResultMapper[H :!: T] {
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :!: T] = {
-        val (headName, headValue) = value.head
-        val head = fieldDecoder.to(headName, Some(headValue))
-        val tail = tailDecoder.to(value.tail, None)
-
-        head.flatMap(h => tail.map(t => h :: t))
-      }
-    }
-
-  implicit final def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
-                                                                  head: ValueMapper[H],
-                                                                  tail: ResultMapper[T]): ResultMapper[FieldType[K, H] :!: T] =
-    new ResultMapper[FieldType[K, H] :!: T] {
-      private def collectEntityFields(entity: Entity): List[(String, Value)] = {
-        val entityId = new IntegerValue(entity.id())
-        val ids = ("id" -> entityId) :: ("_id" -> entityId) :: Nil
-        (getKeyValuesFrom(entity) ++ ids).toList
-      }
-
-      override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, FieldType[K, H] :!: T] = {
-        val fieldName = key.value.name
-
-        typeHint match {
-          case Some(TypeHint(true)) =>
-            val index = fieldName.substring(1).toInt - 1
-            val decodedHead = head.to(fieldName, if (value.size <= index) None else Some(value(index)._2))
-            decodedHead.flatMap(v => tail.to(value, typeHint).map(t => labelled.field[K](v) :: t))
-
-          case _ =>
-            val convertedValue =
-              if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.NODE) {
-                val node = value.head._2.asNode
-                collectEntityFields(node)
-              } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.RELATIONSHIP) {
-                val relationship = value.head._2.asRelationship
-                collectEntityFields(relationship)
-              } else if (value.size == 1 && value.head._2.`type` == InternalTypeSystem.TYPE_SYSTEM.MAP) {
-                getKeyValuesFrom(value.head._2).toList
-              } else {
-                value
-              }
-
-            val decodedHead = head.to(fieldName, convertedValue.find(_._1 == fieldName).map(_._2))
-            decodedHead.flatMap(v => tail.to(convertedValue, typeHint).map(t => labelled.field[K](v) :: t))
-        }
-      }
-    }
 
   implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
     new ResultMapper[Option[T]] {

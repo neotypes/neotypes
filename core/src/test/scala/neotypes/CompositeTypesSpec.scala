@@ -1,11 +1,11 @@
 package neotypes
 
 import neotypes.exceptions.IncoercibleException
+import neotypes.generic.auto.all._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.Value
-import scala.concurrent.Future
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing queries which produce complex types. */

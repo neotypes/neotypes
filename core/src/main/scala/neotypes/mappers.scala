@@ -1,8 +1,8 @@
 package neotypes
 
-import exceptions.{PropertyNotFoundException, IncoercibleException}
+import exceptions.{IncoercibleException, PropertyNotFoundException}
+import neotypes.generic.Exported
 import types.QueryParam
-
 import org.neo4j.driver.Value
 import org.neo4j.driver.exceptions.value.Uncoercible
 import org.neo4j.driver.summary.ResultSummary
@@ -85,7 +85,7 @@ object mappers {
     }
   }
 
-  object ResultMapper {
+  object ResultMapper extends ResultMapperLowPriority {
     /**
       * Summons an implicit [[ResultMapper]] already in scope by result type.
       *
@@ -146,6 +146,11 @@ object mappers {
               case (name, value) => marshallable.to(name, Some(value))
             }
       }
+  }
+
+  private[mappers] sealed trait ResultMapperLowPriority {
+    implicit final def exportedResultMapper[A](implicit exported: Exported[ResultMapper[A]]): ResultMapper[A] =
+      exported.instance
   }
 
   @annotation.implicitNotFound("Could not find the ValueMapper for ${A}")

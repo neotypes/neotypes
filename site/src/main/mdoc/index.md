@@ -45,6 +45,7 @@ The project aims to provide seamless integration with most popular scala infrast
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
+import neotypes.generic.auto.all._
 import neotypes.implicits.all._
 import org.neo4j.driver.AuthTokens
 import scala.concurrent.{Await, Future}

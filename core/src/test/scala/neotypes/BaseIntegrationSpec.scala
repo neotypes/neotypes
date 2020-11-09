@@ -1,12 +1,9 @@
 package neotypes
 
-import java.time.Duration
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import neotypes.internal.utils.toJavaDuration
 import org.neo4j.{driver => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
-import org.testcontainers.containers.BindMode
-import org.testcontainers.containers.wait.strategy.HostPortWaitStrategy
 import org.testcontainers.images.PullPolicy
 import scala.concurrent.Future
 import scala.concurrent.duration._

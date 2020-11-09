@@ -1,10 +1,10 @@
 package neotypes
 
+import neotypes.generic.auto.all._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import scala.collection.immutable.{ListMap, ListSet, SortedMap}
-import scala.concurrent.Future
 
 /** Base classs for testing the different ways of executing queries. */
 final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
