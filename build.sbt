@@ -14,7 +14,7 @@ val catsVersion = "2.2.0"
 val catsEffectsVersion = "2.2.0"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.10"
-val fs2Version = "2.4.4"
+val fs2Version = "2.4.5"
 val zioVersion = "1.0.3"
 val refinedVersion = "0.9.17"
 
