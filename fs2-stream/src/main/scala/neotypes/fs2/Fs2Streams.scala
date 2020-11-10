@@ -11,19 +11,6 @@ trait Fs2Streams {
     new neotypes.Stream[Fs2FStream[_F]#T] {
       override final type F[T] = _F[T]
 
-      // Legacy module ------------------------------------------------------------
-      override final def init[T](value: () => F[Option[T]]): Stream[F, T] =
-        Stream.repeatEval(F.suspend(value())).unNoneTerminate
-
-      override final def onComplete[T](s: Stream[F, T])(f: => F[Unit]): Stream[F, T] =
-        s.onFinalize(f)
-
-      override final def fToS[T](f: F[Stream[F, T]]): Stream[F, T] =
-        Stream.eval(f).flatten
-      // --------------------------------------------------------------------------
-
-
-      // New (Rx) module ----------------------------------------------------------
       override final def fromRx[A](publisher: Publisher[A]): Stream[F, A] =
         fs2.interop.reactivestreams.fromPublisher(publisher)
 
@@ -58,6 +45,5 @@ trait Fs2Streams {
 
       override final def void(s: fs2.Stream[F, _]): F[Unit] =
         s.compile.drain
-      // --------------------------------------------------------------------------
     }
 }

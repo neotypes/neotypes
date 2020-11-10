@@ -12,22 +12,6 @@ trait MonixStreams {
     new neotypes.Stream[Observable] {
       override final type F[T] = Task[T]
 
-      // Legacy module ------------------------------------------------------------
-      override final def init[T](value: () => Task[Option[T]]): Observable[T] =
-        Observable
-          .repeatEvalF(Task.suspend(value()))
-          .takeWhile(option => option.isDefined)
-          .collect { case Some(t) => t }
-
-      override final def onComplete[T](s: Observable[T])(f: => Task[Unit]): Observable[T] =
-        s.guarantee(f)
-
-      override final def fToS[T](f: Task[Observable[T]]): Observable[T] =
-        Observable.fromTask(f).flatten
-      // --------------------------------------------------------------------------
-
-
-      // New (Rx) module ----------------------------------------------------------
       override final def fromRx[A](publisher: Publisher[A]): Observable[A] =
         Observable.fromReactivePublisher(publisher)
 
@@ -57,6 +41,5 @@ trait MonixStreams {
 
       override final def void(s: Observable[_]): Task[Unit] =
         s.completedL
-      // --------------------------------------------------------------------------
     }
 }

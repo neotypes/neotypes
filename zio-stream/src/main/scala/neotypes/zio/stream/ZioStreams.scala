@@ -12,27 +12,6 @@ trait ZioStreams {
     new neotypes.Stream[ZioStream] {
       override final type F[T] = Task[T]
 
-      // Legacy module ------------------------------------------------------------
-      override final def init[T](value: () => Task[Option[T]]): ZioStream[T] =
-        ZStream.unfoldM(()) { _: Unit =>
-          value().map { optional =>
-            optional.map { v =>
-              (v, ())
-            }
-          }
-        }
-
-      override final def onComplete[T](s: ZioStream[T])(f: => Task[Unit]): ZioStream[T] =
-        ZStream.bracket(Task(s)) { _ =>
-          f.orDie
-        }.flatten
-
-      override final def fToS[T](f: Task[ZioStream[T]]): ZioStream[T] =
-        ZStream.fromEffect(f).flatten
-      // --------------------------------------------------------------------------
-
-
-      // New (Rx) module ----------------------------------------------------------
       override final def fromRx[A](publisher: Publisher[A]): ZioStream[A] =
         Adapters.publisherToStream(publisher, bufferSize = 16)
 
@@ -67,6 +46,5 @@ trait ZioStreams {
 
       override final def void(s: ZioStream[_]): Task[Unit] =
         s.runDrain
-      // --------------------------------------------------------------------------
     }
 }

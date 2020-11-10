@@ -7,7 +7,7 @@ import neotypes.akkastreams.implicits._
 import scala.concurrent.{ExecutionContext, Future, blocking}
 import scala.concurrent.duration.Duration
 
-/** Implementation of the Stream Teskit for akka streams. */
+/** Implementation of the Stream Testkit for Akka streams. */
 object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
@@ -22,5 +22,5 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
     }
 }
 
-/** Execute all the stream specs using akka streams. */
+/** Execute all the stream specs using Akka streams. */
 final class AkkaStreamsSuite extends StreamSuite(AkkaStreamsTestkit)

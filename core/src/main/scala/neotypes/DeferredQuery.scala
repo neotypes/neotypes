@@ -1,6 +1,5 @@
 package neotypes
 
-import internal.syntax.async._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
@@ -297,16 +296,6 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def stream[S[_]]: StreamPartiallyApplied[S, T] =
     new StreamPartiallyApplied(this)
 
-  /** Evaluate the query an get the results as a Stream.
-    *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
-    *
-    * @tparam S stream type.
-    * @return An effectual Stream of T values.
-    */
-  def streamRx[S[_]]: StreamRxPartiallyApplied[S, T] =
-    new StreamRxPartiallyApplied(this)
-
   /** Creates a new query with an updated set of parameters.
    *
     * @note If params contains a key that is already present in the current query,
@@ -334,34 +323,16 @@ private[neotypes] object DeferredQuery {
     }
   }
 
-  // Legacy module ------------------------------------------------------------
   private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
-    def apply[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                   (implicit rm: ResultMapper[T], F: Async[F], S: Stream.Aux[S, F]): S[T] =
-      S.fToS(
-        session.transaction(config).map { tx =>
-          S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
-        }
-      )
-
-    def apply[F[_]](tx: Transaction[F])
-                   (implicit rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
-      tx.stream(dq.query, dq.params)
-  }
-  // ------------------------------------------------------------------------
-
-  // New (Rx) Module --------------------------------------------------------
-  private[neotypes] final class StreamRxPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
     def apply[F[_]](session: StreamingSession[S, F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
                    (implicit rm: ResultMapper[T]): S[T] =
       session.streamingTransact(config) { tx =>
-        tx.streamRx(dq.query, dq.params)
+        tx.stream(dq.query, dq.params)
       }
 
     def apply[F[_]](tx: StreamingTransaction[S, F])
                    (implicit rm: ResultMapper[T]): S[T] =
-      tx.streamRx(dq.query, dq.params)
-    // ------------------------------------------------------------------------
+      tx.stream(dq.query, dq.params)
   }
 }
 

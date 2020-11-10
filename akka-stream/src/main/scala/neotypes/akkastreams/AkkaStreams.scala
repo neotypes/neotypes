@@ -1,7 +1,7 @@
 package neotypes.akkastreams
 
 import akka.stream.{Attributes, Materializer, SourceShape, Outlet}
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.reactivestreams.Publisher
 
@@ -23,51 +23,8 @@ trait AkkaStreams {
     new neotypes.Stream[AkkaStream] {
       import mat.executionContext
 
-      /** Define effect type to be the scala Future
-        *
-        * @tparam T parametric type for scala Future
-        */
       override final type F[T] = Future[T]
 
-      // Legacy module ------------------------------------------------------------
-      /** Initialize AkkaStream
-        *
-        * @param value stream function to be applied
-        * @tparam T parametric type
-        * @return neotype AkkaStream
-        */
-      override final def init[T](value: () => Future[Option[T]]): AkkaStream[T] =
-        Source
-          .repeat(())
-          .mapAsync(parallelism = 1)(_ => value())
-          .takeWhile(_.isDefined)
-          .map(_.get)
-
-      /** Apply side effect to AkkaStream
-        *
-        * @param s neotypes AkkaStream
-        * @param f lazily evaluated scala Future side effect
-        * @tparam T parametric type
-        * @return neotypes AkkaStream
-        */
-      override final def onComplete[T](s: AkkaStream[T])(f: => Future[Unit]): AkkaStream[T] =
-        s.watchTermination() { (mat, done) =>
-          done.flatMap(_ => f)
-          mat
-        }
-
-      /** Evaluate Future AkkaStream
-        *
-        * @param f Future AkkaStream
-        * @tparam T parametric type
-        * @return the evaluated AkkaStream
-        */
-      override final def fToS[T](f: Future[AkkaStream[T]]): AkkaStream[T] =
-        Source.futureSource(f).viaMat(Flow[T])(Keep.none)
-      // --------------------------------------------------------------------------
-
-
-      // New (Rx) module ----------------------------------------------------------
       override final def fromRx[A](publisher: Publisher[A]): AkkaStream[A] =
         Source.fromPublisher(publisher)
 
@@ -94,7 +51,6 @@ trait AkkaStreams {
 
       override final def void(s: AkkaStream[_]): Future[Unit] =
         s.runWith(Sink.ignore).map(_ => ())
-      // --------------------------------------------------------------------------
     }
 }
 

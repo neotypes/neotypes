@@ -1,7 +1,5 @@
 package neotypes
 
-import java.util.concurrent.CompletionStage
-
 import internal.utils.traverse._
 import internal.syntax.async._
 import internal.syntax.stage._
@@ -40,17 +38,14 @@ sealed trait Transaction[F[_]] {
   def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit resultMapper: ResultMapper[T]): F[T]
 
-  def stream[T, S[_]](query: String, params: Map[String, QueryParam] = Map.empty)
-                     (implicit S: Stream.Aux[S, F], resultMapper: ResultMapper[T]): S[T]
-
   def commit: F[Unit]
 
   def rollback: F[Unit]
 }
 
 sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
-  def streamRx[T](query: String, params: Map[String, QueryParam] = Map.empty)
-                 (implicit resultMapper: ResultMapper[T]): S[T]
+  def stream[T](query: String, params: Map[String, QueryParam] = Map.empty)
+               (implicit resultMapper: ResultMapper[T]): S[T]
 }
 
 object Transaction {
@@ -118,32 +113,6 @@ object Transaction {
           }
       }
 
-    private def nextAsyncToF[T](cs: CompletionStage[Record])
-                               (implicit resultMapper: ResultMapper[T]): F[Option[T]] =
-      F.async { cb =>
-        cs.accept(cb) { r =>
-          Option(r) match {
-            case None =>
-              Right(None)
-
-            case Some(record) =>
-              resultMapper.to(recordToList(record), None).map(r => Option(r))
-          }
-        }
-      }
-
-    override final def stream[T, S[_]](query: String, params: Map[String, QueryParam])
-                                      (implicit S: Stream.Aux[S, F], resultMapper: ResultMapper[T]): S[T] =
-      S.fToS(
-        F.async { cb =>
-          transaction
-            .runAsync(query, QueryParam.toJavaMap(params))
-            .accept(cb) { statementResultCursor =>
-              Right(S.init(() => nextAsyncToF(statementResultCursor.nextAsync())))
-            }
-        }
-      )
-
     override final def commit: F[Unit] =
       F.async[Unit] { cb =>
         transaction.commitAsync().acceptVoid(cb)
@@ -179,7 +148,7 @@ object Transaction {
     override final def collectAs[C, T](factory: Factory[T, C])
                                       (query: String, params: Map[String, QueryParam])
                                       (implicit resultMapper: ResultMapper[T]): F[C] =
-      streamRx(query, params).collectAs[F, C](factory)
+      stream(query, params).collectAs[F, C](factory)
 
     override final def list[T](query: String, params: Map[String, QueryParam])
                               (implicit resultMapper: ResultMapper[T]): F[List[T]] =
@@ -199,16 +168,12 @@ object Transaction {
 
     override final def single[T](query: String, params: Map[String, QueryParam])
                                 (implicit resultMapper: ResultMapper[T]): F[T] =
-      streamRx(query, params).single[F].recoverWith {
+      stream(query, params).single[F].recoverWith {
         case _: NoSuchElementException => F.fromEither(resultMapper.to(List.empty, None))
       }
 
-    override final def stream[T, S1[_]](query: String, params: Map[String, QueryParam])
-                                       (implicit S1: Stream.Aux[S1, F], resultMapper: ResultMapper[T]): S1[T] =
-      streamRx(query, params).asInstanceOf[S1[T]]
-
-    override final def streamRx[T](query: String, params: Map[String, QueryParam])
-                                  (implicit resultMapper: ResultMapper[T]): S[T] =
+    override final def stream[T](query: String, params: Map[String, QueryParam])
+                                (implicit resultMapper: ResultMapper[T]): S[T] =
       transaction
         .run(query, QueryParam.toJavaMap(params))
         .records

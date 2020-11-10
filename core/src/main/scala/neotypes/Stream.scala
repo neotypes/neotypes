@@ -8,15 +8,6 @@ import scala.collection.compat.Factory
 trait Stream[S[_]] {
   type F[T]
 
-  // Legacy module ------------------------------------------------------------
-  private[neotypes] def init[A](value: () => F[Option[A]]): S[A]
-
-  private[neotypes] def onComplete[A](s: S[A])(f: => F[Unit]): S[A]
-
-  private[neotypes] def fToS[A](f: F[S[A]]): S[A]
-  // --------------------------------------------------------------------------
-
-  // New (Rx) module ----------------------------------------------------------
   private[neotypes] def fromRx[A](publisher: Publisher[A]): S[A]
 
   private[neotypes] def fromF[A](fa: F[A]): S[A]
@@ -34,7 +25,6 @@ trait Stream[S[_]] {
   private[neotypes] def single[A](sa: S[A]): F[A]
 
   private[neotypes] def void(s: S[_]): F[Unit]
-  // --------------------------------------------------------------------------
 }
 
 object Stream {

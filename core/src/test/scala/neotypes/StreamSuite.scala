@@ -43,20 +43,9 @@ abstract class StreamSessionProvider[S[_], F[_]] (testkit: StreamTestkit[S, F]) 
     executeAsFuture(work andThen streamToFList)
 }
 
-/** Provides an asynchronous session for streaming tests. */
-abstract class LegacyStreamSessionProvider[S[_], F[_]] (testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with SessionProvider[F] { self: BaseIntegrationSpec[F] =>
-  override protected final val sessionType: String = "AsyncSession"
-
-  override protected final lazy val neotypesSession: Session[F] =
-    Session[F](F,this.driver.asyncSession())(fToT(F.makeLock))
-
-  protected final def executeAsFutureList[T](work: Session[F] => S[T]): Future[List[T]] =
-    executeAsFuture(work andThen streamToFList)
-}
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
-  new LegacyStreamSessionProvider(testkit) with LegacyStreamIntegrationSpec[S, F],
-  new StreamSessionProvider(testkit) with NewStreamIntegrationSpec[S, F],
+  new StreamSessionProvider(testkit) with StreamIntegrationSpec[S, F],
   new StreamSessionProvider(testkit) with AlgorithmSpec[F],
   new StreamSessionProvider(testkit) with AsyncIntegrationSpec[F],
   new StreamSessionProvider(testkit) with BasicSessionSpec[F],
