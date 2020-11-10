@@ -1,6 +1,7 @@
 package neotypes.generic
 
 import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
+
 import org.neo4j.driver.Value
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.IntegerValue
@@ -26,10 +27,8 @@ object ReprResultMapper {
     }
   }
 
-  implicit final def hlistMarshallable[H, T <: HList](implicit
-      fieldDecoder: ValueMapper[H],
-      tailDecoder: ReprResultMapper[T]
-  ): ReprResultMapper[H :: T] =
+  implicit final def hlistMarshallable[H, T <: HList](implicit fieldDecoder: ValueMapper[H],
+                                                tailDecoder: ReprResultMapper[T]): ReprResultMapper[H :: T] =
     new ReprResultMapper[H :: T] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :: T] = {
         val (headName, headValue) = value.head
@@ -40,11 +39,9 @@ object ReprResultMapper {
       }
     }
 
-  implicit final def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit
-      key: Witness.Aux[K],
-      head: ValueMapper[H],
-      tail: ReprResultMapper[T]
-  ): ReprResultMapper[FieldType[K, H] :: T] =
+  implicit final def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
+                                                                  head: ValueMapper[H],
+                                                                  tail: ReprResultMapper[T]): ReprResultMapper[FieldType[K, H] :: T] =
     new ReprResultMapper[FieldType[K, H] :: T] {
       private def collectEntityFields(entity: Entity): List[(String, Value)] = {
         val entityId = new IntegerValue(entity.id())
@@ -82,4 +79,3 @@ object ReprResultMapper {
     }
 
 }
-

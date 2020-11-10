@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.generic.auto.all._
+import neotypes.generic.auto._
 import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._

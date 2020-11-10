@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.generic.auto.all._
+import neotypes.generic.auto._
 import neotypes.implicits.mappers.results._
 import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
 import org.neo4j.driver.internal.value.{IntegerValue, StringValue}

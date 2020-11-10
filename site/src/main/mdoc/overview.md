@@ -39,7 +39,7 @@ Or, if you use other effect types instead of `Future`, for example, `IO`. Then, 
 
 ```scala mdoc:compile-only
 import neotypes.Driver
-import neotypes.generic.auto.all._ // Allows to automatically derive an implicit ResultMapper for case classes.
+import neotypes.generic.auto._ // Allows to automatically derive an implicit ResultMapper for case classes.
 import neotypes.implicits.mappers.results._ // Provides instances for primitives (String, Int, Long, Instant, etc)
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import scala.concurrent.Future
@@ -95,7 +95,7 @@ If you need to support your return types for this type of queries, you can provi
 _(for more information, please read [streaming](streams))_.
 
 ```scala mdoc:compile-only
-import neotypes.generic.auto.all._
+import neotypes.generic.auto._
 import org.neo4j.driver.Value
 import shapeless.{::, HNil}
 import scala.collection.immutable.{ListMap, ListSet}
