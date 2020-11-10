@@ -2,7 +2,6 @@ package neotypes.generic
 
 import java.{util => ju}
 
-import neotypes.implicits.mappers.results._
 import neotypes.mappers.ResultMapper
 
 import org.neo4j.driver.internal.InternalNode

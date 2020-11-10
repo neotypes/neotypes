@@ -13,7 +13,6 @@ position: 40
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -40,7 +39,6 @@ val data: String = Await.result(program, 1.second)
 import cats.effect.{IO, Resource}
 import neotypes.{GraphDatabase, Session}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
@@ -64,7 +62,6 @@ val data: String = program.unsafeRunSync()
 import cats.effect.{Concurrent, IO, Resource}
 import neotypes.{GraphDatabase, Session}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
@@ -88,7 +85,6 @@ import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import neotypes.{GraphDatabase, Session}
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.monix.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import scala.concurrent.duration._ // Provides the second extension method.
@@ -111,7 +107,6 @@ val data: String = program.runSyncUnsafe(1.second)
 ```scala mdoc:compile-only
 import zio.{Runtime, Managed, Task}
 import neotypes.{GraphDatabase, Session}
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import org.neo4j.driver.AuthTokens

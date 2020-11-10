@@ -1,7 +1,7 @@
 package neotypes
 
 import neotypes.generic.auto._
-import neotypes.implicits.mappers.results._
+import neotypes.implicits.mappers.collections._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import scala.collection.immutable.{ListMap, ListSet, SortedMap}

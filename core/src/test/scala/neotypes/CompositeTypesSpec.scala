@@ -2,7 +2,6 @@ package neotypes
 
 import neotypes.exceptions.IncoercibleException
 import neotypes.generic.auto._
-import neotypes.implicits.mappers.results._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.Value
