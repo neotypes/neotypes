@@ -89,7 +89,7 @@ If you need to support your return types for this type of queries, you can provi
 * `set(session)` - runs a query and returns a **Set** of results.
 * `vector(session)` - runs a query and returns a **Vector** of results.
 * `map(session)` - runs a query and returns a **Map** of results _(only if the elements are tuples)_.
-* `collectAs(Col)(session)` - runs a query and returns a **Col** of results _(where **Col** is any kind of collection)_. Might require the following import `import neotypes.implicits.mappers.collections._`.
+* `collectAs(Col)(session)` - runs a query and returns a **Col** of results _(where **Col** is any kind of collection)_. If you are in `2.12` or you are cross-compiling with `2.12` you need to import `neotypes.implicits.mappers.collections._` or you can import `scala.collection.compat._`.
 * `stream(session)` - runs a query and returns a **Stream** of results
 _(for more information, please read [streaming](streams))_.
 

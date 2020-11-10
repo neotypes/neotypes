@@ -4,7 +4,6 @@ import neotypes.generic.auto._
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
-import neotypes.mappers.ResultMapper
 import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the use of the library with the Neo4j graph-data-science plugin. */
