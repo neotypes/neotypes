@@ -24,7 +24,6 @@ import akka.stream.scaladsl.{Sink, Source}
 import neotypes.{GraphDatabase, Session}
 import neotypes.akkastreams.AkkaStream
 import neotypes.akkastreams.implicits._ // Brings the implicit Stream[AkkaStream] instance into the scope.
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 import scala.concurrent.{Await, Future}
@@ -59,7 +58,6 @@ import neotypes.{GraphDatabase, Session}
 import neotypes.cats.effect.implicits._ // Brings the implicit Async[IO] instance into the scope.
 import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2IOStream] instance into the scope.
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
@@ -96,7 +94,6 @@ import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
 import neotypes.{GraphDatabase, Session}
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.monix.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.monix.stream.MonixStream
@@ -126,7 +123,6 @@ program.completedL.runSyncUnsafe(5.seconds)
 import zio.{Runtime, Managed, Task}
 import zio.stream.ZStream
 import neotypes.{GraphDatabase, Session}
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.zio.stream.ZioStream

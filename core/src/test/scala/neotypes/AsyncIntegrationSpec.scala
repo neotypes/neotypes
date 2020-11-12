@@ -3,9 +3,6 @@ package neotypes
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.exceptions.ClientException
-import org.scalatest.compatible.Assertion
-import scala.concurrent.Future
-import scala.reflect.ClassTag
 
 /** Base class for testing the basic behavoir of Async[F] instances. */
 final class AsyncIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {

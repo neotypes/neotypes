@@ -1,6 +1,7 @@
 package neotypes.cats.data
 
 import neotypes.{CleaningIntegrationSpec, FutureTestkit}
+import neotypes.generic.auto._
 import neotypes.cats.data.implicits._
 import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._

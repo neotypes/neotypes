@@ -1,7 +1,5 @@
 package neotypes
 
-
-import neotypes.implicits.mappers.parameters._
 import neotypes.implicits.syntax.cypher._
 import neotypes.types.QueryParam
 import org.scalatest.flatspec.AnyFlatSpec
