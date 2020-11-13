@@ -6,7 +6,7 @@ import org.neo4j.driver.exceptions.ClientException
 import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the basic behaviour of Stream[S, F] instances. */
-trait StreamIntegrationSpec[S[_], F[_]] extends BaseIntegrationSpec[F] with Matchers { self: StreamSessionProvider[S, F] =>
+trait StreamIntegrationSpec[F[_], S[_]] extends BaseIntegrationSpec[F] with Matchers { self: StreamSessionProvider[F, S] =>
   behavior of s"Stream[${streamName}, ${effectName}]"
 
   it should s"execute a streaming query" in {

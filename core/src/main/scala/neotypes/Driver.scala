@@ -90,7 +90,7 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
     *
     * @see [[SessionConfig]].
     */
-  def streamingSession[S[_]](implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[S, F]] =
+  def streamingSession[S[_]](implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[F, S]] =
     streamingSession(SessionConfig.defaultConfig)
 
   /** Acquire a streaming session to the database.
@@ -102,7 +102,7 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
     * @return a single element streaming with the [[StreamingSession]].
     */
   def streamingSession[S[_]](config: SessionConfig)
-                            (implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[S, F]] = {
+                            (implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[F, S]] = {
     val session = F.makeLock.flatMap { lock =>
       F.delay {
         Session(F, S, driver.rxSession(config))(lock)

@@ -22,16 +22,16 @@ sealed trait Session[F[_]] {
   def close: F[Unit]
 }
 
-sealed trait StreamingSession[S[_], F[_]] extends Session[F] {
-  final def streamingTransaction: S[StreamingTransaction[S, F]] =
+sealed trait StreamingSession[F[_], S[_]] extends Session[F] {
+  final def streamingTransaction: S[StreamingTransaction[F, S]] =
     streamingTransaction(NeoTransactionConfig.empty)
 
-  def streamingTransaction(config: NeoTransactionConfig): S[StreamingTransaction[S, F]]
+  def streamingTransaction(config: NeoTransactionConfig): S[StreamingTransaction[F, S]]
 
-  final def streamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
+  final def streamingTransact[T](txF: StreamingTransaction[F, S] => S[T]): S[T] =
     streamingTransact(NeoTransactionConfig.empty)(txF)
 
-  def streamingTransact[T](config: NeoTransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
+  def streamingTransact[T](config: NeoTransactionConfig)(txF: StreamingTransaction[F, S] => S[T]): S[T]
 }
 
 object Session {
@@ -62,15 +62,15 @@ object Session {
       }
   }
 
-  private[neotypes] def apply[S[_], F[_]](F: Async[F], S: Stream.Aux[S, F], session: NeoRxSession)
-                                         (lock: F.Lock): StreamingSession[S, F] = new StreamingSession[S, F] {
+  private[neotypes] def apply[F[_], S[_]](F: Async[F], S: Stream.Aux[S, F], session: NeoRxSession)
+                                         (lock: F.Lock): StreamingSession[F, S] = new StreamingSession[F, S] {
     private implicit final val FF: Async[F] = F
     private implicit final val SS: Stream.Aux[S, F] = S
 
     override final def transaction(config: NeoTransactionConfig): F[Transaction[F]] =
       streamingTransaction(config).single[F].widden
 
-    override final def streamingTransaction(config: NeoTransactionConfig): S[StreamingTransaction[S, F]] =
+    override final def streamingTransaction(config: NeoTransactionConfig): S[StreamingTransaction[F, S]] =
       S.fromF(lock.acquire).flatMapS { _ =>
         session.beginTransaction(config).toStream[S].mapS { tx =>
           Transaction(F, S, tx)(lock)
@@ -80,7 +80,7 @@ object Session {
     override final def transact[T](config: NeoTransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
       transaction(config).guarantee(txF)(txFinalizer)
 
-    override final def streamingTransact[T](config: NeoTransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] =
+    override final def streamingTransact[T](config: NeoTransactionConfig)(txF: StreamingTransaction[F, S] => S[T]): S[T] =
       S.resource(streamingTransaction(config).single[F])(txFinalizer).flatMapS(txF)
 
     override final def close: F[Unit] =

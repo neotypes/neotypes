@@ -7,7 +7,7 @@ import neotypes.akkastreams.implicits._
 import scala.concurrent.{ExecutionContext, Future, blocking}
 
 /** Implementation of the Stream Testkit for Akka streams. */
-object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestkit) {
+object AkkaStreamsTestkit extends StreamTestkit[Future, AkkaStream](FutureTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       implicit val system =

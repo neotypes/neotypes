@@ -43,7 +43,7 @@ sealed trait Transaction[F[_]] {
   def rollback: F[Unit]
 }
 
-sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
+sealed trait StreamingTransaction[F[_], S[_]] extends Transaction[F] {
   def stream[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit resultMapper: ResultMapper[T]): S[T]
 }
@@ -128,8 +128,8 @@ object Transaction {
       }
   }
 
-  private[neotypes] def apply[S[_], F[_]](F: Async[F], S: Stream.Aux[S, F], transaction: NeoRxTransaction)
-                                         (lock: F.Lock): StreamingTransaction[S, F] = new StreamingTransaction[S, F] {
+  private[neotypes] def apply[F[_], S[_]](F: Async[F], S: Stream.Aux[S, F], transaction: NeoRxTransaction)
+                                         (lock: F.Lock): StreamingTransaction[F, S] = new StreamingTransaction[F, S] {
     private implicit final val FF: Async[F] = F
     private implicit final val SS: Stream.Aux[S, F] = S
 

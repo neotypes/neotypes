@@ -120,9 +120,26 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @tparam F effect type.
     * @return An effectual value that will compute a single T element.
     */
-  def single[F[_]](session: Session[F],config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def single[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
                   (implicit rm: ResultMapper[T]): F[T] =
     session.transact(config)(tx => single(tx))
+
+  /** Evaluate the query an get the results as a Stream.
+    *
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @param session neotypes streaming session.
+    * @param config neo4j transaction config (optional).
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @tparam S stream type.
+    * @return An effectual Stream of T values.
+    */
+  def stream[F[_], S[_]](session: StreamingSession[F, S], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+                        (implicit rm: ResultMapper[T]): S[T] =
+    session.streamingTransact(config) { tx =>
+      tx.stream(query, params)
+    }
 
   /** Executes the query and ignores its output.
     *
@@ -250,6 +267,20 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
                   (implicit rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
 
+  /** Evaluate the query an get the results as a Stream.
+    *
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @param tx neotypes streaming transaction.
+    * @param rm result mapper for type T.
+    * @tparam F effect type.
+    * @tparam S stream type.
+    * @return An effectual Stream of T values.
+    */
+  def stream[F[_], S[_]](tx: StreamingTransaction[F, S])
+                        (implicit rm: ResultMapper[T]): S[T] =
+    tx.stream(query, params)
+
   /** Executes the query and ignores its output.
     *
     * @example
@@ -286,16 +317,6 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
     new CollectAsPartiallyApplied(factory -> this)
 
-  /** Evaluate the query an get the results as a Stream.
-    *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
-    *
-    * @tparam S stream type.
-    * @return An effectual Stream of T values.
-    */
-  def stream[S[_]]: StreamPartiallyApplied[S, T] =
-    new StreamPartiallyApplied(this)
-
   /** Creates a new query with an updated set of parameters.
    *
     * @note If params contains a key that is already present in the current query,
@@ -321,18 +342,6 @@ private[neotypes] object DeferredQuery {
       val (factory, dq) = factoryAndDq
       tx.collectAs(factory)(dq.query, dq.params)
     }
-  }
-
-  private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
-    def apply[F[_]](session: StreamingSession[S, F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                   (implicit rm: ResultMapper[T]): S[T] =
-      session.streamingTransact(config) { tx =>
-        tx.stream(dq.query, dq.params)
-      }
-
-    def apply[F[_]](tx: StreamingTransaction[S, F])
-                   (implicit rm: ResultMapper[T]): S[T] =
-      tx.stream(dq.query, dq.params)
   }
 }
 
