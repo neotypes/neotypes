@@ -40,7 +40,6 @@ import scala.concurrent.ExecutionContext.Implicits.global
 
 ```scala mdoc:compile-only
 import neotypes.Session
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMapper[String] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
 def result(session: Session[F]): F[String] =
@@ -56,7 +55,6 @@ You can use `Session.transact` method.
 
 ```scala mdoc:compile-only
 import neotypes.Session
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMappers instances in scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
 def result(session: Session[F]): F[(String, String)] = session.transact { tx =>
@@ -76,7 +74,6 @@ You can use the `Session.transaction` method, to create an `F[Transaction[F]]`.
 
 ```scala mdoc:compile-only
 import neotypes.Session
-import neotypes.implicits.mappers.executions._ // Brings the implicit ExecutionMapper[Unit] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
 def result(session: Session[F]): F[Unit] = session.transaction.flatMap { tx =>
@@ -101,7 +98,6 @@ If you want to configure the timeout of a `Transaction` or add add custom metada
 
 ```scala mdoc
 import neotypes.TransactionConfig
-import neotypes.implicits.mappers.parameters._
 import neotypes.types.QueryParam
 import scala.concurrent.duration._
 
@@ -116,7 +112,6 @@ Which you can use in operations that explicitly or implicitly create `Transactio
 
 ```scala mdoc:compile-only
 import neotypes.{Session, Transaction}
-import neotypes.implicits.mappers.results._ // Brings the implicit ResultMappers instances in scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
 def customTransaction(session: Session[F]): F[Transaction[F]] =

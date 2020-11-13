@@ -1,10 +1,10 @@
 package neotypes
 
-import neotypes.implicits.mappers.results._
+import neotypes.generic.auto._
+import neotypes.implicits.mappers.collections._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import scala.collection.immutable.{ListMap, ListSet, SortedMap}
-import scala.concurrent.Future
 
 /** Base classs for testing the different ways of executing queries. */
 trait QueryExecutionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvider[F] =>

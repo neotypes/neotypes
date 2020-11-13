@@ -6,8 +6,6 @@ import cats.syntax.all._
 import neotypes.{BaseIntegrationSpec, Driver, EffectSessionProvider, Session}
 import neotypes.cats.effect.implicits._
 import neotypes.implicits.all._
-import org.neo4j.driver.exceptions.ClientException
-import org.testcontainers.shaded.okio.AsyncTimeout
 
 /** Ensures the neotypes implicits does not collide with the cats ones. */
 final class CatsImplicitsSpec extends EffectSessionProvider(IOTestkit) with BaseIntegrationSpec[IO] { self =>

@@ -1,13 +1,11 @@
 package neotypes
 
-import neotypes.implicits.mappers.results._
+import neotypes.generic.auto._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.types.{Node, Relationship}
 import scala.jdk.CollectionConverters._
 import shapeless._
-import scala.concurrent.Future
-import scala.jdk.CollectionConverters._
 
 /** Base class for testing the extraction of Paths. */
 trait PathSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvider[F] =>

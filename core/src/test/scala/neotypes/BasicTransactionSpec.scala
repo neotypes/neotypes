@@ -3,7 +3,6 @@ package neotypes
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
-import scala.concurrent.Future
 
 /** Base class for testing the basic behaviour of Transaction[F] instances. */
 trait BasicTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] { self: SessionProvider[F] =>

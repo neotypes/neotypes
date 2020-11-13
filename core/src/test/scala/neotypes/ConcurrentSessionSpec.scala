@@ -3,7 +3,6 @@ package neotypes
 import neotypes.internal.syntax.async._
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
-import org.neo4j.driver.exceptions.ClientException
 import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
 

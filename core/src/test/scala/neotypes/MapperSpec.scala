@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.implicits.mappers.results._
+import neotypes.generic.auto._
 import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
 import org.neo4j.driver.internal.value.{IntegerValue, StringValue}
 import org.neo4j.driver.Value
@@ -13,7 +13,7 @@ final class MapperSpec extends AnyFreeSpec {
     "constructors" - {
       "should summon implicit ResultMapper instances" in {
         val strMapper = ResultMapper[String]
-        assert(strMapper == StringResultMapper)
+        assert(strMapper == ResultMapper.StringResultMapper)
       }
       "should create an instance based on a function" in {
         def myParsingFunction(vals: List[(String, Value)], typeHint: Option[TypeHint]) = Right("function works")
@@ -38,7 +38,7 @@ final class MapperSpec extends AnyFreeSpec {
         override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, String] =
           Left(new Exception)
       }
-      val result = failingMapper.or(StringResultMapper).to(List(("value", new StringValue("string"))), None)
+      val result = failingMapper.or(ResultMapper.StringResultMapper).to(List(("value", new StringValue("string"))), None)
       assert(result == Right("string"))
     }
 
@@ -61,13 +61,13 @@ final class MapperSpec extends AnyFreeSpec {
 
     "should derive a product mapper" in {
       val lengthOfStringMapper = ResultMapper[String].map(_.length)
-      val productMapper = StringResultMapper.product(lengthOfStringMapper)
+      val productMapper = ResultMapper.StringResultMapper.product(lengthOfStringMapper)
       val result = productMapper.to(List(("value", new StringValue("twelve chars"))), None)
       assert(result == Right("twelve chars" -> 12))
     }
 
     "should derive an either mapper" in {
-      val eitherIntOrStringMapper = ResultMapper[Int].either(StringResultMapper)
+      val eitherIntOrStringMapper = ResultMapper[Int].either(ResultMapper.StringResultMapper)
       val resultInt = eitherIntOrStringMapper.to(List(("value", new IntegerValue(1))), None)
       val resultString = eitherIntOrStringMapper.to(List(("value", new StringValue("string"))), None)
       assert(resultInt == Right(Left(1)))
@@ -79,7 +79,7 @@ final class MapperSpec extends AnyFreeSpec {
     "constructors" - {
       "should summon implicit ValueMapper instances" in {
         val strMapper = ValueMapper[String]
-        assert(strMapper == StringValueMapper)
+        assert(strMapper == ValueMapper.StringValueMapper)
       }
       "should create an instance based on a function" in {
         def myParsingFunction(name: String, value: Option[Value]) = Right("function works")
@@ -124,7 +124,7 @@ final class MapperSpec extends AnyFreeSpec {
 
     "should be able to derive a product mapper" in {
       val lengthOfStringMapper = ValueMapper[String].map(_.length)
-      val productMapper = StringValueMapper.product(lengthOfStringMapper)
+      val productMapper = ValueMapper.StringValueMapper.product(lengthOfStringMapper)
       val result = productMapper.to("value", Some(new StringValue("twelve chars")))
       assert(result == Right("twelve chars" -> 12))
     }

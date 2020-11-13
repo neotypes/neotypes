@@ -1,6 +1,7 @@
 package neotypes.refined
 
 import neotypes.{EffectSessionProvider, CleaningIntegrationSpec, FutureTestkit}
+import neotypes.generic.auto._
 import neotypes.exceptions.IncoercibleException
 import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._

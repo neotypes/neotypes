@@ -10,7 +10,6 @@ import org.neo4j.driver.{Value, Values}
 import org.neo4j.driver.types.{IsoDuration, Node, Point}
 import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
-import scala.concurrent.Future
 
 /** Base class for testing the mapping of inserted parameters. */
 trait ParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: SessionProvider[F] =>

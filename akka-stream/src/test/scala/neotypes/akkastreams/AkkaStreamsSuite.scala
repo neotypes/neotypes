@@ -5,7 +5,6 @@ import akka.stream.scaladsl.Sink
 import neotypes.{FutureTestkit, Stream, StreamSuite, StreamTestkit}
 import neotypes.akkastreams.implicits._
 import scala.concurrent.{ExecutionContext, Future, blocking}
-import scala.concurrent.duration.Duration
 
 /** Implementation of the Stream Testkit for Akka streams. */
 object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestkit) {

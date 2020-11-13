@@ -11,7 +11,6 @@ position: 20
 And uses the `ParameteterMapper` typeclass to ensure typesafety.
 
 ```scala mdoc:silent
-import neotypes.implicits.mappers.parameters._ // Brings all the default ParameterMappers into the scope.
 import neotypes.implicits.syntax.cypher._ // Adds the ` interpolator into the scope.
 ```
 

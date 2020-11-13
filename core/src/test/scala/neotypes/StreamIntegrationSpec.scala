@@ -4,8 +4,6 @@ import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.exceptions.ClientException
 import org.scalatest.matchers.should.Matchers
-import scala.concurrent.Future
-import scala.reflect.ClassTag
 
 /** Base class for testing the basic behaviour of Stream[S, F] instances. */
 trait StreamIntegrationSpec[S[_], F[_]] extends BaseIntegrationSpec[F] with Matchers { self: StreamSessionProvider[S, F] =>

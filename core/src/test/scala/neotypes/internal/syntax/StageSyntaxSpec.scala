@@ -1,12 +1,11 @@
 package neotypes
 package internal.syntax
 
-import java.util.concurrent.{CompletableFuture, CompletionStage}
+import java.util.concurrent.CompletableFuture
 import neotypes.internal.syntax.stage._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AsyncWordSpecLike
 import scala.concurrent.Future
-import scala.reflect.ClassTag
 
 /** Base class for testing the CompletionStage syntax. */
 final class StageSyntaxSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncWordSpecLike with Matchers {

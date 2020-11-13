@@ -1,12 +1,24 @@
 package neotypes
 
-import exceptions.{PropertyNotFoundException, IncoercibleException}
-import types.QueryParam
+import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.util.UUID
 
+import exceptions.{ConversionException, IncoercibleException, PropertyNotFoundException}
+import generic.Exported
+import types.{Path, QueryParam}
+import internal.utils.traverse.{traverseAs, traverseAsList}
+
+import org.neo4j.driver.internal.types.InternalTypeSystem
+import org.neo4j.driver.internal.value.{MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.Value
 import org.neo4j.driver.exceptions.value.Uncoercible
 import org.neo4j.driver.summary.ResultSummary
+import org.neo4j.driver.types.{IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
+import shapeless.HNil
 
+import scala.collection.Iterable
+import scala.collection.compat._
+import scala.jdk.CollectionConverters._
 import scala.reflect.ClassTag
 import scala.util.Try
 
@@ -85,7 +97,7 @@ object mappers {
     }
   }
 
-  object ResultMapper {
+  object ResultMapper extends ResultMappers with ResultMappersLowPriority {
     /**
       * Summons an implicit [[ResultMapper]] already in scope by result type.
       *
@@ -146,6 +158,101 @@ object mappers {
               case (name, value) => marshallable.to(name, Some(value))
             }
       }
+  }
+
+  trait ResultMappers {
+    implicit final val BooleanResultMapper: ResultMapper[Boolean] =
+      ResultMapper.fromValueMapper
+
+    implicit final val ByteArrayResultMapper: ResultMapper[Array[Byte]] =
+      ResultMapper.fromValueMapper
+
+    implicit final val DoubleResultMapper: ResultMapper[Double] =
+      ResultMapper.fromValueMapper
+
+    implicit final val DurationTimeResultMapper: ResultMapper[Duration] =
+      ResultMapper.fromValueMapper
+
+    implicit final val FloatResultMapper: ResultMapper[Float] =
+      ResultMapper.fromValueMapper
+
+    implicit final val IntResultMapper: ResultMapper[Int] =
+      ResultMapper.fromValueMapper
+
+    implicit final val IsoDurationResultMapper: ResultMapper[IsoDuration] =
+      ResultMapper.fromValueMapper
+
+    implicit final val LocalDateResultMapper: ResultMapper[LocalDate] =
+      ResultMapper.fromValueMapper
+
+    implicit final val LocalDateTimeResultMapper: ResultMapper[LocalDateTime] =
+      ResultMapper.fromValueMapper
+
+    implicit final val LocalTimeResultMapper: ResultMapper[LocalTime] =
+      ResultMapper.fromValueMapper
+
+    implicit final val LongResultMapper: ResultMapper[Long] =
+      ResultMapper.fromValueMapper
+
+    implicit final val NodeResultMapper: ResultMapper[Node] =
+      ResultMapper.fromValueMapper
+
+    implicit final val OffsetDateTimeResultMapper: ResultMapper[OffsetDateTime] =
+      ResultMapper.fromValueMapper
+
+    implicit final val OffsetTimeResultMapper: ResultMapper[OffsetTime] =
+      ResultMapper.fromValueMapper
+
+    implicit final val PathResultMapper: ResultMapper[NPath] =
+      ResultMapper.fromValueMapper
+
+    implicit final val PeriodTimeResultMapper: ResultMapper[Period] =
+      ResultMapper.fromValueMapper
+
+    implicit final val PointResultMapper: ResultMapper[Point] =
+      ResultMapper.fromValueMapper
+
+    implicit final val RelationshipResultMapper: ResultMapper[Relationship] =
+      ResultMapper.fromValueMapper
+
+    implicit final val StringResultMapper: ResultMapper[String] =
+      ResultMapper.fromValueMapper
+
+    implicit final val UnitResultMapper: ResultMapper[Unit] =
+      ResultMapper.const(())
+
+    implicit final val UUIDResultMapper: ResultMapper[UUID] =
+      ResultMapper.fromValueMapper
+
+    implicit final val ValueResultMapper: ResultMapper[Value] =
+      ResultMapper.fromValueMapper
+
+    implicit final val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
+      ResultMapper.fromValueMapper
+
+    implicit final def iterableResultMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ResultMapper[I[T]] =
+      ResultMapper.fromValueMapper
+
+    implicit final def mapResultMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ResultMapper[M[String, V]] =
+      ResultMapper.fromValueMapper
+
+    implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
+      new ResultMapper[Option[T]] {
+        override def to(fields: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Option[T]] =
+          fields match {
+            case Nil => Right(None)
+            case (_, v) :: Nil if (v.isNull) => Right(None)
+            case _ => mapper.to(fields, typeHint).map(r => Option(r))
+          }
+      }
+
+    implicit final def pathRecordMarshallable[N: ResultMapper, R: ResultMapper]: ResultMapper[Path[N, R]] =
+      ResultMapper.fromValueMapper
+  }
+
+  trait ResultMappersLowPriority {
+    implicit final def exportedResultMapper[A](implicit exported: Exported[ResultMapper[A]]): ResultMapper[A] =
+      exported.instance
   }
 
   @annotation.implicitNotFound("Could not find the ValueMapper for ${A}")
@@ -221,7 +328,7 @@ object mappers {
     }
   }
 
-  object ValueMapper {
+  object ValueMapper extends ValueMappers {
     /**
       * Summons an implicit [[ValueMapper]] already in scope by result type.
       *
@@ -288,9 +395,198 @@ object mappers {
     }
   }
 
+  trait ValueMappers {
+
+    implicit final val BooleanValueMapper: ValueMapper[Boolean] =
+      ValueMapper.fromCast(v => v.asBoolean)
+
+    implicit final val ByteArrayValueMapper: ValueMapper[Array[Byte]] =
+      ValueMapper.fromCast(v => v.asByteArray)
+
+    implicit final val DoubleValueMapper: ValueMapper[Double] =
+      ValueMapper.fromCast(v => v.asDouble)
+
+    implicit final val DurationValueMapper: ValueMapper[Duration] =
+      ValueMapper.fromCast { v =>
+        val isoDuration = v.asIsoDuration
+
+        Duration
+          .ZERO
+          .plusDays(isoDuration.days)
+          .plusSeconds(isoDuration.seconds)
+          .plusNanos(isoDuration.nanoseconds.toLong)
+      }
+
+    implicit final val FloatValueMapper: ValueMapper[Float] =
+      ValueMapper.fromCast(v => v.asFloat)
+
+    implicit final val HNilMapper: ValueMapper[HNil] =
+      ValueMapper.const(HNil)
+
+    implicit final val IntValueMapper: ValueMapper[Int] =
+      ValueMapper.fromCast(v => v.asInt)
+
+    implicit final val IsoDurationValueMapper: ValueMapper[IsoDuration] =
+      ValueMapper.fromCast(v => v.asIsoDuration)
+
+    implicit final val LocalDateValueMapper: ValueMapper[LocalDate] =
+      ValueMapper.fromCast(v => v.asLocalDate)
+
+    implicit final val LocalDateTimeValueMapper: ValueMapper[LocalDateTime] =
+      ValueMapper.fromCast(v => v.asLocalDateTime)
+
+    implicit final val LocalTimeValueMapper: ValueMapper[LocalTime] =
+      ValueMapper.fromCast(v => v.asLocalTime)
+
+    implicit final val LongValueMapper: ValueMapper[Long] =
+      ValueMapper.fromCast(v => v.asLong)
+
+    implicit final val NodeValueMapper: ValueMapper[Node] =
+      ValueMapper.fromCast(v => v.asNode)
+
+    implicit final val OffsetDateTimeValueMapper: ValueMapper[OffsetDateTime] =
+      ValueMapper.fromCast(v => v.asOffsetDateTime)
+
+    implicit final val OffsetTimeValueMapper: ValueMapper[OffsetTime] =
+      ValueMapper.fromCast(v => v.asOffsetTime)
+
+    implicit final val PathValueMapper: ValueMapper[NPath] =
+      ValueMapper.fromCast(v => v.asPath)
+
+    implicit final val PeriodValueMapper: ValueMapper[Period] =
+      ValueMapper.fromCast { v =>
+        val isoDuration = v.asIsoDuration
+
+        Period
+          .ZERO
+          .plusMonths(isoDuration.months)
+          .plusDays(isoDuration.days)
+      }
+
+    implicit final val PointValueMapper: ValueMapper[Point] =
+      ValueMapper.fromCast(v => v.asPoint)
+
+    implicit final val RelationshipValueMapper: ValueMapper[Relationship] =
+      ValueMapper.fromCast(v => v.asRelationship)
+
+    implicit final val StringValueMapper: ValueMapper[String] =
+      ValueMapper.fromCast(v => v.asString)
+
+    implicit final val UUIDValueMapper: ValueMapper[UUID] =
+      ValueMapper.fromCast(s => UUID.fromString(s.asString))
+
+    implicit final val ValueValueMapper: ValueMapper[Value] =
+      ValueMapper.fromCast(identity)
+
+    implicit final val ZonedDateTimeValueMapper: ValueMapper[ZonedDateTime] =
+      ValueMapper.fromCast(v => v.asZonedDateTime)
+
+    implicit final def iterableValueMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ValueMapper[I[T]] =
+      new ValueMapper[I[T]] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, I[T]] =
+          value match {
+            case None =>
+              Right(factory.newBuilder.result())
+
+            case Some(value) =>
+              traverseAs(factory)(value.values.asScala.iterator) { value =>
+                mapper.to("", Option(value))
+              }
+          }
+      }
+
+    private def getKeyValuesFrom(nmap: NMap): Iterator[(String, Value)] =
+      nmap.keys.asScala.iterator.map(key => key -> nmap.get(key))
+
+    implicit final def mapValueMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ValueMapper[M[String, V]] =
+      new ValueMapper[M[String, V]] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, M[String, V]] =
+          value match {
+            case None =>
+              Right(factory.newBuilder.result())
+
+            case Some(value) =>
+              traverseAs(factory)(getKeyValuesFrom(value)) {
+                case (key, value) =>
+                  mapper.to("", Option(value)).map(v => key -> v)
+              }
+          }
+      }
+
+    implicit final def optionValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[Option[T]] =
+      new ValueMapper[Option[T]] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, Option[T]] =
+          value match {
+            case Some(value) if (!value.isNull) =>
+              mapper.to(fieldName, Some(value)).map(r => Option(r))
+
+            case _ =>
+              Right(None)
+          }
+      }
+
+    implicit final def pathMarshallable[N, R](implicit nm: ResultMapper[N], rm: ResultMapper[R]): ValueMapper[Path[N, R]] =
+      new ValueMapper[Path[N, R]] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, Path[N, R]] =
+          value match {
+            case None =>
+              Left(PropertyNotFoundException(s"Property $fieldName not found"))
+
+            case Some(value) =>
+              if (value.`type` == InternalTypeSystem.TYPE_SYSTEM.PATH) {
+                val path = value.asPath
+
+                val nodes = traverseAsList(path.nodes.asScala.iterator.zipWithIndex) {
+                  case (node, index) => nm.to((s"node $index" -> new NodeValue(node)) :: Nil, None)
+                }
+
+                val relationships = traverseAsList(path.relationships.asScala.iterator.zipWithIndex) {
+                  case (relationship, index) => rm.to((s"relationship $index" -> new RelationshipValue(relationship)) :: Nil, None)
+                }
+
+                for {
+                  nodes <- nodes
+                  relationships <- relationships
+                } yield Path(nodes, relationships, path)
+              } else {
+                Left(ConversionException(s"$fieldName of type ${value.`type`} cannot be converted into a Path"))
+              }
+          }
+      }
+
+    implicit final def ccValueMarshallable[T](implicit resultMapper: ResultMapper[T], ct: ClassTag[T]): ValueMapper[T] =
+      new ValueMapper[T] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, T] =
+          value match {
+            case Some(value: MapValue) =>
+              resultMapper.to(getKeyValuesFrom(value).toList, Some(TypeHint(ct)))
+
+            case Some(value) =>
+              resultMapper.to((fieldName -> value) :: Nil, Some(TypeHint(ct)))
+
+            case None =>
+              Left(ConversionException(s"Cannot convert $fieldName [$value]"))
+          }
+      }
+  }
+
   @annotation.implicitNotFound("Could not find the ExecutionMapper for ${A}")
   trait ExecutionMapper[A] {
     def to(resultSummary: ResultSummary): Either[Throwable, A]
+  }
+
+  object ExecutionMapper {
+    implicit final val ResultSummaryExecutionMapper: ExecutionMapper[ResultSummary] =
+      new ExecutionMapper[ResultSummary] {
+        override def to(resultSummary: ResultSummary): Either[Throwable, ResultSummary] =
+          Right(resultSummary)
+      }
+
+    implicit final val UnitExecutionMapper: ExecutionMapper[Unit] =
+      new ExecutionMapper[Unit] {
+        override def to(resultSummary: ResultSummary): Either[Throwable, Unit] =
+          Right(())
+      }
   }
 
   final case class TypeHint(isTuple: Boolean)
@@ -325,7 +621,7 @@ object mappers {
     }
   }
 
-  object ParameterMapper {
+  object ParameterMapper extends ParameterMappers {
     /**
       * Summons an implicit [[ParameterMapper]] already in scope by result type.
       *
@@ -373,4 +669,88 @@ object mappers {
         new QueryParam(scalaValue)
     }
   }
+
+  trait ParameterMappers {
+
+    implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
+      ParameterMapper.fromCast(Boolean.box)
+
+    implicit final val ByteArrayParameterMapper: ParameterMapper[Array[Byte]] =
+      ParameterMapper.identity
+
+    implicit final val DoubleParameterMapper: ParameterMapper[Double] =
+      ParameterMapper.fromCast(Double.box)
+
+    implicit final val DurationParameterMapper: ParameterMapper[Duration] =
+      ParameterMapper.identity
+
+    implicit final val FloatParameterMapper: ParameterMapper[Float] =
+      ParameterMapper.fromCast(Float.box)
+
+    implicit final val IntParameterMapper: ParameterMapper[Int] =
+      ParameterMapper.fromCast(Int.box)
+
+    implicit final val IsoDurationParameterMapper: ParameterMapper[IsoDuration] =
+      ParameterMapper.identity
+
+    implicit final val LocalDateParameterMapper: ParameterMapper[LocalDate] =
+      ParameterMapper.identity
+
+    implicit final val LocalDateTimeParameterMapper: ParameterMapper[LocalDateTime] =
+      ParameterMapper.identity
+
+    implicit final val LocalTimeParameterMapper: ParameterMapper[LocalTime] =
+      ParameterMapper.identity
+
+    implicit final val LongParameterMapper: ParameterMapper[Long] =
+      ParameterMapper.fromCast(Long.box)
+
+    implicit final val OffsetDateTimeParameterMapper: ParameterMapper[OffsetDateTime] =
+      ParameterMapper.identity
+
+    implicit final val OffsetTimeParameterMapper: ParameterMapper[OffsetTime] =
+      ParameterMapper.identity
+
+    implicit final val PeriodParameterMapper: ParameterMapper[Period] =
+      ParameterMapper.identity
+
+    implicit final val PointParameterMapper: ParameterMapper[Point] =
+      ParameterMapper.identity
+
+    implicit final val StringParameterMapper: ParameterMapper[String] =
+      ParameterMapper.identity
+
+    implicit final val UUIDParameterMapper: ParameterMapper[UUID] =
+      ParameterMapper[String].contramap(_.toString)
+
+    implicit final val ValueParameterMapper: ParameterMapper[Value] =
+      ParameterMapper.identity
+
+    implicit final val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
+      ParameterMapper.identity
+
+    private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
+      ParameterMapper.fromCast { col =>
+        col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
+      }
+
+    implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]): ParameterMapper[C[T]] =
+      iterableParameterMapper(mapper).contramap(ev)
+
+    private final def iterableMapParameterMapper[V](mapper: ParameterMapper[V]): ParameterMapper[Iterable[(String, V)]] =
+      ParameterMapper.fromCast { col =>
+        col.iterator.map {
+          case (key, v) => key -> mapper.toQueryParam(v).underlying
+        }.toMap.asJava
+      }
+
+    implicit final def mapParameterMapper[V, M[_, _]](implicit mapper: ParameterMapper[V], ev: M[String, V] <:< Iterable[(String, V)]): ParameterMapper[M[String, V]] =
+      iterableMapParameterMapper(mapper).contramap(ev)
+
+    implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
+      ParameterMapper.fromCast { optional =>
+        optional.map(v => mapper.toQueryParam(v).underlying).orNull
+      }
+  }
+
 }
