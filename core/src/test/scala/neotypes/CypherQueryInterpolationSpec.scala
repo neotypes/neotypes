@@ -1,10 +1,13 @@
 package neotypes
 
+import neotypes.generic.auto._
 import neotypes.implicits.syntax.cypher._
 import neotypes.types.QueryParam
 import org.scalatest.flatspec.AnyFlatSpec
 
 final class CypherQueryInterpolationSpec extends AnyFlatSpec {
+  import CypherQueryInterpolationSpec._
+
   it should "interpolation with one param" in {
     val name = "John"
     val query = c"create (a:Test {name: $name})"
@@ -86,4 +89,62 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     assert(query.query == expected)
   }
+
+  it should "interpolation with a case class" in {
+    val testClass = TestClass("name", 33)
+
+    val query = c"""create (a:Test { $testClass })"""
+
+    val expected = DeferredQuery(
+      query = """create (a:Test {  name: $p1, age: $p2 })""",
+      params = Map(
+        "p1" -> QueryParam(testClass.name),
+        "p2" -> QueryParam(testClass.age)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with a case class and extra args" in {
+    val testClass = TestClass("name", 33)
+    val bName = "b-name"
+
+    val query = c"""create (a:Test { $testClass }), (b: B { name: $bName })"""
+
+    val expected = DeferredQuery(
+      query = """create (a:Test {  name: $p1, age: $p2 }), (b: B { name: $p3 })""",
+      params = Map(
+        "p1" -> QueryParam(testClass.name),
+        "p2" -> QueryParam(testClass.age),
+        "p3" -> QueryParam(bName)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with a case class and extra args (concat queries)" in {
+    val testClass = TestClass("name", 33)
+    val bName = "b-name"
+
+    val query = c"""create (a:Test { $testClass }),""" + c"""(b: B { const: "Const", name: $bName })"""
+
+    val expected = DeferredQuery(
+      query = """create (a:Test {  name: $p1, age: $p2 }), (b: B { const: "Const", name: $p3 })""",
+      params = Map(
+        "p1" -> QueryParam(testClass.name),
+        "p2" -> QueryParam(testClass.age),
+        "p3" -> QueryParam(bName)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+}
+
+object CypherQueryInterpolationSpec {
+
+  case class TestClass(name: String, age: Int)
+
 }
