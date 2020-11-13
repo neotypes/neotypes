@@ -85,8 +85,8 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
     * @note ensures the session is properly closed after its use.
     *
     * @param F asynchronous effect type.
-    * @tparam S streaming type dependant on the effect type F.
-    * @return a single element streaming with the [[StreamingSession]].
+    * @tparam S streaming type.
+    * @return a single element stream with the [[StreamingSession]].
     *
     * @see [[SessionConfig]].
     */
@@ -98,8 +98,8 @@ final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
     *
     * @param config the [[SessionConfig]] used to initialize the session.
     * @param F asynchronous effect type.
-    * @tparam S streaming type dependant on the effect type F.
-    * @return a single element streaming with the [[StreamingSession]].
+    * @tparam S streaming type.
+    * @return a single element stream with the [[StreamingSession]].
     */
   def streamingSession[S[_]](config: SessionConfig)
                             (implicit F: Async[F], S: Stream.Aux[S, F]): S[StreamingSession[F, S]] = {
