@@ -16,7 +16,8 @@ trait AkkaStreams {
 
   /** neotypes support for Akka Streams
     *
-    * @param ec implicit scala.concurrent ExecutionContext that will be passed down to all Akka Streams operations
+    * @param mat implicit [[Materializer]] that will be passed down to all Akka Streams operations.
+    *            This also provides the [[ExecutionContext]] that is used to run the futures produced by the stream.
     * @return neotype AkkaStream with effect type as the scala.concurrent Future
     */
   implicit final def akkaStream(implicit mat: Materializer): neotypes.Stream.Aux[AkkaStream, Future] =

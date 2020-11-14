@@ -26,6 +26,8 @@ val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
   Test / scalacOptions := Seq("-feature", "-deprecation", "-language:higherKinds", "-Xfatal-warnings"),
+  Test / fork := true,
+  Test / javaOptions += "-XX:ActiveProcessorCount=1",
   autoAPIMappings := true,
 
   /**
