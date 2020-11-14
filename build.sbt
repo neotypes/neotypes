@@ -17,7 +17,7 @@ val akkaStreamVersion = "2.6.10"
 val fs2Version = "2.4.5"
 val zioVersion = "1.0.3"
 val zioInteropReactiveStreamsVersion = "1.0.3.5"
-val refinedVersion = "0.9.17"
+val refinedVersion = "0.9.18"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
