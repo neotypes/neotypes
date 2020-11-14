@@ -150,13 +150,31 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
     val query = c"CREATE (u: User { $user }) -[r:HAS_CAT { $relationship }]->(c:Cat { $cat }) RETURN r"
 
     val expected = DeferredQuery(
-      query = """CREATE (u: User {  name: $p1, age: $p2 }) -[r:HAS_CAT {  friendsFor: $p3 }]->(c:Cat {  tag: $p4, age: $p5 }) RETURN r""",
+      query = "CREATE (u: User {  name: $p1, age: $p2 }) -[r:HAS_CAT {  friendsFor: $p3 }]->(c:Cat {  tag: $p4, age: $p5 }) RETURN r",
       params = Map(
         "p1" -> QueryParam(user.name),
         "p2" -> QueryParam(user.age),
         "p3" -> QueryParam(relationship.friendsFor),
         "p4" -> QueryParam(cat.tag),
         "p5" -> QueryParam(cat.age)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with a case classes and an extra property" in {
+    val user = User("Joan", 20)
+    val extraProp = 123
+
+    val query = c"CREATE (u: User { $user, extraProperty: $extraProp }) RETURN u"
+
+    val expected = DeferredQuery(
+      query = "CREATE (u: User {  name: $p1, age: $p2, extraProperty: $p3 }) RETURN u",
+      params = Map(
+        "p1" -> QueryParam(user.name),
+        "p2" -> QueryParam(user.age),
+        "p3" -> QueryParam(extraProp)
       )
     )
 
