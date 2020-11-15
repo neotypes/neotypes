@@ -7,7 +7,7 @@ position: 100
 
 # Changelog
 
-## 0.16.0 _(2020-11-??)_
+## v0.16.0 _(2020-11-??)_
 
 ### Add wrappers for the new Rx module ([#164](https://github.com/neotypes/neotypes/pull/164){:target="_blank"})
 
@@ -100,7 +100,7 @@ val query = c"""CREATE (u: User { $user }) RETURN u"""
 Cancelling an effectual operation that was using a **Transaction**
 will now `rollback` the **Transaction** instead of `commit` it.
 
-## 0.15.1 _(2020-09-08)_
+## v0.15.1 _(2020-09-08)_
 
 ### Fix id handling ([#174](https://github.com/neotypes/neotypes/pull/174){:target="_blank"})
 
@@ -108,4 +108,43 @@ will now `rollback` the **Transaction** instead of `commit` it.
 that one takes precedence over the system _(**neo4j**)_ one.
 
 > For more information, please read [**neo4j** id](types#neo4j-id).
-## 0.15.0 _(2020-07-30)_
+
+## v0.15.0 _(2020-07-30)_
+
+### Making Session thread safe ([#163](https://github.com/neotypes/neotypes/pull/163){:target="_blank"})
+
+`neotypes.Session` is now thread safe, by ensuring only one active `neotypes.Transaction` per session.
+
+> For more information, please read [thread safety](driver_session_transaction#session-thread-safety).
+
+## v0.14.0 _(2020-07-10)_
+
+### Upgrade neo4j java driver to version 4 ([#140](https://github.com/neotypes/neotypes/pull/140){:target="_blank"})
+
+**neotypes** is now published for the `v4` version of the **Java** driver,
+instead of the `1.7.x` version.
+
+## v0.13.2 _(2020-02-23)_
+
+### Case class mapper for maps ([#60](https://github.com/neotypes/neotypes/pull/60){:target="_blank"})
+
+You can now query for a **case class** when returning a node or a [map projection](https://neo4j.com/docs/cypher-manual/current/syntax/maps/#cypher-map-projection).
+
+### Fix composite types ([#61](https://github.com/neotypes/neotypes/pull/61){:target="_blank"})
+
+**neotypes** now supports all [composite types](https://neo4j.com/docs/cypher-manual/current/syntax/values/#composite-types).
+
+## v0.13.1 _(2020-01-09)_
+
+Bug fixes and improvements to the docs.
+
+> Special thanks to @geoffjohn11
+
+## v0.13.0 _(2019-09-11)_
+
+### Scala 2.13 support ([#45](https://github.com/neotypes/neotypes/pull/45){:target="_blank"})
+
+**neotypes** is now cross compiled for **Scala** `2.12` & `2.13`,
+instead of for `2.11` & `2.12`.
+
+## v0.12.0 _(2019-08-25)_
