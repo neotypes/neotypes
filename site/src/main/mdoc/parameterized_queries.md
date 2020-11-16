@@ -39,3 +39,23 @@ val LABEL = "User"
 val query2 = c"CREATE (a:" + LABEL + c"{name: $name})"
 query2.query[Unit]
 ```
+
+A case class can be used directly in the interpolation:
+
+```scala mdoc:nest
+import neotypes.generic.auto._
+
+case class User(name: String, born: Int)
+case class Cat(tag: String)
+case class HasCat(since: Int)
+
+val user = User("John", 1980)
+val cat = Cat("Waffles")
+val hasCat = HasCat(2010)
+
+val query1 = c"CREATE (u: User { $user })"
+query1.query[Unit]
+
+val query2 = c"CREATE (u: User { $user }) -[r:HAS_CAT { $hasCat }]->(c:Cat{ $cat }) RETURN r"
+query2.query[HasCat]
+```
