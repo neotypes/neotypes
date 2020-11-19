@@ -4,6 +4,7 @@ import java.util.concurrent.{CompletableFuture, CompletionStage}
 
 import internal.syntax.async._
 import internal.syntax.stage._
+
 import org.neo4j.driver.{TransactionConfig => NeoTransactionConfig}
 import org.neo4j.driver.async.{AsyncTransaction, AsyncTransactionWork, AsyncSession => NeoAsyncSession}
 
@@ -56,11 +57,9 @@ object Session {
       lock.acquire.flatMap { _ =>
         F.async { cb =>
           session.readTransactionAsync(new AsyncTransactionWork[CompletionStage[T]] {
-            override def execute(tx: AsyncTransaction): CompletionStage[T] = {
+            override def execute(tx: AsyncTransaction) = {
               val completableF = new CompletableFuture[T]()
-              txf(Transaction(F, tx)(lock)).map {
-                completableF.complete
-              }.recover{
+              txf(Transaction(F, tx)(lock)).map(completableF.complete).recover{
                 case th: Throwable => completableF.completeExceptionally(th)
               }
               completableF

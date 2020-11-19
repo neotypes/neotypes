@@ -20,7 +20,7 @@ import scala.collection.mutable.StringBuilder
 final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
   import DeferredQuery.{CollectAsPartiallyApplied, StreamPartiallyApplied}
 
-  /** Executes the query and returns a List of values.
+  /** Executes the query as read only and returns a List of values.
     *
     * @example
     * {{{
@@ -38,9 +38,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     */
   def list[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
                 (implicit rm: ResultMapper[T]): F[List[T]] =
-    session.transact(config)(tx => list(tx))
+    session.readOnlyTransact(config)(tx => list(tx))
 
-  /** Executes the query and returns a Map[K,V] of values.
+  /** Executes the query as read only and returns a Map[K,V] of values.
     *
     * @example
     * {{{
@@ -61,9 +61,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     */
   def map[F[_], K, V](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
                      (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    session.transact(config)(tx => map(tx))
+    session.readOnlyTransact(config)(tx => map(tx))
 
-  /** Executes the query and returns a Set of values.
+  /** Executes the query as read only and returns a Set of values.
     *
     * @example
     * {{{
@@ -81,9 +81,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     */
   def set[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
                (implicit rm: ResultMapper[T]): F[Set[T]] =
-    session.transact(config)(tx => set(tx))
+    session.readOnlyTransact(config)(tx => set(tx))
 
-  /** Executes the query and returns a Vector of values.
+  /** Executes the query as read only and returns a Vector of values.
     *
     * @example
     * {{{
@@ -101,9 +101,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     */
   def vector[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    session.transact(config)(tx => vector(tx))
+    session.readOnlyTransact(config)(tx => vector(tx))
 
-  /** Executes the query and returns the unique record in the result.
+  /** Executes the query as read only and returns the unique record in the result.
     *
     * @example
     * {{{
@@ -123,28 +123,6 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     */
   def single[F[_]](session: Session[F],config: NeoTransactionConfig = NeoTransactionConfig.empty)
                   (implicit rm: ResultMapper[T]): F[T] =
-    session.transact(config)(tx => single(tx))
-
-  /** Executes the query as read async and returns the unique record in the result.
-    *
-    * @example
-    * {{{
-    * val result: F[(Person, Movie)] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .readOnlySingle(session)
-    * }}}
-    *
-    * @note This will fail if the query returned more than a single result.
-    *
-    * @param session neotypes session.
-    * @param config neo4j transaction config (optional).
-    * @param rm result mapper for type T.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a single T element.
-    */
-  def readOnlySingle[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty())
-                          (implicit rm: ResultMapper[T]): F[T] =
     session.readOnlyTransact(config)(tx => single(tx))
 
   /** Executes the query and ignores its output.
