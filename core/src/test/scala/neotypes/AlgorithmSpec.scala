@@ -52,23 +52,25 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
                 }
               )
            """.query[Unit].execute(s)
-      result <- """CALL gds.triangleCount.mutate('myGraph', {mutateProperty: 'tc'})
-                   YIELD globalTriangleCount
-                   CALL gds.localClusteringCoefficient.stream(
-                     'myGraph', {
-                     triangleCountProperty: 'tc'
-                   }) YIELD nodeId, localClusteringCoefficient
-                   WITH
-                     round(100 * localClusteringCoefficient) AS coefficient,
-                     gds.util.asNode(nodeId).name AS person,
-                     gds.util.nodeProperty('myGraph', nodeId, 'tc') AS triangleCount
-                   RETURN person, triangleCount, coefficient
-                   ORDER BY
-                     coefficient DESC,
-                     triangleCount DESC,
-                     person ASC
-                   LIMIT 5
-                """.query[PersonTriangleCount].list(s)
+      result <- s.transact { tx =>
+        """CALL gds.triangleCount.mutate('myGraph', {mutateProperty: 'tc'})
+           YIELD globalTriangleCount
+           CALL gds.localClusteringCoefficient.stream(
+             'myGraph', {
+             triangleCountProperty: 'tc'
+           }) YIELD nodeId, localClusteringCoefficient
+           WITH
+             round(100 * localClusteringCoefficient) AS coefficient,
+             gds.util.asNode(nodeId).name AS person,
+             gds.util.nodeProperty('myGraph', nodeId, 'tc') AS triangleCount
+           RETURN person, triangleCount, coefficient
+           ORDER BY
+             coefficient DESC,
+             triangleCount DESC,
+             person ASC
+           LIMIT 5
+        """.query[PersonTriangleCount].list(tx)
+      }
     } yield {
       result shouldBe List(
         PersonTriangleCount(person = "Karin", triangleCount = 1, coefficient = 100),
@@ -95,23 +97,25 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
   it should "execute the shortest path algorithm" in executeAsFuture { s =>
     for{
       _ <- shortestPathData.query[Unit].execute(s)
-      result <- """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
-                   CALL gds.alpha.shortestPath.write({
-                     nodeProjection: 'Loc',
-                     relationshipProjection: {
-                       ROAD: {
-                         type: 'ROAD',
-                         properties: 'cost',
-                         orientation: 'UNDIRECTED'
-                       }
-                     },
-                     startNode: start,
-                     endNode: end,
-                     relationshipWeightProperty: 'cost'
-                   })
-                   YIELD nodeCount, totalCost
-                   RETURN nodeCount, totalCost
-                """.query[ShortestPath].single(s)
+      result <- s.transact { tx =>
+        """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
+           CALL gds.alpha.shortestPath.write({
+             nodeProjection: 'Loc',
+             relationshipProjection: {
+               ROAD: {
+                 type: 'ROAD',
+                 properties: 'cost',
+                 orientation: 'UNDIRECTED'
+               }
+             },
+             startNode: start,
+             endNode: end,
+             relationshipWeightProperty: 'cost'
+           })
+           YIELD nodeCount, totalCost
+           RETURN nodeCount, totalCost
+        """.query[ShortestPath].single(s)
+      }
     } yield {
       result shouldBe ShortestPath(
         nodeCount = 5,
