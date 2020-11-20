@@ -53,8 +53,8 @@ object Session {
     override final def readOnlyTransact[T](txf: Transaction[F] => F[T]): F[T] =
       readOnlyTransact(NeoTransactionConfig.empty())(txf)
 
-    override final def readOnlyTransact[T](config: NeoTransactionConfig)(txf: Transaction[F] => F[T]): F[T] =
-      lock.acquire.flatMap { _ =>
+    override final def readOnlyTransact[T](config: NeoTransactionConfig)(txf: Transaction[F] => F[T]): F[T] = {
+      val fOfT: F[T] = lock.acquire.flatMap { _ =>
         F.async { cb =>
           session.readTransactionAsync(new AsyncTransactionWork[CompletionStage[T]] {
             override def execute(tx: AsyncTransaction) = {
@@ -70,8 +70,16 @@ object Session {
           }
         }
       }
+      //because readTransactionAsync automatically commits the transaction there is no
+      //tx.commit or rollback, so it's necessary to manually release the lock.  Is this the preferred way?
+      fOfT.flatMap{ res =>
+        lock.release.map{_ => res}
+      }.recoverWith{
+        case th: Throwable => lock.release.map(_ => throw th)
+      }
+    }
 
-    override final def close: F[Unit] =
+   override final def close: F[Unit] =
       F.async { cb =>
         session.closeAsync().acceptVoid(cb)
       }
