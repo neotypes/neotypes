@@ -15,5 +15,12 @@ jobs:
           java-version: '8'
           java-package: jdk
           architecture: x64
-      - run: ./sbt clean +test
+      #- run: ./sbt clean +test
+      - run: rvm use 2.6.0 --install --fuzzy
+      - run: gem update --system
+      - run: gem install sass
+      - run: gem install ruby_dep -v 1.3.1
+      - run: gem install public_suffix -v 3.0.3
+      - run: gem install jekyll -v 4.0.0
+      - run: sudo apt-get update && sudo apt install -y graphviz
       - run: ./sbt "project microsite" makeMicrosite
