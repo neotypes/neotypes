@@ -114,7 +114,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
            })
            YIELD nodeCount, totalCost
            RETURN nodeCount, totalCost
-        """.query[ShortestPath].single(s)
+        """.query[ShortestPath].single(tx)
       }
     } yield {
       result shouldBe ShortestPath(
