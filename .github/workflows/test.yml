@@ -25,4 +25,4 @@ jobs:
       - run: gem install public_suffix -v 3.0.3
       - run: gem install jekyll -v 4.0.0
       - run: sudo apt-get update && sudo apt install -y graphviz
-      - run: ./sbt "project microsite" makeMicrosite
+      - run: ./sbt "project microsite" makeMicrosite -verbose -debug
