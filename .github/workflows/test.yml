@@ -37,10 +37,6 @@ jobs:
       #- name: Compile and Test
       # run: ./sbt +test
 
-  build-site:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
         with:
@@ -52,11 +48,21 @@ jobs:
       - name: Build the microsite
         run: ./sbt microsite/makeMicrosite
 
+      - name: Upload site data
+          uses: actions/upload-artifact@v2
+          with:
+            name: site
+            path: site/target/site
+
   deploy-site:
     needs: build-site
 #    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
+      - name: Download site data
+        uses: actions/download-artifact@v2
+        with:
+          name: site
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
