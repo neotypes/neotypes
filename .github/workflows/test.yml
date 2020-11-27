@@ -55,7 +55,7 @@ jobs:
           path: site/target/site
 
   deploy-site:
-    needs: build-site
+    needs: build
 #    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
