@@ -3,10 +3,10 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.2.0"
-val scalaCollectionCompatVersion = "2.2.0"
+val scalaCollectionCompatVersion = "2.3.1"
 val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.15.0"
-val testcontainersScalaVersion = "0.38.6"
+val testcontainersScalaVersion = "0.38.7"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
 val slf4jVersion = "1.7.30"
@@ -14,7 +14,7 @@ val catsVersion = "2.2.0"
 val catsEffectsVersion = "2.2.0"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.10"
-val fs2Version = "2.4.5"
+val fs2Version = "2.4.6"
 val zioVersion = "1.0.3"
 val refinedVersion = "0.9.18"
 
