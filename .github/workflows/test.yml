@@ -37,6 +37,10 @@ jobs:
       #- name: Compile and Test
       # run: ./sbt +test
 
+  build-site:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
         with:
@@ -47,3 +51,14 @@ jobs:
 
       - name: Build the microsite
         run: ./sbt microsite/makeMicrosite
+
+  deploy-site:
+    needs: build-site
+#    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site/target/site
