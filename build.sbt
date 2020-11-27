@@ -25,7 +25,7 @@ val commonSettings = Seq(
   crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
   Test / scalacOptions := Seq("-feature", "-deprecation"),
-  autoAPIMappings := true,
+  //autoAPIMappings := true,
 
   /**
     * Publishing
@@ -213,7 +213,7 @@ lazy val catsData = (project in file("cats-data"))
     )
   )
 
-lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
+//lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
 
 lazy val microsite = (project in file("site"))
   .settings(moduleName := "site")
@@ -232,8 +232,8 @@ lazy val microsite = (project in file("site"))
     ghpagesNoJekyll := false,
     mdocIn := (Compile / sourceDirectory).value / "mdoc",
     mdoc / fork := true,
-    docsMappingsAPIDir := "api",
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
+    //docsMappingsAPIDir := "api",
+    //addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
