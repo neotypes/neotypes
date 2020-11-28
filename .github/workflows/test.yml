@@ -59,7 +59,7 @@ jobs:
         uses: oprypin/find-latest-tag@v1
         with:
           repository: neotypes/neotypes
-          releases-only: true
+          releases-only: false
         id: latestTag
 
       - run: echo "Latest release ${{ steps.octokit.outputs.tag }}"
