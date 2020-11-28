@@ -53,6 +53,7 @@ jobs:
         with:
           name: site
           path: site/target/site
+          retention-days: 1
 
   deploy-site:
     needs: build
@@ -63,6 +64,7 @@ jobs:
         uses: actions/download-artifact@v2
         with:
           name: site
+
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
         with:
