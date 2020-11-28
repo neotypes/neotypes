@@ -36,8 +36,8 @@ jobs:
           restore-keys: |
             cache-v1-
 
-      - name: Compile and Test
-        run: ./sbt +test
+#      - name: Compile and Test
+#        run: ./sbt +test
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
@@ -68,6 +68,11 @@ jobs:
         with:
           repository: neotypes/neotypes
           ref: ${{ steps.latestTag.outputs.tag }}
+
+      - name: Setup Java
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
