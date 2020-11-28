@@ -20,12 +20,39 @@ val refinedVersion = "0.9.18"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
+// Fix scmInfo in Github Actions.
+// See: https://github.com/sbt/sbt-git/issues/171
+ThisBuild / scmInfo ~= {
+  case Some(info) => Some(info)
+  case None =>
+    import scala.sys.process._
+    import scala.util.control.NonFatal
+    val identifier = """([^\/]+)"""
+    val GitHubHttps = s"https://github.com/$identifier/$identifier".r
+    try {
+      val remote = List("git", "ls-remote", "--get-url", "origin").!!.trim()
+      remote match {
+        case GitHubHttps(user, repo) =>
+          Some(
+            ScmInfo(
+              url(s"https://github.com/$user/$repo"),
+              s"scm:git:https://github.com/$user/$repo.git",
+              Some(s"scm:git:git@github.com:$user/$repo.git")
+            )
+          )
+        case _ =>
+          None
+      }
+    } catch {
+      case NonFatal(_) => None
+    }
+  }
+
 val commonSettings = Seq(
   ThisBuild / scalaVersion := "2.12.12",
   crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
   Test / scalacOptions := Seq("-feature", "-deprecation"),
-  autoAPIMappings := true,
 
   /**
     * Publishing
@@ -231,13 +258,13 @@ lazy val microsite = (project in file("site"))
     micrositeBaseUrl := "/neotypes",
     ghpagesNoJekyll := false,
     mdocIn := (Compile / sourceDirectory).value / "mdoc",
-    mdoc / fork := true,
+    autoAPIMappings := true,
     docsMappingsAPIDir := "api",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    Compile / scalacOptions in Compile -= "-Xfatal-warnings",
+    Compile / scalacOptions -= "-Xfatal-warnings",
     ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",
