@@ -36,8 +36,8 @@ jobs:
           restore-keys: |
             cache-v1-
 
-      #- name: Compile and Test
-      # run: ./sbt +test
+      - name: Compile and Test
+        run: ./sbt +test
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
@@ -59,7 +59,7 @@ jobs:
 
   deploy-site:
     needs: build
-#    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master'
     runs-on: ubuntu-latest
     steps:
       - name: Download site data
