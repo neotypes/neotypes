@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  pull_request:
+    branches: ['*']
+  push:
+    branches: ['master']
+
+jobs:
+  build:
+    name: Build and Test
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        java:
+          - adopt@1.8
+          - graalvm-ce-java11@20.3.0
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: ${{ matrix.java }}
+
+      - name: Restore cache
+        uses: actions/cache@v2
+        with:
+          path: |
+            ~/.sbt
+            ~/.ivy2/cache
+            ~/.cache/coursier
+          key: cache-v1-${{ hashFiles('build.sbt') }}
+          restore-keys: |
+            cache-v1-
+
+      - name: Compile and Test
+        run: ./sbt +test
+
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6
+
+      - name: Setup Jekyll
+        run: gem install jekyll -v 4.0.0
+
+      - name: Build the microsite
+        run: ./sbt microsite/makeMicrosite
+
+  deploy-site:
+    needs: build
+    if: github.ref == 'refs/heads/master'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Find latest tag
+        uses: oprypin/find-latest-tag@v1
+        with:
+          repository: neotypes/neotypes
+          releases-only: false
+        id: latestTag
+
+      - run: echo "Latest release ${{ steps.octokit.outputs.tag }}"
+
+      - uses: actions/checkout@v2
+        with:
+          repository: neotypes/neotypes
+          ref: ${{ steps.latestTag.outputs.tag }}
+
+      - name: Setup Java
+        uses: olafurpg/setup-scala@v10
+        with:
+          java-version: adopt@1.8
+
+      - name: Setup Ruby
+        uses: actions/setup-ruby@v1
+        with:
+          ruby-version: 2.6
+
+      - name: Setup Jekyll
+        run: gem install jekyll -v 4.0.0
+
+      - name: Build the microsite
+        run: ./sbt microsite/makeMicrosite
+
+      - name: Deploy
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./site/target/site/

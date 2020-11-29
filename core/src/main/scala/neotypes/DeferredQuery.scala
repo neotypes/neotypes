@@ -358,7 +358,7 @@ private[neotypes] object DeferredQuery {
   *
   * val deferredQueryBuilder = c"create (a: Person { name: \$name," + c"born: \$born })"
   *
-  * val deferredQuery = defferedQueryBuilder.query[Unit]
+  * val deferredQuery = deferredQueryBuilder.query[Unit]
   * }}}
   */
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {

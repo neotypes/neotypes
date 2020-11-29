@@ -2,24 +2,52 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.1.1"
-val scalaCollectionCompatVersion = "2.2.0"
+val neo4jDriverVersion = "4.2.0"
+val scalaCollectionCompatVersion = "2.3.1"
 val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.15.0"
-val testcontainersScalaVersion = "0.38.6"
+val testcontainersScalaVersion = "0.38.7"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
 val slf4jVersion = "1.7.30"
-val catsVersion = "2.2.0"
-val catsEffectsVersion = "2.2.0"
+val catsVersion = "2.3.0"
+val catsEffectsVersion = "2.3.0"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.10"
-val fs2Version = "2.4.5"
+val fs2Version = "2.4.6"
 val zioVersion = "1.0.3"
 val zioInteropReactiveStreamsVersion = "1.0.3.5"
 val refinedVersion = "0.9.18"
 
 //lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
+
+// Fix scmInfo in Github Actions.
+// See: https://github.com/sbt/sbt-git/issues/171
+ThisBuild / scmInfo ~= {
+  case Some(info) => Some(info)
+  case None =>
+    import scala.sys.process._
+    import scala.util.control.NonFatal
+    val identifier = """([^\/]+)"""
+    val GitHubHttps = s"https://github.com/$identifier/$identifier".r
+    try {
+      val remote = List("git", "ls-remote", "--get-url", "origin").!!.trim()
+      remote match {
+        case GitHubHttps(user, repo) =>
+          Some(
+            ScmInfo(
+              url(s"https://github.com/$user/$repo"),
+              s"scm:git:https://github.com/$user/$repo.git",
+              Some(s"scm:git:git@github.com:$user/$repo.git")
+            )
+          )
+        case _ =>
+          None
+      }
+    } catch {
+      case NonFatal(_) => None
+    }
+  }
 
 val commonSettings = Seq(
   ThisBuild / scalaVersion := "2.12.12",
@@ -28,7 +56,6 @@ val commonSettings = Seq(
   Test / scalacOptions := Seq("-feature", "-deprecation", "-language:higherKinds", "-Xfatal-warnings"),
   Test / fork := true,
   Test / javaOptions += "-XX:ActiveProcessorCount=1",
-  autoAPIMappings := true,
 
   /**
     * Publishing
@@ -236,13 +263,13 @@ lazy val microsite = (project in file("site"))
     micrositeBaseUrl := "/neotypes",
     ghpagesNoJekyll := false,
     mdocIn := (Compile / sourceDirectory).value / "mdoc",
-    mdoc / fork := true,
+    autoAPIMappings := true,
     docsMappingsAPIDir := "api",
     addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    Compile / scalacOptions in Compile -= "-Xfatal-warnings",
+    Compile / scalacOptions -= "-Xfatal-warnings",
     ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",

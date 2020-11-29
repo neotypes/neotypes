@@ -1,7 +1,6 @@
 package neotypes
 
 import neotypes.internal.syntax.async._
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
