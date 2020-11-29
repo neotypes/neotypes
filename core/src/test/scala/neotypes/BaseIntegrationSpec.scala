@@ -5,6 +5,7 @@ import neotypes.internal.utils.toJavaDuration
 import org.neo4j.{driver => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
 import org.testcontainers.images.PullPolicy
+import org.testcontainers.utility.DockerImageName
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
@@ -13,7 +14,7 @@ trait BaseIntegrationSpec[F[_]] extends BaseEffectSpec[F] with AsyncFlatSpecLike
   protected def initQuery: String
 
   override final val container =
-    Neo4jContainer(neo4jImageVersion = "neo4j:latest")
+    Neo4jContainer(neo4jImageVersion = DockerImageName.parse("neo4j:latest"))
       .configure(_.withoutAuthentication())
       .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
       .configure(_.withImagePullPolicy(PullPolicy.ageBased(toJavaDuration(1.day))))
