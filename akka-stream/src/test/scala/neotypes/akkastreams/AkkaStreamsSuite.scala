@@ -4,7 +4,7 @@ import akka.actor.ActorSystem
 import akka.stream.scaladsl.Sink
 import neotypes.{FutureTestkit, Stream, StreamSuite, StreamTestkit}
 import neotypes.akkastreams.implicits._
-import scala.concurrent.{ExecutionContext, Future, blocking}
+import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the Stream Testkit for Akka streams. */
 object AkkaStreamsTestkit extends StreamTestkit[Future, AkkaStream](FutureTestkit) {

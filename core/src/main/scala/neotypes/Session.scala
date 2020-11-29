@@ -72,9 +72,20 @@ object Session {
 
     override final def streamingTransaction(config: NeoTransactionConfig): S[StreamingTransaction[F, S]] =
       S.fromF(lock.acquire).flatMapS { _ =>
+        /**
         session.beginTransaction(config).toStream[S].mapS { tx =>
           Transaction(F, S, tx)(lock)
         }
+        */
+        S.fromF(F.async[StreamingTransaction[F, S]] { cb =>
+          val rxs = session.asInstanceOf[org.neo4j.driver.internal.reactive.InternalRxSession]
+          val f = rxs.getClass.getDeclaredField("session")
+          f.setAccessible(true)
+          val ns = f.get(rxs).asInstanceOf[org.neo4j.driver.internal.async.NetworkSession]
+          ns.beginTransactionAsync(config).accept(cb) { tx =>
+            Right(Transaction(F, S, new org.neo4j.driver.internal.reactive.InternalRxTransaction(tx))(lock))
+          }
+        })
       }
 
     override final def transact[T](config: NeoTransactionConfig)(txF: Transaction[F] => F[T]): F[T] =

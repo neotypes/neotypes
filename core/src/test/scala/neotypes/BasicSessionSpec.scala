@@ -14,27 +14,30 @@ trait BasicSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvi
 
   import BasicSessionSpec._
 
-  it should "map result to hlist and case classes" in executeAsFuture { s =>
+  it should "map result to simple values" in executeAsFuture { s =>
     for {
       string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
       int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int].single(s)
       long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long].single(s)
       double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double].single(s)
       float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float].single(s)
-      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
-      cc2 <- "match (p:Person {name: 'Charlize Theron'}) return p.born as born, p.name as name".query[Person2].single(s)
-      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
       node <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Node].list(s)
-      notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover { case ex => ex.toString }
-      emptyResult <- "match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
-      emptyResultList <- "match (p:Person {name: '1243'}) return p.born".query[Int].list(s)
-      emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover { case ex => ex.toString }
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)
       assert(long == 1975)
       assert((double - 1975).abs < 0.0001)
       assert((float - 1975).abs < 0.0001)
+      assert(node.head.get("name").asString() == "Charlize Theron")
+    }
+  }
+
+  it should "map result to hlist and case classes" in executeAsFuture { s =>
+    for {
+      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
+      cc2 <- "match (p:Person {name: 'Charlize Theron'}) return p.born as born, p.name as name".query[Person2].single(s)
+      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
+    } yield {
       assert(cc.id >= 0)
       assert(cc.name.contains("Charlize Theron"))
       assert(cc.born == 1975)
@@ -44,11 +47,28 @@ trait BasicSessionSpec[F[_]] extends BaseIntegrationSpec[F] { self: SessionProvi
       assert(hlist.size == 1)
       assert(hlist.head.head.name.contains("Charlize Theron"))
       assert(hlist.head.last.title == "That Thing You Do")
-      assert(node.head.get("name").asString() == "Charlize Theron")
-      assert(notString == "neotypes.exceptions$IncoercibleException: Cannot coerce INTEGER to Java String for field [p.born] with value [1975]") // TODO test separately
+    }
+  }
+
+  it should "map empty result to a single option" in executeAsFuture { s =>
+    "match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s).map { emptyResult =>
       assert(emptyResult.isEmpty)
+    }
+  }
+
+  it should "map empty result to an empty list" in executeAsFuture { s =>
+    "match (p:Person {name: '1243'}) return p.born".query[Int].list(s).map { emptyResultList =>
       assert(emptyResultList.isEmpty)
-      assert(emptyResultEx == "neotypes.exceptions$PropertyNotFoundException: Property  not found") // TODO test separately
+    }
+  }
+
+  it should "lift exceptions into failed effects" in executeAsFuture { s =>
+    for {
+      notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover { case ex => ex.toString }
+      emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover { case ex => ex.toString }
+    } yield {
+      assert(notString == "neotypes.exceptions$IncoercibleException: Cannot coerce INTEGER to Java String for field [p.born] with value [1975]")
+      assert(emptyResultEx == "neotypes.exceptions$PropertyNotFoundException: Property  not found")
     }
   }
 

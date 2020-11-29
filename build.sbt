@@ -49,13 +49,17 @@ ThisBuild / scmInfo ~= {
     }
   }
 
+// Global settings.
+ThisBuild / scalaVersion := "2.12.12"
+ThisBuild / crossScalaVersions := Seq("2.13.3", "2.12.12")
+ThisBuild / organization := "com.dimafeng"
+
+// Common settings.
 val commonSettings = Seq(
-  ThisBuild / scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
+  Test / parallelExecution := false,
   Test / scalacOptions := Seq("-feature", "-deprecation", "-language:higherKinds", "-Xfatal-warnings"),
   Test / fork := true,
-  Test / javaOptions += "-XX:ActiveProcessorCount=1",
 
   /**
     * Publishing
@@ -71,9 +75,6 @@ val commonSettings = Seq(
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
-  ThisBuild / organization := "com.dimafeng",
-
-  Global / parallelExecution := false,
 
   releaseCrossBuild := true
 )
