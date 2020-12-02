@@ -11,7 +11,7 @@ object AkkaStreamsTestkit extends StreamTestkit[Future, AkkaStream](FutureTestki
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       implicit val system =
-        ActorSystem("QuickStart")
+        ActorSystem(name = "QuickStart")
 
       override def streamToFList[T](stream: AkkaStream[T]): Future[List[T]] =
         stream.runWith(Sink.seq).map(_.toList)

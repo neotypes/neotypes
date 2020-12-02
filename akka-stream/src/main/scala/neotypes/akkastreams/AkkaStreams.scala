@@ -41,7 +41,7 @@ trait AkkaStreams {
       override final def flatMap[A, B](sa: AkkaStream[A])(f: A => AkkaStream[B]): AkkaStream[B] =
         sa.flatMapConcat(f)
 
-      override final def evalMap[A, B](sa: AkkaStream[A])(f: A => F[B]): AkkaStream[B] =
+      override final def evalMap[A, B](sa: AkkaStream[A])(f: A => Future[B]): AkkaStream[B] =
         sa.mapAsync(parallelism = 1)(f)
 
       override final def collectAs[C, A](sa: AkkaStream[A])(factory: Factory[A, C]): Future[C] =

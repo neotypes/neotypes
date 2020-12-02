@@ -9,7 +9,7 @@ val testcontainersNeo4jVersion = "1.15.0"
 val testcontainersScalaVersion = "0.38.7"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
-val slf4jVersion = "1.7.30"
+val logbackVersion = "1.2.3"
 val catsVersion = "2.3.0"
 val catsEffectsVersion = "2.3.0"
 val monixVersion = "3.3.0"
@@ -131,7 +131,7 @@ lazy val core = (project in file("core"))
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
         "org.mockito" % "mockito-all" % mockitoVersion,
-        "org.slf4j" % "slf4j-simple" % slf4jVersion
+        "ch.qos.logback" % "logback-classic" % logbackVersion
       )
   )
 

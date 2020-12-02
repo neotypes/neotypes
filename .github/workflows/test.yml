@@ -39,6 +39,8 @@ jobs:
       - name: Compile
         run: ./sbt +test:compile
 
+      - run: ./sbt core/testOnly neotypes.ReproduceError
+
       - name: Test
         run: ./sbt +test
 
