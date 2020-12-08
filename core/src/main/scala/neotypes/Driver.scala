@@ -3,88 +3,58 @@ package neotypes
 import internal.syntax.async._
 import internal.syntax.stage._
 
-import org.neo4j.driver.{AccessMode, Driver => NeoDriver, SessionConfig}
+import org.neo4j.driver.{Driver => NeoDriver}
 
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
   * {{{
-  *    val driver = GraphDatabase[F]("bolt://localhost:7687").driver
+  *    val driver = GraphDatabase.driver[F]("bolt://localhost:7687")
   * }}}
   *
   * @tparam F effect type for driver
-  *
-  * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
   */
-final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
+sealed trait Driver[F[_]] {
+  def transaction(config: TransactionConfig): F[Transaction[F]]
 
-  /** Acquire a session to the database with the default config.
-    * @note $futinfo
+  final def transaction: F[Transaction[F]]  =
+    transaction(config = TransactionConfig.default)
+
+  def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+
+  final def transact[T](txF: Transaction[F] => F[T]): F[T] =
+    transact(config = TransactionConfig.default)(txF)
+
+  /** Close the resources assigned to the neo4j driver.
     *
-    * @param F asynchronous effect type with resource type defined.
-    * @tparam R resource type dependant on effect type F.
-    * @return Session[F] in effect type R.
+    *  @return an effect F of Unit.
     */
-  def session[R[_]](implicit F: Async.Aux[F, R]): R[Session[F]] =
-    session(SessionConfig.defaultConfig)
+  def close: F[Unit]
+}
 
-  /** Acquire a session to the database.
-    * @note $futinfo
-    *
-    * @param accessMode read or write mode.
-    * @param bookmarks bookmarks passed between transactions for neo4j casual chaining.
-    * @param F asynchronous effect type with resource type defined.
-    * @tparam R resource type dependant on effect type F.
-    * @return Session[F] in effect type R.
-    */
-  def session[R[_]](config: SessionConfig)
-                   (implicit F: Async.Aux[F, R]): R[Session[F]] =
-    F.resource(createSession(config))(session => session.close)
-
-  private[this] def createSession(config: SessionConfig)
-                                 (implicit F: Async[F]): F[Session[F]] =
-    F.makeLock.map { lock =>
-      val session = driver.asyncSession(config)
-      Session(F, session)(lock)
-    }
-
-  /** Apply a unit of work to a read session
-    *
-    * @param sessionWork function that takes a Session[F] and returns an F[T]
-    * @param F the effect type
-    * @tparam T the type of the value that will be returned when the query is executed.
-    * @return an effect F of type T
-    */
-  def readSession[T](sessionWork: Session[F] => F[T])
-                    (implicit F: Async[F]): F[T] =
-    withSession(AccessMode.READ)(sessionWork)
-
-  /** Apply a unit to a write session
-    *
-    * @param sessionWork function that takes a Session[F] and returns an F[T]
-    * @param F the effect type
-    * @tparam T the type of the value that will be returned when the query is executed.
-    * @return an effect F of type T
-    */
-  def writeSession[T](sessionWork: Session[F] => F[T])
-                     (implicit F: Async[F]): F[T] =
-    withSession(AccessMode.WRITE)(sessionWork)
-
-  private[this] def withSession[T](accessMode: AccessMode)
-                                  (sessionWork: Session[F] => F[T])
-                                  (implicit F: Async[F]): F[T] = {
-    val config =  SessionConfig.builder.withDefaultAccessMode(accessMode).build()
-    createSession(config).guarantee(sessionWork) {
-      case (session, _) => session.close
-    }
+object Driver {
+  private def txFinalizer[F[_]]: (Transaction[F], Option[Throwable]) => F[Unit] = {
+    case (tx, None)    => tx.commit
+    case (tx, Some(_)) => tx.rollback
   }
 
-  /** Close the resources assigned to the neo4j driver
-    *
-    * @param F the effect type
-    * @return an effect F of Unit
-    */
-  def close(implicit F: Async[F]): F[Unit] =
-    F.async { cb =>
-      driver.closeAsync().acceptVoid(cb)
+  private[neotypes] def apply[F[_]](driver: NeoDriver)(implicit F: Async[F]): Driver[F] =
+    new Driver[F] {
+      override final def transaction(config: TransactionConfig): F[Transaction[F]] =
+        F.async { cb =>
+          val (sessionConfig, transactionConfig) = config.getConfigs
+          val s = driver.asyncSession(sessionConfig)
+
+          s.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
+            Right(Transaction[F](tx, s))
+          }
+        }
+
+      override final def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
+        transaction(config).guarantee(txF)(Driver.txFinalizer)
+
+      override final def close: F[Unit] =
+        F.async { cb =>
+          driver.closeAsync().acceptVoid(cb)
+        }
     }
 }

@@ -3,8 +3,6 @@ package neotypes
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
-import org.neo4j.driver.{TransactionConfig => NeoTransactionConfig}
-
 import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
 
@@ -26,18 +24,18 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val result: F[List[(Person, Movie)]] =
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
     *     .query[(Person, Movie)]
-    *     .list(session)
+    *     .list(driver)
     * }}}
     *
-    * @param session neotypes session.
+    * @param driver neotypes driver.
     * @param config neo4j transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a List of T elements.
     */
-  def list[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def list[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
                 (implicit rm: ResultMapper[T]): F[List[T]] =
-    session.transact(config)(tx => list(tx))
+    driver.transact(config)(tx => list(tx))
 
   /** Executes the query and returns a Map[K,V] of values.
     *
@@ -46,10 +44,10 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val result: F[Map[Person, Movie]] =
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
     *     .query[(Person, Movie)]
-    *     .map(session)
+    *     .map(driver)
     * }}}
     *
-    * @param session neotypes session.
+    * @param driver neotypes driver.
     * @param config neo4j transaction config (optional).
     * @param ev evidence that T is a tuple (K, V).
     * @param rm result mapper for type (K, V).
@@ -58,9 +56,9 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @tparam V values type.
     * @return An effectual value that will compute a Map of key-value pairs.
     */
-  def map[F[_], K, V](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def map[F[_], K, V](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
                      (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    session.transact(config)(tx => map(tx))
+    driver.transact(config)(tx => map(tx))
 
   /** Executes the query and returns a Set of values.
     *
@@ -69,18 +67,18 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val result: F[Set[(Person, Movie)]] =
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
     *     .query[(Person, Movie)]
-    *     .set(session)
+    *     .set(driver)
     * }}}
     *
-    * @param session neotypes session.
+    * @param driver neotypes driver.
     * @param config neo4j transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a Set of T elements.
     */
-  def set[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def set[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
                (implicit rm: ResultMapper[T]): F[Set[T]] =
-    session.transact(config)(tx => set(tx))
+    driver.transact(config)(tx => set(tx))
 
   /** Executes the query and returns a Vector of values.
     *
@@ -89,18 +87,18 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val result: F[Vector[(Person, Movie)]] =
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
     *     .query[(Person, Movie)]
-    *     .vector(session)
+    *     .vector(driver)
     * }}}
     *
-    * @param session neotypes session.
+    * @param driver neotypes driver.
     * @param config neo4j transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a Vector of T elements.
     */
-  def vector[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def vector[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    session.transact(config)(tx => vector(tx))
+    driver.transact(config)(tx => vector(tx))
 
   /** Executes the query and returns the unique record in the result.
     *
@@ -109,20 +107,20 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val result: F[(Person, Movie)] =
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
     *     .query[(Person, Movie)]
-    *     .single(session)
+    *     .single(driver)
     * }}}
     *
     * @note This will fail if the query returned more than a single result.
     *
-    * @param session neotypes session.
+    * @param driver neotypes driver.
     * @param config neo4j transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a single T element.
     */
-  def single[F[_]](session: Session[F],config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def single[F[_]](driver: Driver[F],config: TransactionConfig = TransactionConfig.default)
                   (implicit rm: ResultMapper[T]): F[T] =
-    session.transact(config)(tx => single(tx))
+    driver.transact(config)(tx => single(tx))
 
   /** Executes the query and ignores its output.
     *
@@ -130,18 +128,18 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * {{{
     * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
     *   .query[Unit]
-    *   .execute(session)
+    *   .execute(driver)
     * }}}
     *
-    * @param session neotypes session.
+    * @param driver neotypes driver.
     * @param config neo4j transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will execute the query.
     */
-  def execute[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+  def execute[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
                    (implicit rm: ExecutionMapper[T]): F[T] =
-    session.transact(config)(tx => execute(tx))
+    driver.transact(config)(tx => execute(tx))
 
   /** Executes the query and returns a List of values.
     *
@@ -151,7 +149,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
     *
     * val result: F[List[(Person, Movie)]] =
-    *   session.transact(tx => deferredQuery.list(tx))
+    *   driver.transact(tx => deferredQuery.list(tx))
     * }}}
     *
     * @param tx neotypes transaction.
@@ -171,7 +169,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
     *
     * val result: F[Map[Person, Movie]] =
-    *   session.transact(tx => deferredQuery.map(tx))
+    *   driver.transact(tx => deferredQuery.map(tx))
     * }}}
     *
     * @param tx neotypes transaction.
@@ -196,7 +194,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
     *
     * val result: F[Set[(Person, Movie)]] =
-    *   session.transact(tx => deferredQuery.set(tx))
+    *   driver.transact(tx => deferredQuery.set(tx))
     * }}}
     *
     * @param tx neotypes transaction.
@@ -216,7 +214,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
     *
     * val result: F[Vector[(Person, Movie)]] =
-    *   session.transact(tx => deferredQuery.vector(tx))
+    *   driver.transact(tx => deferredQuery.vector(tx))
     * }}}
     *
     * @param tx neotypes transaction.
@@ -236,7 +234,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
     *
     * val result: F[(Person, Movie)] =
-    *   session.transact(tx => deferredQuery.single(tx))
+    *   driver.transact(tx => deferredQuery.single(tx))
     * }}}
     *
     * @note This will fail if the query returned more than a single result.
@@ -257,7 +255,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val deferredQuery =
     *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
     *
-    * session.transact(tx => deferredQuery.execute(tx))
+    * driver.transact(tx => deferredQuery.execute(tx))
     * }}}
     *
     * @param tx neotypes transaction.
@@ -276,7 +274,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * val result: F[ListMap[Person, Movie]] =
     *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
     *     .query[(Person, Movie)]
-    *     .collectAs(ListMap)(session)
+    *     .collectAs(ListMap)(driver)
     * }}}
     *
     * @param factory the type of the custom collection to return.
@@ -300,10 +298,10 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
 
 private[neotypes] object DeferredQuery {
   private[neotypes] final class CollectAsPartiallyApplied[T, C](private val factoryAndDq: (Factory[T, C], DeferredQuery[T])) extends AnyVal {
-    def apply[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
+    def apply[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
                    (implicit rm: ResultMapper[T]): F[C] = {
       val (factory, dq) = factoryAndDq
-      session.transact(config)(tx => tx.collectAs(factory)(dq.query, dq.params))
+      driver.transact(config)(tx => tx.collectAs(factory)(dq.query, dq.params))
     }
 
     def apply[F[_]](tx: Transaction[F])
