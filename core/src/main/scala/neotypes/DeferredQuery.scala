@@ -1,6 +1,5 @@
 package neotypes
 
-import internal.syntax.async._
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
@@ -18,7 +17,7 @@ import scala.collection.mutable.StringBuilder
   * @tparam T the type of the value that will be returned when the query is executed.
   */
 final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[String, QueryParam]) {
-  import DeferredQuery.{CollectAsPartiallyApplied, StreamPartiallyApplied}
+  import DeferredQuery._
 
   /** Executes the query and returns a List of values.
     *
@@ -287,16 +286,6 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
     new CollectAsPartiallyApplied(factory -> this)
 
-  /** Evaluate the query an get the results as a Stream.
-    *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
-    *
-    * @tparam S stream type.
-    * @return An effectual Stream of T values.
-    */
-  def stream[S[_]]: StreamPartiallyApplied[S, T] =
-    new StreamPartiallyApplied(this)
-
   /** Creates a new query with an updated set of parameters.
    *
     * @note If params contains a key that is already present in the current query,
@@ -322,20 +311,6 @@ private[neotypes] object DeferredQuery {
       val (factory, dq) = factoryAndDq
       tx.collectAs(factory)(dq.query, dq.params)
     }
-  }
-
-  private[neotypes] final class StreamPartiallyApplied[S[_], T](private val dq: DeferredQuery[T]) extends AnyVal {
-    def apply[F[_]](session: Session[F], config: NeoTransactionConfig = NeoTransactionConfig.empty)
-                   (implicit rm: ResultMapper[T], F: Async[F], S: Stream.Aux[S, F]): S[T] =
-      S.fToS(
-        session.transaction(config).map { tx =>
-          S.onComplete(tx.stream(dq.query, dq.params))(tx.rollback)
-        }
-      )
-
-    def apply[F[_]](tx: Transaction[F])
-                   (implicit rm: ResultMapper[T], S: Stream.Aux[S, F]): S[T] =
-      tx.stream(dq.query, dq.params)
   }
 }
 

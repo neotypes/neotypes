@@ -1,7 +1,5 @@
 package neotypes
 
-import java.util.concurrent.CompletionStage
-
 import internal.utils.traverse._
 import internal.syntax.async._
 import internal.syntax.stage._
@@ -37,9 +35,6 @@ sealed trait Transaction[F[_]] {
 
   def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
                (implicit resultMapper: ResultMapper[T]): F[T]
-
-  def stream[T, S[_]](query: String, params: Map[String, QueryParam] = Map.empty)
-                     (implicit S: Stream.Aux[S, F], resultMapper: ResultMapper[T]): S[T]
 
   def commit: F[Unit]
 
@@ -110,32 +105,6 @@ object Transaction {
             case _: NoSuchRecordException => resultMapper.to(List.empty, None)
           }
       }
-
-    private def nextAsyncToF[T](cs: CompletionStage[Record])
-                               (implicit resultMapper: ResultMapper[T]): F[Option[T]] =
-      F.async { cb =>
-        cs.accept(cb) { r =>
-          Option(r) match {
-            case None =>
-              Right(None)
-
-            case Some(record) =>
-              resultMapper.to(recordToList(record), None).map(r => Option(r))
-          }
-        }
-      }
-
-    override final def stream[T, S[_]](query: String, params: Map[String,QueryParam])
-                                      (implicit S: Stream.Aux[S,F], resultMapper: ResultMapper[T]): S[T] =
-      S.fToS(
-        F.async { cb =>
-          transaction
-            .runAsync(query, QueryParam.toJavaMap(params))
-            .accept(cb) { statementResultCursor =>
-              Right(S.init(() => nextAsyncToF(statementResultCursor.nextAsync())))
-            }
-        }
-      )
 
     override final def commit: F[Unit] =
       F.async[Unit] { cb =>
