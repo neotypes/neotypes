@@ -9,7 +9,6 @@ val testcontainersNeo4jVersion = "1.15.0"
 val testcontainersScalaVersion = "0.38.7"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
-val slf4jVersion = "1.7.30"
 val catsVersion = "2.3.0"
 val catsEffectsVersion = "2.3.0"
 val monixVersion = "3.3.0"
@@ -48,11 +47,17 @@ ThisBuild / scmInfo ~= {
     }
   }
 
+// Global settings.
+ThisBuild / scalaVersion := "2.12.12"
+ThisBuild / crossScalaVersions := Seq("2.13.4", "2.12.12")
+ThisBuild / organization := "com.dimafeng"
+
+// Common settings.
 val commonSettings = Seq(
-  ThisBuild / scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
-  Test / scalacOptions := Seq("-feature", "-deprecation"),
+  Test / parallelExecution := false,
+  Test / fork := true,
+  Test / scalacOptions := Seq("-feature", "-deprecation", "-language:higherKinds", "-Xfatal-warnings"),
 
   /**
     * Publishing
@@ -68,9 +73,6 @@ val commonSettings = Seq(
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
-  ThisBuild / organization := "com.dimafeng",
-
-  Global / parallelExecution := false,
 
   releaseCrossBuild := true
 )
@@ -126,8 +128,7 @@ lazy val core = (project in file("core"))
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
-        "org.mockito" % "mockito-all" % mockitoVersion,
-        "org.slf4j" % "slf4j-simple" % slf4jVersion
+        "org.mockito" % "mockito-all" % mockitoVersion
       )
   )
 
