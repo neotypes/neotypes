@@ -28,7 +28,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * }}}
     *
     * @param driver neotypes driver.
-    * @param config neo4j transaction config (optional).
+    * @param config neotypes transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a List of T elements.
@@ -48,7 +48,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * }}}
     *
     * @param driver neotypes driver.
-    * @param config neo4j transaction config (optional).
+    * @param config neotypes transaction config (optional).
     * @param ev evidence that T is a tuple (K, V).
     * @param rm result mapper for type (K, V).
     * @tparam F effect type.
@@ -71,7 +71,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * }}}
     *
     * @param driver neotypes driver.
-    * @param config neo4j transaction config (optional).
+    * @param config neotypes transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a Set of T elements.
@@ -91,7 +91,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * }}}
     *
     * @param driver neotypes driver.
-    * @param config neo4j transaction config (optional).
+    * @param config neotypes transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a Vector of T elements.
@@ -113,7 +113,7 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @note This will fail if the query returned more than a single result.
     *
     * @param driver neotypes driver.
-    * @param config neo4j transaction config (optional).
+    * @param config neotypes transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a single T element.
@@ -121,6 +121,21 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
   def single[F[_]](driver: Driver[F],config: TransactionConfig = TransactionConfig.default)
                   (implicit rm: ResultMapper[T]): F[T] =
     driver.transact(config)(tx => single(tx))
+
+  /** Evaluate the query an get the results as a Stream.
+    *
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @param driver neotypes driver.
+    * @param config neotypes transaction config (optional).
+    * @param rm result mapper for type T.
+    * @tparam S stream type.
+    * @tparam F effect type.
+    * @return An effectual Stream of T values.
+    */
+  def stream[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig = TransactionConfig.default)
+                        (implicit rm: ResultMapper[T]): S[T] =
+    driver.streamingTransact(config)(tx => stream(tx))
 
   /** Executes the query and ignores its output.
     *
@@ -132,13 +147,13 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * }}}
     *
     * @param driver neotypes driver.
-    * @param config neo4j transaction config (optional).
+    * @param config neotypes transaction config (optional).
     * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will execute the query.
     */
   def execute[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
-                   (implicit rm: ExecutionMapper[T]): F[T] =
+                   (implicit em: ExecutionMapper[T]): F[T] =
     driver.transact(config)(tx => execute(tx))
 
   /** Executes the query and returns a List of values.
@@ -264,8 +279,22 @@ final case class DeferredQuery[T] private[neotypes] (query: String, params: Map[
     * @return An effectual value that will execute the query.
     */
   def execute[F[_]](tx: Transaction[F])
-                   (implicit rm: ExecutionMapper[T]): F[T] =
+                   (implicit em: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
+
+  /** Evaluate the query an get the results as a Stream.
+    *
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @param tx neotypes transaction.
+    * @param rm result mapper for type T.
+    * @tparam S stream type.
+    * @tparam F effect type.
+    * @return An effectual Stream of T values.
+    */
+  def stream[S[_], F[_]](tx: StreamingTransaction[S, F])
+                        (implicit rm: ResultMapper[T]): S[T] =
+    tx.stream(query, params)
 
   /** Executes the query and returns a custom collection of values.
     *
