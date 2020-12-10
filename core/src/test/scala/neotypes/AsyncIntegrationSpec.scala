@@ -1,6 +1,5 @@
 package neotypes
 
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.exceptions.ClientException
 

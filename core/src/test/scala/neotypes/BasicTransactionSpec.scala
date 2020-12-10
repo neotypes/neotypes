@@ -1,6 +1,5 @@
 package neotypes
 
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 
@@ -8,27 +7,27 @@ import neotypes.internal.syntax.async._
 final class BasicTransactionSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
   behavior of s"Transaction[${effectName}]"
 
-  it should "explicitly commit a transaction" in executeAsFuture { s =>
+  it should "explicitly commit a transaction" in executeAsFuture { d =>
     for {
-      tx <- s.transaction
+      tx <- d.transaction
       _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
       _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
       _ <- tx.commit
-      people <- "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
+      people <- "MATCH (p: PERSON) RETURN p.name".query[String].set(d)
     } yield  {
-      assert(people == List("Luis", "Dmitry"))
+      assert(people == Set("Luis", "Dmitry"))
     }
   }
 
-  it should "explicitly rollback a transaction" in executeAsFuture { s =>
+  it should "explicitly rollback a transaction" in executeAsFuture { d =>
     for {
-      tx <-s.transaction
+      tx <-d.transaction
       _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
       _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
       _ <- tx.rollback
-      people <- "MATCH (p: PERSON) RETURN p.name".query[String].list(s)
+      people <- "MATCH (p: PERSON) RETURN p.name".query[String].list(d)
     } yield {
-      assert(people == List.empty)
+      assert(people.isEmpty)
     }
   }
 }

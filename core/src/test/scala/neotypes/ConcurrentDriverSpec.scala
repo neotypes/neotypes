@@ -5,9 +5,9 @@ import neotypes.implicits.syntax.cypher._
 import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
 
-/** Base class for testing the concurrent use of a session. */
-final class ConcurrentSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) with Matchers {
-  behavior of s"Concurrent use of Session[${effectName}]"
+/** Base class for testing the concurrent use of a Driver. */
+final class ConcurrentDriverSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec[F](testkit) with Matchers {
+  behavior of s"Concurrent use of Driver[${effectName}]"
 
   // Use a custom ec to ensure the tasks run concurrently.
   override implicit final def executionContext: ExecutionContext =
@@ -15,13 +15,13 @@ final class ConcurrentSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseI
       java.util.concurrent.Executors.newFixedThreadPool(2)
     )
 
-  it should "work and not throw an exception when a single session is used concurrently" in {
-    executeAsFuture { s =>
+  it should "work and not throw an exception when the driver is used concurrently" in {
+    executeAsFuture { d =>
       def query(name: String): F[Unit] =
-        c"CREATE (p: PERSON { name: ${name} })".query[Unit].execute(s)
+        c"CREATE (p: PERSON { name: ${name} })".query[Unit].execute(d)
 
       runConcurrently(query(name = "name1"), query(name = "name2")).flatMap { _ =>
-        c"MATCH (p: PERSON) RETURN p.name".query[String].list(s)
+        c"MATCH (p: PERSON) RETURN p.name".query[String].list(d)
       }
     } map { result =>
       result should contain theSameElementsAs List("name1", "name2")

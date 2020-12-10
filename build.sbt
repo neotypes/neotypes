@@ -9,6 +9,7 @@ val testcontainersNeo4jVersion = "1.15.0"
 val testcontainersScalaVersion = "0.38.7"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
+val logbackVersion = "1.2.3"
 val catsVersion = "2.3.0"
 val catsEffectsVersion = "2.3.0"
 val monixVersion = "3.3.0"
@@ -16,8 +17,6 @@ val akkaStreamVersion = "2.6.10"
 val fs2Version = "2.4.6"
 val zioVersion = "1.0.3"
 val refinedVersion = "0.9.19"
-
-//lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
@@ -52,12 +51,18 @@ ThisBuild / scalaVersion := "2.12.12"
 ThisBuild / crossScalaVersions := Seq("2.13.4", "2.12.12")
 ThisBuild / organization := "com.dimafeng"
 
+def removeScalacOptionsInTest(scalaVersion: String) =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, 12)) => Seq("-Ywarn-value-discard", "-Ywarn-unused:params")
+    case _ => Seq("-Wvalue-discard", "-Wunused:explicits", "-Wunused:params", "-Wunused:imports")
+  }
+
 // Common settings.
 val commonSettings = Seq(
   scalacOptions += "-Ywarn-macros:after",
   Test / parallelExecution := false,
   Test / fork := true,
-  Test / scalacOptions := Seq("-feature", "-deprecation", "-language:higherKinds", "-Xfatal-warnings"),
+  Test / scalacOptions --= removeScalacOptionsInTest(scalaVersion.value),
 
   /**
     * Publishing
@@ -128,7 +133,8 @@ lazy val core = (project in file("core"))
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
-        "org.mockito" % "mockito-all" % mockitoVersion
+        "org.mockito" % "mockito-all" % mockitoVersion,
+        "ch.qos.logback" % "logback-classic" % logbackVersion
       )
   )
 

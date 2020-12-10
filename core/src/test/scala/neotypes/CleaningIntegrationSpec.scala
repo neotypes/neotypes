@@ -8,7 +8,7 @@ abstract class CleaningIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends 
     complete {
       super.withFixture(test)
     } lastly {
-      this.cleanDb()
+      this.cleanDB()
     }
   }
 

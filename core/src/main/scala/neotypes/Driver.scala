@@ -4,7 +4,10 @@ import internal.syntax.async._
 import internal.syntax.stage._
 import internal.syntax.stream._
 
-import org.neo4j.driver.{Driver => NeoDriver}
+import org.neo4j.driver.{ConnectionPoolMetrics, Driver => NeoDriver}
+
+import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
@@ -15,6 +18,8 @@ import org.neo4j.driver.{Driver => NeoDriver}
   * @tparam F effect type for driver
   */
 sealed trait Driver[F[_]] {
+  def metrics: List[ConnectionPoolMetrics]
+
   def transaction(config: TransactionConfig): F[Transaction[F]]
 
   final def transaction: F[Transaction[F]]  =
@@ -52,6 +57,9 @@ object Driver {
 
   private class DriverImpl[F[_]](driver: NeoDriver)
                                 (implicit F: Async[F]) extends Driver[F] {
+    override final def metrics: List[ConnectionPoolMetrics] =
+      Try(driver.metrics).map(_.connectionPoolMetrics.asScala.toList).getOrElse(List.empty)
+
     override final def transaction(config: TransactionConfig): F[Transaction[F]] =
       F.async { cb =>
         val (sessionConfig, transactionConfig) = config.getConfigs

@@ -14,7 +14,7 @@ import scala.jdk.CollectionConverters._
 final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
   behavior of s"Inserting parameters for ${effectName}"
 
-  it should "convert parameters" in executeAsFuture { s =>
+  it should "convert parameters" in executeAsFuture { d =>
     val name: String = "test"
     val born: Int = 123
     val age1: Option[Int] = None
@@ -40,7 +40,7 @@ final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
     val value: Value = Values.value(0)
 
     for {
-      _ <- c"""create (p: Person {
+      _ <- c"""CREATE (d: Data {
                  name: $name,
                  born: $born,
                  age1: $age1,
@@ -64,8 +64,8 @@ final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
                  isoDuration: $isoDuration,
                  point: $point,
                  value: $value
-               })""".query[Unit].execute(s)
-      res <- "match (p:Person) return p limit 1".query[Node].single(s)
+               })""".query[Unit].execute(d)
+      res <- "MATCH (d: Data) RETURN d limit 1".query[Node].single(d)
     } yield {
       assert(res.get("name").asString == name)
       assert(res.get("born").asInt == born)
@@ -93,12 +93,12 @@ final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningInteg
     }
   }
 
-  it should "convert map-like parameters into a node" in executeAsFuture { s =>
+  it should "convert map-like parameters into a node" in executeAsFuture { d =>
     val parameters = SortedMap("p1" -> 3, "p2" -> 5)
 
     for {
-      _ <- c"""create (p: Person ${parameters})""".query[Unit].execute(s)
-      res <- "match (p:Person) return p limit 1".query[Node].single(s)
+      _ <- c"""CREATE (d: Data ${parameters})""".query[Unit].execute(d)
+      res <- "MATCH (d: Data) RETURN d limit 1".query[Node].single(d)
     } yield {
       assert(res.get("p1").asInt == 3)
       assert(res.get("p2").asInt == 5)
