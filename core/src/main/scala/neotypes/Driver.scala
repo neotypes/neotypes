@@ -18,7 +18,7 @@ import scala.jdk.CollectionConverters._
   * @tparam F effect type for driver
   */
 sealed trait Driver[F[_]] {
-  def metrics: List[ConnectionPoolMetrics]
+  def metrics: F[List[ConnectionPoolMetrics]]
 
   def transaction(config: TransactionConfig): F[Transaction[F]]
 
@@ -57,8 +57,10 @@ object Driver {
 
   private class DriverImpl[F[_]](driver: NeoDriver)
                                 (implicit F: Async[F]) extends Driver[F] {
-    override final def metrics: List[ConnectionPoolMetrics] =
-      Try(driver.metrics).map(_.connectionPoolMetrics.asScala.toList).getOrElse(List.empty)
+    override final def metrics: F[List[ConnectionPoolMetrics]] =
+      F.fromEither(
+        Try(driver.metrics).map(_.connectionPoolMetrics.asScala.toList).toEither
+      )
 
     override final def transaction(config: TransactionConfig): F[Transaction[F]] =
       F.async { cb =>
