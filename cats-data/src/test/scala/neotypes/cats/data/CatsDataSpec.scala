@@ -1,10 +1,9 @@
 package neotypes.cats.data
 
-import neotypes.{CleaningIntegrationSpec, FutureTestkit}
+import neotypes.{AsyncDriverProvider, CleaningIntegrationSpec, FutureTestkit}
 import neotypes.generic.auto._
 import neotypes.cats.data.implicits._
 import neotypes.exceptions.IncoercibleException
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
 
@@ -17,12 +16,12 @@ import cats.data.{
   NonEmptySet,
   NonEmptyVector
 }
-import _root_.cats.instances.string._ // Brings the implicit Order[String] instance into the scope.
-import _root_.cats.instances.int._ // Brings the implicit Order[Int] instance into the scope.
+import cats.instances.string._ // Brings the implicit Order[String] instance into the scope.
+import cats.instances.int._ // Brings the implicit Order[Int] instance into the scope.
 
 import scala.concurrent.Future
 
-final class CatsDataSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
+final class CatsDataSpec extends AsyncDriverProvider(FutureTestkit) with CleaningIntegrationSpec[Future] {
   import CatsDataSpec._
 
   it should "work with Chain" in executeAsFuture { s =>

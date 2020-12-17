@@ -8,7 +8,9 @@ import shapeless._
 import scala.concurrent.Future
 
 /** Base class for testing the basic behaviour of Driver[F] instances. */
-final class DriverSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
+final class DriverSpec[F[_]](
+  testkit: EffectTestkit[F]
+) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
   behavior of s"Driver[${effectName}]"
 
   import DriverSpec._

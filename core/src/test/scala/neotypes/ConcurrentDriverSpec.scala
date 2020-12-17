@@ -6,7 +6,9 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
 
 /** Base class for testing the concurrent use of a Driver. */
-final class ConcurrentDriverSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] with Matchers {
+final class ConcurrentDriverSpec[F[_]](
+  testkit: EffectTestkit[F]
+) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] with Matchers {
   behavior of s"Concurrent use of Driver[${effectName}]"
 
   // Use a custom ec to ensure the tasks run concurrently.
