@@ -6,7 +6,7 @@ import neotypes.internal.syntax.async._
 import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the use of the library with the Neo4j graph-data-science plugin. */
-final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) with Matchers {
+final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with CleaningIntegrationSpec[F] with Matchers {
   behavior of s"The Neo4j graph-data-science plugin used with: ${effectName}"
 
   import AlgorithmData._

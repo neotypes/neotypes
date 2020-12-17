@@ -8,7 +8,7 @@ import scala.jdk.CollectionConverters._
 import shapeless._
 
 /** Base class for testing the extraction of Paths. */
-final class PathSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class PathSessionSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
   behavior of s"Extracting a Path using: ${effectName}"
 
   import PathSessionSpec._

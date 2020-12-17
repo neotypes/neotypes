@@ -11,7 +11,7 @@ import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing the mapping of inserted parameters. */
-final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
+final class ParameterSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with CleaningIntegrationSpec[F] {
   behavior of s"Inserting parameters for ${effectName}"
 
   it should "convert parameters" in executeAsFuture { d =>

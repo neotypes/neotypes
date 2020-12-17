@@ -8,7 +8,7 @@ import org.neo4j.driver.Value
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing queries which produce complex types. */
-final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
   behavior of s"Extracting complex types using: ${effectName}"
 
   import CompositeTypesSpec._

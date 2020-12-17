@@ -4,7 +4,7 @@ import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 
 /** Base class for testing the basic behaviour of Transaction[F] instances. */
-final class BasicTransactionSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
+final class AsyncTransactionSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with CleaningIntegrationSpec[F] {
   behavior of s"Transaction[${effectName}]"
 
   it should "explicitly commit a transaction" in executeAsFuture { d =>

@@ -8,10 +8,10 @@ import shapeless._
 import scala.concurrent.Future
 
 /** Base class for testing the basic behaviour of Driver[F] instances. */
-final class BasicDriverSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class DriverSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
   behavior of s"Driver[${effectName}]"
 
-  import BasicDriverSpec._
+  import DriverSpec._
 
   it should "map result to simple values" in executeAsFuture { d =>
     for {
@@ -207,7 +207,7 @@ final class BasicDriverSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegra
   override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
-object BasicDriverSpec {
+object DriverSpec {
   final case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
 
   final case class Person2(born: Int, name: Option[String])

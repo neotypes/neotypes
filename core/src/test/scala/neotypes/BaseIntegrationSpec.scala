@@ -1,16 +1,17 @@
 package neotypes
 
-import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import neotypes.internal.utils.toJavaDuration
+
+import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import org.neo4j.{driver => neo4j}
 import org.scalatest.flatspec.AsyncFlatSpecLike
 import org.testcontainers.images.{ImagePullPolicy, PullPolicy}
 import org.testcontainers.utility.DockerImageName
-import scala.concurrent.Future
+
 import scala.concurrent.duration._
 
 /** Base class for writing integration specs. */
-abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec(testkit) with AsyncFlatSpecLike with ForAllTestContainer  {
+trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
   protected def initQuery: String
 
   override final val container =
@@ -25,7 +26,7 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
       case _ => PullPolicy.defaultPolicy
     }
 
-  private lazy final val neoDriver =
+  protected lazy final val neoDriver =
     neo4j.GraphDatabase.driver(
       container.boltUrl,
       neo4j.Config.builder
@@ -33,13 +34,6 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
         .withDriverMetrics
         .build()
     )
-
-  protected lazy final val driver =
-    Driver[F](neoDriver)
-
-  protected final def debugMetrics(): Unit = {
-    println(s"METRICS: ${driver.metrics}")
-  }
 
   private final def runQuery(query: String): Unit = {
     val s = neoDriver.session
@@ -54,23 +48,20 @@ abstract class BaseIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Base
 
   override final def afterStart(): Unit = {
     // Force evaluation of the driver.
-    driver
+    internal.utils.void(self.driver)
 
     if (initQuery != null) {
       runQuery(initQuery)
     }
   }
 
-  override final def beforeStop(): Unit = {
-    neoDriver.close()
-  }
-
   protected final def cleanDB(): Unit = {
     runQuery("MATCH (n) DETACH DELETE n")
   }
 
-  protected final def executeAsFuture[T](work: Driver[F] => F[T]): Future[T] =
-    fToFuture(work(driver))
+  override final def beforeStop(): Unit = {
+    neoDriver.close()
+  }
 }
 
 object BaseIntegrationSpec {
@@ -86,4 +77,9 @@ object BaseIntegrationSpec {
 
   final val EMPTY_INIT_QUERY: String =
     null
+}
+
+trait DriverProvider[F[_]] { self: BaseIntegrationSpec[F] =>
+  type DriverType <: Driver[F]
+  protected val driver: DriverType
 }
