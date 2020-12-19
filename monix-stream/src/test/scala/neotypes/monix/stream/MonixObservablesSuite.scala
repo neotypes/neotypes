@@ -1,17 +1,23 @@
 package neotypes.monix.stream
 
-import monix.eval.Task
 import neotypes.{Stream, StreamSuite, StreamTestkit}
 import neotypes.monix.MonixTaskTestkit
 import neotypes.monix.stream.implicits._
+
+import monix.eval.Task
+import monix.reactive.Observable
+
 import scala.concurrent.ExecutionContext
 
-/** Implementation of the Stream Teskit for monix observables. */
+/** Implementation of the Stream Testkit for monix observables. */
 object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTaskTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      override def streamToFList[T](stream: MonixStream[T]): Task[List[T]] =
+      override def streamToFList[A](stream: MonixStream[A]): Task[List[A]] =
         stream.toListL
+
+      override def streamFromF[A](task: Task[A]): MonixStream[A] =
+        Observable.fromTask(task)
 
       override final val streamInstance: Stream.Aux[MonixStream, Task] =
         implicitly

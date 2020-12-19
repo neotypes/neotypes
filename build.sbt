@@ -16,6 +16,7 @@ val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.10"
 val fs2Version = "2.4.6"
 val zioVersion = "1.0.3"
+val zioInteropReactiveStreamsVersion = "1.0.3.5"
 val refinedVersion = "0.9.19"
 
 // Fix scmInfo in Github Actions.
@@ -197,7 +198,8 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
-      "co.fs2" %% "fs2-core" % fs2Version
+      "co.fs2" %% "fs2-core" % fs2Version,
+      "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
   )
 
@@ -211,6 +213,7 @@ lazy val monixStream = (project in file("monix-stream"))
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion,
+      "io.monix" %% "monix-reactive" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
   )
@@ -223,7 +226,8 @@ lazy val zioStream = (project in file("zio-stream"))
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion
+      "dev.zio" %% "zio-streams" % zioVersion,
+      "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
 
