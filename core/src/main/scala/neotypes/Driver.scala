@@ -88,9 +88,46 @@ object Driver {
       val (sessionConfig, transactionConfig) = config.getConfigs
       val s = driver.rxSession(sessionConfig)
 
+      /** Use when https://github.com/neo4j/neo4j-java-driver/issues/797 is fixed.
       s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
         Transaction[S, F](tx, s)
       }
+      */
+
+      // Workaround for neo4j-java-driver#797 -------------------------------------------
+      val rxs = s.asInstanceOf[org.neo4j.driver.internal.reactive.InternalRxSession]
+      val f = rxs.getClass.getDeclaredField("session")
+      f.setAccessible(true)
+      val ns = f.get(rxs).asInstanceOf[org.neo4j.driver.internal.async.NetworkSession]
+      val streamingTx = F.async[StreamingTransaction[S, F]] { cb =>
+        ns.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
+          val rxtx = new org.neo4j.driver.internal.reactive.InternalRxTransaction(tx)
+          Right(Transaction(rxtx, s))
+        }
+      }
+      val unitPublisher = new org.reactivestreams.Publisher[Unit] {
+        override def subscribe(s: org.reactivestreams.Subscriber[_ >: Unit]): Unit = {
+          s.onSubscribe(new org.reactivestreams.Subscription {
+            var produced = false
+            override def request(x: Long): Unit = {
+              if (!produced) {
+                produced = true
+                s.onNext(())
+                s.onComplete()
+              }
+            }
+            override def cancel(): Unit = {
+              if (produced) {
+                s.onComplete()
+              } else {
+                s.onError(exceptions.TransactionWasNotCreatedException)
+              }
+            }
+          })
+        }
+      }
+      S.fromRx(unitPublisher).evalMap(_ => streamingTx)
+      // --------------------------------------------------------------------------------
     }
 
     override def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
