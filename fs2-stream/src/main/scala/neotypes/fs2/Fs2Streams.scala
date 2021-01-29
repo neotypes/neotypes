@@ -1,5 +1,7 @@
 package neotypes.fs2
 
+import neotypes.exceptions.CancellationException
+
 import cats.effect.{ConcurrentEffect, ExitCase}
 import fs2.Stream
 import org.reactivestreams.Publisher
@@ -16,8 +18,9 @@ trait Fs2Streams {
 
       override final def resource[A, B](r: F[A])(f: A => Stream[F, B])(finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, B] =
         Stream.bracketCase(acquire = r) {
-          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
-          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+          case (a, ExitCase.Completed) => finalizer(a, None)
+          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.flatMap(f)
 
       override final def map[A, B](sa: Stream[F, A])(f: A => B): Stream[F, B] =

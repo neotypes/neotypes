@@ -1,5 +1,7 @@
 package neotypes.cats.effect
 
+import neotypes.exceptions.CancellationException
+
 import cats.effect.{Async, ExitCase, Resource}
 
 trait CatsEffect {
@@ -25,8 +27,9 @@ trait CatsEffect {
                                         (f: A => F[B])
                                         (finalizer: (A, Option[Throwable]) => F[Unit]): F[B] =
         Resource.makeCase(fa) {
-          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
-          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+          case (a, ExitCase.Completed) => finalizer(a, None)
+          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.use(f)
 
       override final def map[A, B](m: F[A])(f: A => B): F[B] =

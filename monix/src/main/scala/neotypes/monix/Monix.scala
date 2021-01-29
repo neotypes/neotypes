@@ -1,5 +1,7 @@
 package neotypes.monix
 
+import neotypes.exceptions.CancellationException
+
 import cats.effect.{ExitCase, Resource}
 import monix.eval.Task
 
@@ -31,8 +33,9 @@ object Monix {
                                         (f: A => Task[B])
                                         (finalizer: (A, Option[Throwable]) => Task[Unit]): Task[B] =
         Resource.makeCase(fa) {
-          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
-          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+          case (a, ExitCase.Completed) => finalizer(a, None)
+          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.use(f)
 
       override final def map[A, B](m: Task[A])(f: A => B): Task[B] =

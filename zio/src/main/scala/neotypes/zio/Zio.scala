@@ -1,5 +1,7 @@
 package neotypes.zio
 
+import neotypes.exceptions.CancellationException
+
 import zio.{Exit, Managed, Task}
 
 trait Zio {
@@ -34,11 +36,12 @@ object Zio {
                                   (f: A => zio.Task[B])
                                   (finalizer: (A, Option[Throwable]) => zio.Task[Unit]): zio.Task[B] =
         Managed.makeExit(fa) {
-          case (a, Exit.Failure(cause)) => cause.failureOrCause match {
-            case Left(ex: Throwable)    => finalizer(a, Some(ex)).ignore
-            case _                      => finalizer(a, None).ignore
+          case (a, Exit.Failure(cause))          => cause.failureOrCause match {
+            case Left(ex: Throwable)             => finalizer(a, Some(ex)).ignore
+            case Right(c) if (c.interruptedOnly) => finalizer(a, Some(CancellationException)).ignore
+            case _                               => finalizer(a, None).ignore
           }
-          case (a, _)                   => finalizer(a, None).orDie
+          case (a, _)                            => finalizer(a, None).orDie
         }.use(f).absorbWith(identity)
 
       override final def map[A, B](m: Task[A])(f: A => B): Task[B] =

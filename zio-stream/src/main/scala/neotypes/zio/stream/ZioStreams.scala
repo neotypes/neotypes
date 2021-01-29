@@ -1,5 +1,7 @@
 package neotypes.zio.stream
 
+import neotypes.exceptions.CancellationException
+
 import zio.{Exit, Task}
 import zio.stream.{ZSink, ZStream}
 import zio.interop.reactivestreams.Adapters
@@ -17,11 +19,12 @@ trait ZioStreams {
 
       override final def resource[A, B](r: Task[A])(f: A => ZioStream[B])(finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
         ZStream.bracketExit(acquire = r) {
-          case (a, Exit.Failure(cause)) => cause.failureOrCause match {
-            case Left(ex: Throwable)    => finalizer(a, Some(ex)).ignore
-            case _                      => finalizer(a, None).ignore
+          case (a, Exit.Failure(cause))          => cause.failureOrCause match {
+            case Left(ex: Throwable)             => finalizer(a, Some(ex)).ignore
+            case Right(c) if (c.interruptedOnly) => finalizer(a, Some(CancellationException)).ignore
+            case _                               => finalizer(a, None).ignore
           }
-          case (a, _)                   => finalizer(a, None).orDie
+          case (a, _)                            => finalizer(a, None).orDie
         }.flatMap(f)
 
       override final def map[A, B](sa: ZioStream[A])(f: A => B): ZioStream[B] =

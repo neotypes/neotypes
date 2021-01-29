@@ -1,5 +1,7 @@
 package neotypes.monix.stream
 
+import neotypes.exceptions.CancellationException
+
 import cats.effect.ExitCase
 import monix.eval.Task
 import monix.reactive.Observable
@@ -17,8 +19,9 @@ trait MonixStreams {
 
       override final def resource[A, B](r: Task[A])(f: A => Observable[B])(finalizer: (A, Option[Throwable]) => Task[Unit]): Observable[B] =
         Observable.resourceCase(acquire = r) {
-          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
-          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+          case (a, ExitCase.Completed) => finalizer(a, None)
+          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.flatMap(f)
 
       override final def map[A, B](sa: Observable[A])(f: A => B): Observable[B] =
