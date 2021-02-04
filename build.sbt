@@ -3,21 +3,21 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.2.0"
-val scalaCollectionCompatVersion = "2.3.2"
+val scalaCollectionCompatVersion = "2.4.1"
 val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.15.1"
-val testcontainersScalaVersion = "0.38.8"
+val testcontainersScalaVersion = "0.39.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
 val logbackVersion = "1.2.3"
 val catsVersion = "2.3.1"
 val catsEffectsVersion = "2.3.1"
 val monixVersion = "3.3.0"
-val akkaStreamVersion = "2.6.10"
+val akkaStreamVersion = "2.6.12"
 val fs2Version = "2.5.0"
-val zioVersion = "1.0.3"
-val zioInteropReactiveStreamsVersion = "1.0.3.5"
-val refinedVersion = "0.9.19"
+val zioVersion = "1.0.4-2"
+val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
+val refinedVersion = "0.9.20"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
