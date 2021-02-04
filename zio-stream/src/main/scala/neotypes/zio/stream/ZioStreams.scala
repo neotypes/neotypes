@@ -17,6 +17,9 @@ trait ZioStreams {
       override final def fromRx[A](publisher: Publisher[A]): ZioStream[A] =
         Adapters.publisherToStream(publisher, bufferSize = 16)
 
+      override def fromF[A](task: Task[A]): ZioStream[A] =
+        ZStream.fromEffect(task)
+
       override final def resource[A, B](r: Task[A])(f: A => ZioStream[B])(finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
         ZStream.bracketExit(acquire = r) {
           case (a, Exit.Failure(cause))          => cause.failureOrCause match {

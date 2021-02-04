@@ -31,6 +31,9 @@ trait AkkaStreams {
       override final def fromRx[A](publisher: Publisher[A]): AkkaStream[A] =
         Source.fromPublisher(publisher)
 
+      override def fromF[A](future: Future[A]): AkkaStream[A] =
+        Source.future(future)
+
       override final def resource[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
         Source.future(r).flatMapConcat { a =>
           f(a).watchTermination() {

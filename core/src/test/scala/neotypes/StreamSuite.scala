@@ -11,7 +11,6 @@ abstract class StreamTestkit[S[_], F[_]](val effectTestkit: EffectTestkit[F])
 
   trait Behaviour {
     def streamToFList[A](stream: S[A]): F[List[A]]
-    def streamFromF[A](fa: F[A]): S[A]
     def streamInstance: Stream.Aux[S, F]
   }
 
@@ -28,9 +27,6 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
 
   protected final def streamToFList[A](stream: S[A]): F[List[A]] =
     behaviour.streamToFList(stream)
-
-  protected final def streamFromF[A](fa: F[A]): S[A] =
-    behaviour.streamFromF(fa)
 
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance

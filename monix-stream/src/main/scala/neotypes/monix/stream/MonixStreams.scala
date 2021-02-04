@@ -17,6 +17,9 @@ trait MonixStreams {
       override final def fromRx[A](publisher: Publisher[A]): Observable[A] =
         Observable.fromReactivePublisher(publisher)
 
+      override def fromF[A](task: Task[A]): Observable[A] =
+        Observable.fromTask(task)
+
       override final def resource[A, B](r: Task[A])(f: A => Observable[B])(finalizer: (A, Option[Throwable]) => Task[Unit]): Observable[B] =
         Observable.resourceCase(acquire = r) {
           case (a, ExitCase.Completed) => finalizer(a, None)

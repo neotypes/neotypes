@@ -86,47 +86,33 @@ object Driver {
                                                      extends DriverImpl[F](driver) with StreamingDriver[S, F] {
     override def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
       val (sessionConfig, transactionConfig) = config.getConfigs
-      val s = driver.rxSession(sessionConfig)
+
+      val session = F.delay {
+        driver.rxSession(sessionConfig)
+      }
 
       /** Use when https://github.com/neo4j/neo4j-java-driver/issues/797 is fixed.
-      s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
-        Transaction[S, F](tx, s)
+      S.fromF(session).flatMapS { s =>
+        s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
+          Transaction[S, F](tx, s)
+        }
       }
       */
 
       // Workaround for neo4j-java-driver#797 -------------------------------------------
-      val rxs = s.asInstanceOf[org.neo4j.driver.internal.reactive.InternalRxSession]
-      val f = rxs.getClass.getDeclaredField("session")
-      f.setAccessible(true)
-      val ns = f.get(rxs).asInstanceOf[org.neo4j.driver.internal.async.NetworkSession]
-      val streamingTx = F.async[StreamingTransaction[S, F]] { cb =>
-        ns.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
-          val rxtx = new org.neo4j.driver.internal.reactive.InternalRxTransaction(tx)
-          Right(Transaction(rxtx, s))
+      val streamingTx = session.flatMap { s =>
+        F.async[StreamingTransaction[S, F]] { cb =>
+          val rxs = s.asInstanceOf[org.neo4j.driver.internal.reactive.InternalRxSession]
+          val f = rxs.getClass.getDeclaredField("session")
+          f.setAccessible(true)
+          val ns = f.get(rxs).asInstanceOf[org.neo4j.driver.internal.async.NetworkSession]
+          ns.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
+            val rxtx = new org.neo4j.driver.internal.reactive.InternalRxTransaction(tx)
+            Right(Transaction(rxtx, s))
+          }
         }
       }
-      val unitPublisher = new org.reactivestreams.Publisher[Unit] {
-        override def subscribe(s: org.reactivestreams.Subscriber[_ >: Unit]): Unit = {
-          s.onSubscribe(new org.reactivestreams.Subscription {
-            var produced = false
-            override def request(x: Long): Unit = {
-              if (!produced) {
-                produced = true
-                s.onNext(())
-                s.onComplete()
-              }
-            }
-            override def cancel(): Unit = {
-              if (produced) {
-                s.onComplete()
-              } else {
-                s.onError(exceptions.TransactionWasNotCreatedException)
-              }
-            }
-          })
-        }
-      }
-      S.fromRx(unitPublisher).evalMap(_ => streamingTx)
+      S.fromF(streamingTx)
       // --------------------------------------------------------------------------------
     }
 

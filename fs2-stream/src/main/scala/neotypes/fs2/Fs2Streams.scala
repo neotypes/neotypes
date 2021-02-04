@@ -16,6 +16,9 @@ trait Fs2Streams {
       override final def fromRx[A](publisher: Publisher[A]): Stream[F, A] =
         fs2.interop.reactivestreams.fromPublisher(publisher)
 
+      override def fromF[A](fa: F[A]): Stream[F, A] =
+        Stream.eval(fa)
+
       override final def resource[A, B](r: F[A])(f: A => Stream[F, B])(finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, B] =
         Stream.bracketCase(acquire = r) {
           case (a, ExitCase.Completed) => finalizer(a, None)

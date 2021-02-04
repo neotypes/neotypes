@@ -4,7 +4,7 @@ import neotypes.{FutureTestkit, Stream, StreamSuite, StreamTestkit}
 import neotypes.akkastreams.implicits._
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.scaladsl.Sink
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -17,9 +17,6 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
 
       override def streamToFList[A](stream: AkkaStream[A]): Future[List[A]] =
         stream.runWith(Sink.seq[A]).map(_.toList)
-
-      override def streamFromF[A](future: Future[A]): AkkaStream[A] =
-        Source.future(future)
 
       override final val streamInstance: Stream.Aux[AkkaStream, Future] =
         implicitly

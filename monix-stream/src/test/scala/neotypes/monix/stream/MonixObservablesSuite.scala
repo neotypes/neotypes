@@ -5,7 +5,6 @@ import neotypes.monix.MonixTaskTestkit
 import neotypes.monix.stream.implicits._
 
 import monix.eval.Task
-import monix.reactive.Observable
 
 import scala.concurrent.ExecutionContext
 
@@ -15,9 +14,6 @@ object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTas
     new Behaviour {
       override def streamToFList[A](stream: MonixStream[A]): Task[List[A]] =
         stream.toListL
-
-      override def streamFromF[A](task: Task[A]): MonixStream[A] =
-        Observable.fromTask(task)
 
       override final val streamInstance: Stream.Aux[MonixStream, Task] =
         implicitly

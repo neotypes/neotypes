@@ -18,9 +18,6 @@ object Fs2Testkit extends StreamTestkit[Fs2IoStream, IO](IOTestkit) {
       override def streamToFList[A](stream: Fs2IoStream[A]): IO[List[A]] =
         stream.compile.toList
 
-      override def streamFromF[A](io: IO[A]): Fs2IoStream[A] =
-        fs2.Stream.eval(io)
-
       override final val streamInstance: Stream.Aux[Fs2IoStream, IO] =
         implicitly
     }

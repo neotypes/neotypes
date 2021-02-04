@@ -5,7 +5,6 @@ import neotypes.zio.ZioTaskTestkit
 import neotypes.zio.stream.implicits._
 
 import zio.Task
-import zio.stream.ZStream
 
 import scala.concurrent.ExecutionContext
 
@@ -15,9 +14,6 @@ object ZioZStreamsTestkit extends StreamTestkit[ZioStream, Task](ZioTaskTestkit)
     new Behaviour {
       override def streamToFList[A](stream: ZioStream[A]): Task[List[A]] =
         stream.runCollect.map(_.toList)
-
-      override def streamFromF[A](task: Task[A]): ZioStream[A] =
-        ZStream.fromEffect(task)
 
       override final val streamInstance: Stream.Aux[ZioStream, Task] =
         implicitly

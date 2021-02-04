@@ -29,7 +29,7 @@ final class StreamingTransactSpec[S[_], F[_]](
     txF: StreamingTransaction[S, F] => F[Unit]
   ): Future[Assertion] =
     recoverToSucceededIf[E] {
-      executeAsFutureList(_.streamingTransact(txF andThen streamFromF))
+      executeAsFutureList(_.streamingTransact(txF andThen S.fromF))
     } flatMap { _ =>
       executeAsFuture(s => "MATCH (n) RETURN count(n)".query[Int].single(s))
     } map { count =>
@@ -43,7 +43,7 @@ final class StreamingTransactSpec[S[_], F[_]](
         _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
       } yield ()
 
-      streamFromF(create).flatMapS { _ =>
+      S.fromF(create).flatMapS { _ =>
         "MATCH (p: PERSON) RETURN p.name".query[String].stream(tx)
       }
     }
