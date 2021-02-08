@@ -1,53 +1,41 @@
 package neotypes.cats.effect
 
-import cats.effect.{Concurrent, ExitCase, Resource}
-import cats.effect.concurrent.MVar
+import neotypes.exceptions.CancellationException
+
+import cats.effect.{Async, ExitCase, Resource}
 
 trait CatsEffect {
   private[neotypes] final type FResource[F[_]] = { type R[A] = Resource[F, A] }
 
-  implicit final def catsAsync[F[_]](implicit F: Concurrent[F]): neotypes.Async.Aux[F, FResource[F]#R] =
+  implicit final def catsAsync[F[_]](implicit F: Async[F]): neotypes.Async.Aux[F, FResource[F]#R] =
     new neotypes.Async[F] {
       override final type R[A] = Resource[F, A]
 
-      override final def async[T](cb: (Either[Throwable, T] => Unit) => Unit): F[T] =
+      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A] =
         F.async(cb)
 
       override final def delay[A](t: => A): F[A] =
         F.delay(t)
 
-      override final def failed[T](e: Throwable): F[T] =
-        F.raiseError(e)
+      override final def flatMap[A, B](m: F[A])(f: A => F[B]): F[B] =
+        F.flatMap(m)(f)
+
+      override final def fromEither[A](e: => Either[Throwable, A]): F[A] =
+        F.suspend(F.fromEither(e))
 
       override final def guarantee[A, B](fa: F[A])
                                         (f: A => F[B])
                                         (finalizer: (A, Option[Throwable]) => F[Unit]): F[B] =
         Resource.makeCase(fa) {
-          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
-          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+          case (a, ExitCase.Completed) => finalizer(a, None)
+          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.use(f)
 
-      override final def flatMap[T, U](m: F[T])(f: T => F[U]): F[U] =
-        F.flatMap(m)(f)
-
-      override def makeLock: F[Lock] =
-        F.map(MVar[F].empty[Unit]) { mvar =>
-          new Lock {
-            override final def acquire: F[Unit] =
-              mvar.put(())
-
-            override final def release: F[Unit] =
-              mvar.take
-          }
-        }
-
-      override final def map[T, U](m: F[T])(f: T => U): F[U] =
+      override final def map[A, B](m: F[A])(f: A => B): F[B] =
         F.map(m)(f)
 
-      override final def recoverWith[T, U >: T](m: F[T])(f: PartialFunction[Throwable, F[U]]): F[U] =
-        F.recoverWith(F.widen[T, U](m))(f)
-
-      override final def resource[A](input: F[A])(close: A => F[Unit]): Resource[F, A] =
-        Resource.make(input)(close)
+      override final def resource[A](input: => A)(close: A => F[Unit]): Resource[F, A] =
+        Resource.make(delay(input))(close)
     }
 }

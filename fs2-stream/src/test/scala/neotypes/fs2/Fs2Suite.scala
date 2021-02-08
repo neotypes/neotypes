@@ -1,16 +1,21 @@
 package neotypes.fs2
 
-import cats.effect.IO
 import neotypes.{Stream, StreamSuite, StreamTestkit}
 import neotypes.cats.effect.IOTestkit
 import neotypes.fs2.implicits._
+
+import cats.effect.{ContextShift, IO}
+
 import scala.concurrent.ExecutionContext
 
-/** Implementation of the Stream Teskit for fs2. */
+/** Implementation of the Stream Testkit for fs2. */
 object Fs2Testkit extends StreamTestkit[Fs2IoStream, IO](IOTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      override def streamToFList[T](stream: Fs2IoStream[T]): IO[List[T]] =
+      implicit val cs: ContextShift[IO] =
+        IO.contextShift(ec)
+
+      override def streamToFList[A](stream: Fs2IoStream[A]): IO[List[A]] =
         stream.compile.toList
 
       override final val streamInstance: Stream.Aux[Fs2IoStream, IO] =

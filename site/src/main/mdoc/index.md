@@ -19,7 +19,7 @@ position: 0
 **Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
 
 * **Scala** - the driver provides you with support for all standard Scala types without the need to convert Scala <-> Java types back and forth and you can easily add your types.
-* **Lightweight** - the driver depends on `shapeless` and `neo4j Java driver`.
+* **Lightweight** - the driver depends on `Shapeless` and `Neo4j Java driver`.
 * **Type-safe** - the driver leverages [typeclasses](https://blog.scalac.io/2017/04/19/typeclasses-in-scala.html) to derive all needed conversions at the compile time.
 * **Asynchronous** - the driver sits on top of [asynchronous Java driver](https://neo4j.com/blog/beta-release-java-driver-async-api-neo4j/).
 * **Not opinionated on side-effect implementation** - you can use it with any implementation of side-effects of your chose (scala.Future, cats-effect IO, Monix Task, etc) by implementing a simple typeclass. `scala.Future` is implemented and comes out of the box.
@@ -53,20 +53,40 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
 val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-val session = driver.session
 
-val people = "match (p:Person) return p.name, p.born limit 10".query[(String, Int)].list(session)
+val people = "MATCH (p: Person) RETURN p.name, p.born LIMIT 10".query[(String, Int)].list(driver)
 Await.result(people, 1.second)
-// res: Seq[(String, Int)] = ArrayBuffer((Charlize Theron,1975), (Keanu Reeves,1964), (Carrie-Anne Moss,1967), (Laurence Fishburne,1961), (Hugo Weaving,1960), (Lilly Wachowski,1967), (Lana Wachowski,1965), (Joel Silver,1952), (Emil Eifrem,1978), (Charlize Theron,1975))
+// res: Seq[(String, Int)] = ArrayBuffer(
+//   (Charlize Theron, 1975),
+//   (Keanu Reeves, 1964),
+//   (Carrie-Anne Moss, 1967),
+//   (Laurence Fishburne, 1961),
+//   (Hugo Weaving, 1960),
+//   (Lilly Wachowski, 1967),
+//   (Lana Wachowski, 1965),
+//   (Joel Silver,1952),
+//   (Emil Eifrem,1978),
+//   (Charlize Theron,1975)
+// )
 
 final case class Person(id: Long, born: Int, name: Option[String], notExists: Option[Int])
 
-val peopleCC = "match (p:Person) return p limit 10".query[Person].list(session)
+val peopleCC = "MATCH (p: Person) RETURN p LIMIT 10".query[Person].list(driver)
 Await.result(peopleCC, 1.second)
-// res: Seq[Person] = ArrayBuffer(Person(0,1975,Some(Charlize Theron),None), Person(4,1964,Some(Keanu Reeves),None), Person(5,1967,Some(Carrie-Anne Moss),None), Person(6,1961,Some(Laurence Fishburne),None), Person(7,1960,Some(Hugo Weaving),None), Person(8,1967,Some(Lilly Wachowski),None), Person(9,1965,Some(Lana Wachowski),None), Person(10,1952,Some(Joel Silver),None), Person(11,1978,Some(Emil Eifrem),None), Person(15,1975,Some(Charlize Theron),None))
+// res: Seq[Person] = ArrayBuffer(
+//   Person(0, 1975, Some(Charlize Theron), None),
+//   Person(1, 1964, Some(Keanu Reeves), None),
+//   Person(2, 1967, Some(Carrie-Anne Moss), None),
+//   Person(3, 1961, Some(Laurence Fishburne), None),
+//   Person(4, 1960, Some(Hugo Weaving), None),
+//   Person(5, 1967, Some(Lilly Wachowski), None),
+//   Person(6, 1965, Some(Lana Wachowski), None),
+//   Person(7, 1952, Some(Joel Silver), None),
+//   Person(8, 1978, Some(Emil Eifrem), None),
+//   Person(9, 1975, Some(Charlize Theron), None)
+// )
 
-session.close
-driver.close
+Await.ready(driver.close, 1.second)
 ```
 
 ## Compatibility matrix

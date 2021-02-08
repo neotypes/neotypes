@@ -1,10 +1,13 @@
 package neotypes
 
+import neotypes.generic.auto._
 import neotypes.implicits.syntax.cypher._
 import neotypes.types.QueryParam
 import org.scalatest.flatspec.AnyFlatSpec
 
 final class CypherQueryInterpolationSpec extends AnyFlatSpec {
+  import CypherQueryInterpolationSpec._
+
   it should "interpolation with one param" in {
     val name = "John"
     val query = c"create (a:Test {name: $name})"
@@ -86,4 +89,105 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     assert(query.query == expected)
   }
+
+  it should "interpolation with a case class" in {
+    val testClass = TestClass("name", 33)
+
+    val query = c"""create (a:Test { $testClass })"""
+
+    val expected = DeferredQuery(
+      query = """create (a:Test {  name: $p1, age: $p2 })""",
+      params = Map(
+        "p1" -> QueryParam(testClass.name),
+        "p2" -> QueryParam(testClass.age)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with a case class and extra args" in {
+    val testClass = TestClass("name", 33)
+    val bName = "b-name"
+
+    val query = c"""create (a:Test { $testClass }), (b: B { name: $bName })"""
+
+    val expected = DeferredQuery(
+      query = """create (a:Test {  name: $p1, age: $p2 }), (b: B { name: $p3 })""",
+      params = Map(
+        "p1" -> QueryParam(testClass.name),
+        "p2" -> QueryParam(testClass.age),
+        "p3" -> QueryParam(bName)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with a case class and extra args (concat queries)" in {
+    val testClass = TestClass("name", 33)
+    val bName = "b-name"
+
+    val query = c"""create (a:Test { $testClass }),""" + c"""(b: B { const: "Const", name: $bName })"""
+
+    val expected = DeferredQuery(
+      query = """create (a:Test {  name: $p1, age: $p2 }), (b: B { const: "Const", name: $p3 })""",
+      params = Map(
+        "p1" -> QueryParam(testClass.name),
+        "p2" -> QueryParam(testClass.age),
+        "p3" -> QueryParam(bName)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with case classes and a relationship" in {
+    val user = User("Joan", 20)
+    val cat = Cat("Waffles", 3)
+    val relationship = HasCatRelationship(2)
+
+    val query = c"CREATE (u: User { $user }) -[r:HAS_CAT { $relationship }]->(c:Cat { $cat }) RETURN r"
+
+    val expected = DeferredQuery(
+      query = "CREATE (u: User {  name: $p1, age: $p2 }) -[r:HAS_CAT {  friendsFor: $p3 }]->(c:Cat {  tag: $p4, age: $p5 }) RETURN r",
+      params = Map(
+        "p1" -> QueryParam(user.name),
+        "p2" -> QueryParam(user.age),
+        "p3" -> QueryParam(relationship.friendsFor),
+        "p4" -> QueryParam(cat.tag),
+        "p5" -> QueryParam(cat.age)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+
+  it should "interpolation with a case classes and an extra property" in {
+    val user = User("Joan", 20)
+    val extraProp = 123
+
+    val query = c"CREATE (u: User { $user, extraProperty: $extraProp }) RETURN u"
+
+    val expected = DeferredQuery(
+      query = "CREATE (u: User {  name: $p1, age: $p2, extraProperty: $p3 }) RETURN u",
+      params = Map(
+        "p1" -> QueryParam(user.name),
+        "p2" -> QueryParam(user.age),
+        "p3" -> QueryParam(extraProp)
+      )
+    )
+
+    assert(query.query == expected)
+  }
+}
+
+object CypherQueryInterpolationSpec {
+
+  case class TestClass(name: String, age: Int)
+
+  case class User(name: String, age: Int)
+  case class Cat(tag: String, age: Int)
+  case class HasCatRelationship(friendsFor: Int)
+
 }

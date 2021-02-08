@@ -8,7 +8,7 @@ position: 50
 # Streaming
 
 **neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream.
-Currently, there are four implementations of streaming supported out of the box _(one for each effect type)_ -
+Currently, there are four supported implementations _(one for each effect type)_.
 [**Akka Streams**](https://doc.akka.io/docs/akka/current/stream/index.html) _(for `scala.concurrent.Future`)_,
 [**FS2**](https://fs2.io/) _(for `cats.effect.Async[F]`)_,
 [**Monix Observables**](https://monix.io/docs/3x/reactive/observable.html) _(for `monix.eval.Task`)_ &
@@ -19,9 +19,10 @@ Currently, there are four implementations of streaming supported out of the box 
 ### Akka Streams _(neotypes-akka-stream)_
 
 ```scala mdoc:compile-only
+import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
-import neotypes.{GraphDatabase, Session}
+import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.akkastreams.AkkaStream
 import neotypes.akkastreams.implicits._ // Brings the implicit Stream[AkkaStream] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
@@ -32,15 +33,13 @@ import scala.concurrent.duration._
 
 implicit val system = ActorSystem("QuickStart")
 
-val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-val session = driver.session
+val driver = GraphDatabase.streamingDriver[AkkaStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
-def query(session: Session[Future]): Source[String, Future[Unit]] =
-  "MATCH (p:Person) RETURN p.name".query[String].stream[AkkaStream](session)
+def query(driver: StreamingDriver[AkkaStream, Future]): Source[String, NotUsed] =
+  "MATCH (p:Person) RETURN p.name".query[String].stream(driver)
 
 val program: Future[Unit] = for {
-  _ <- query(session).runWith(Sink.foreach(println))
-  _ <- session.close
+  _ <- query(driver).runWith(Sink.foreach(println))
   _ <- driver.close
 } yield ()
 
@@ -54,25 +53,24 @@ Await.ready(program, 5.seconds)
 ```scala mdoc:compile-only
 import cats.effect.{IO, Resource}
 import fs2.Stream
-import neotypes.{GraphDatabase, Session}
+import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.cats.effect.implicits._ // Brings the implicit Async[IO] instance into the scope.
 import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2IOStream] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
 
-implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+implicit val cs =
+  IO.contextShift(scala.concurrent.ExecutionContext.global)
 
-val session: Resource[IO, Session[IO]] = for {
-  driver <- GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-  session <- driver.session
-} yield session
+val driver: Resource[IO, StreamingDriver[Fs2IoStream, IO]] =
+  GraphDatabase.streamingDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Stream[IO, Unit] =
-  Stream.resource(session).flatMap { s =>
+  Stream.resource(driver).flatMap { d =>
     "MATCH (p:Person) RETURN p.name"
       .query[String]
-      .stream[Fs2IoStream](s)
+      .stream(d)
       .evalMap(n => IO(println(n)))
   }
 
@@ -83,8 +81,7 @@ program.compile.drain.unsafeRunSync()
 
 Basically the same code as above, but replacing **IO** with **F**
 _(as long as there is an instance of `cats.effect.Async[F]`)_.
-And replacing the `neotypes.fs2.Fs2IoStream` type alias
-with `neotypes.fs2.Fs2FStream[F]#T`.
+And replacing the `neotypes.fs2.Fs2IoStream` type alias with `neotypes.fs2.Fs2FStream[F]#T`.
 
 ### Monix Observables _(neotypes-monix-stream)_
 
@@ -93,7 +90,7 @@ import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
-import neotypes.{GraphDatabase, Session}
+import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.monix.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.monix.stream.MonixStream
@@ -101,16 +98,14 @@ import neotypes.monix.stream.implicits._ // Brings the implicit Stream[MonixStre
 import org.neo4j.driver.AuthTokens
 import scala.concurrent.duration._
 
-val session: Resource[Task, Session[Task]] = for {
-  driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-  session <- driver.session
-} yield session
+val driver: Resource[Task, StreamingDriver[MonixStream, Task]] =
+  GraphDatabase.streamingDriver[MonixStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Observable[Unit] =
-  Observable.fromResource(session).flatMap { s =>
+  Observable.fromResource(driver).flatMap { d =>
     "MATCH (p:Person) RETURN p.name"
       .query[String]
-      .stream[MonixStream](s)
+      .stream(d)
       .mapEval(n => Task(println(n)))
 }
 
@@ -122,28 +117,24 @@ program.completedL.runSyncUnsafe(5.seconds)
 ```scala mdoc:compile-only
 import zio.{Runtime, Managed, Task}
 import zio.stream.ZStream
-import neotypes.{GraphDatabase, Session}
+import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.zio.stream.ZioStream
 import neotypes.zio.stream.implicits._ // Brings the implicit Stream[ZioStream] instance into the scope.
 import org.neo4j.driver.AuthTokens
 
-val runtime = Runtime.default
-
-val session: Managed[Throwable, Session[Task]] = for {
-  driver <- GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
-  session <- driver.session
-} yield session
+val driver: Managed[Throwable, StreamingDriver[ZioStream, Task]] =
+  GraphDatabase.streamingDriver[ZioStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: ZStream[Any, Throwable, String] =
-  ZStream.managed(session).flatMap { s =>
+  ZStream.managed(driver).flatMap { s =>
     "MATCH (p:Person) RETURN p.name"
       .query[String]
-      .stream[ZioStream](s)
+      .stream(s)
   }
 
-runtime.unsafeRun(program.foreach(n => Task(println(n))))
+Runtime.default.unsafeRun(program.foreach(n => Task(println(n))))
 ```
 
 -----
@@ -154,44 +145,48 @@ _You can always use:_
 
 ```scala mdoc:invisible
 import cats.effect.IO
-import neotypes.implicits.all._
+import neotypes.GraphDatabase
 import neotypes.cats.effect.implicits._
 import neotypes.fs2.implicits._
 implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
+val uri: String = ""
 def query: neotypes.DeferredQuery[String] = ???
-def session: neotypes.Session[IO] = ???
 ```
 
 * **_Type lambdas_:**
 
 ```scala mdoc:compile-only
-query.stream[({ type T[A] = fs2.Stream[IO, A] })#T](session)
+val driver = GraphDatabase.streamingDriver[({ type T[A] = fs2.Stream[IO, A] })#T](uri)
 ```
 
 * **_Type Alias_:**
 
 ```scala mdoc:compile-only
 type Fs2Stream[T] = fs2.Stream[IO, T]
-query.stream[Fs2Stream](session)
+val driver = GraphDatabase.streamingDriver[Fs2Stream](uri)
 ```
 
 * **[_Kind Projector_](https://github.com/typelevel/kind-projector):**
 
 ```scala
-query.stream[fs2.Stream[IO, ?]](session)
+val driver = GraphDatabase.streamingDriver[fs2.Stream[IO, ?]](uri)
 ```
 
 -----
 
-The code snippets above are lazily retrieving data from neo4j, loading each element of the result only when it's requested and rolls back the transaction once all elements are read.
-This approach aims to improve performance and memory footprint with large volumes of returned data.
+The code snippets above are lazily retrieving data from **Neo4j**,
+loading each element of the result only when it's requested
+and commits the transaction once all elements are read.<br>
+This approach aims to improve performance and memory footprint with large volumes of data.
 
 ## Transaction management
 
 You have two options in transaction management:
-* **Manual**: if you use `neotypes.Transaction` and call `stream`, you need to ensure that the transaction is gracefully closed after reading is finished.
-* **Auto-closing**: you may wish to automatically rollback the transaction once
-all elements are consumed. This behavior is provided by `DeferredQuery.stream(Session[F])`
+
++ **Manual**: if you use `neotypes.Transaction` and call `stream`,
+you need to ensure that the transaction is gracefully closed after reading is finished.
++ **Auto-closing**: you may wish to automatically rollback the transaction once all elements are consumed.
+This behavior is provided by `DeferredQuery.stream(StreamingDriver[S, F])`
 
 ## Alternative stream implementations
 

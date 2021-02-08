@@ -6,86 +6,86 @@ import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import scala.collection.immutable.{ListMap, ListSet, SortedMap}
 
-/** Base classs for testing the different ways of executing queries. */
-final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
-  behavior of s"Excuting queries using: ${effectName}"
+/** Base class for testing the different ways of executing queries. */
+final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
+  behavior of s"Executing queries using: ${effectName}"
 
-  it should "retrieve multiple results as a List" in executeAsFuture { s =>
-    "match (p:Person) return p.name"
+  it should "retrieve multiple results as a List" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name"
       .query[Int]
-      .list(s)
+      .list(d)
       .map {
         names => assert(names == (0 to 10).toList)
       }
   }
 
-  it should "retrieve multiple results as a Set" in executeAsFuture { s =>
-    "match (p:Person) return p.name"
+  it should "retrieve multiple results as a Set" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name"
       .query[Int]
-      .set(s)
+      .set(d)
       .map {
         names => assert(names == (0 to 10).toSet)
       }
   }
 
-  it should "retrieve multiple results as a Vector" in executeAsFuture { s =>
-    "match (p:Person) return p.name"
+  it should "retrieve multiple results as a Vector" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name"
       .query[Int]
-      .vector(s)
+      .vector(d)
       .map {
         names => assert(names == (0 to 10).toVector)
       }
   }
 
-  it should "retrieve multiple results as a Map" in executeAsFuture { s =>
-    "match (p:Person) return p.name, 1"
+  it should "retrieve multiple results as a Map" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name, 1"
       .query[(Int, Int)]
-      .map(s)
+      .map(d)
       .map {
         names => assert(names == (0 to 10).map(k => k -> 1).toMap)
       }
   }
 
-  it should "retrieve multiple results as a custom collection (ListSet)" in executeAsFuture { s =>
-    "match (p:Person) return p.name"
+  it should "retrieve multiple results as a custom collection (ListSet)" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name"
       .query[Int]
-      .collectAs(ListSet)(s)
+      .collectAs(ListSet)(d)
       .map {
-        names => assert(names == ListSet((0 to 10) : _*))
+        names => assert(names == (0 to 10).to(ListSet))
       }
   }
 
-  it should "retrieve multiple results as a custom collection (ListMap)" in executeAsFuture { s =>
-    "match (p:Person) return p.name, 1"
+  it should "retrieve multiple results as a custom collection (ListMap)" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name, 1"
       .query[(Int, Int)]
-      .collectAs(ListMap)(s)
+      .collectAs(ListMap)(d)
       .map {
-        names => assert(names == ListMap((0 to 10).map(k => k -> 1) : _*))
+        names => assert(names == (0 to 10).map(_ -> 1).to(ListMap))
       }
   }
 
-  it should "retrieve multiple results as a custom collection (SortedMap)" in executeAsFuture { s =>
-    "match (p:Person) return p.name, 1"
+  it should "retrieve multiple results as a custom collection (SortedMap)" in executeAsFuture { d =>
+    "MATCH (p: Person) RETURN p.name, 1"
       .query[(Int, Int)]
-      .collectAs(SortedMap)(s)
+      .collectAs(SortedMap)(d)
       .map {
-        names => assert(names == SortedMap((0 to 10).map(k => k -> 1) : _*))
+        names => assert(names == (0 to 10).map(_ -> 1).to(SortedMap))
       }
   }
 
-  it should "retrieve a Neo4j LIST into a Scala collection (List)" in executeAsFuture { s =>
-    "unwind [1, 2] as x return x"
+  it should "retrieve a Neo4j LIST into a Scala collection (List)" in executeAsFuture { d =>
+    "unwind [1, 2] as x RETURN x"
       .query[Int]
-      .list(s)
+      .list(d)
       .map {
         names => assert(names == List(1, 2))
       }
   }
 
-  it should "retrieve a Neo4j LIST into a Scala collection (ListSet)" in executeAsFuture { s =>
-    "unwind [1, 2] as x return x"
+  it should "retrieve a Neo4j LIST into a Scala collection (ListSet)" in executeAsFuture { d =>
+    "unwind [1, 2] as x RETURN x"
       .query[Int]
-      .collectAs(ListSet)(s)
+      .collectAs(ListSet)(d)
       .map {
         names => assert(names == ListSet(1, 2))
       }

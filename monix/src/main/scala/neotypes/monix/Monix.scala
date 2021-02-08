@@ -1,7 +1,8 @@
 package neotypes.monix
 
+import neotypes.exceptions.CancellationException
+
 import cats.effect.{ExitCase, Resource}
-import monix.catnap.MVar
 import monix.eval.Task
 
 trait Monix {
@@ -16,44 +17,31 @@ object Monix {
     new neotypes.Async[Task] {
       override final type R[A] = Resource[Task, A]
 
-      override final def async[T](cb: (Either[Throwable, T] => Unit) => Unit): Task[T] =
+      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Task[A] =
         Task.async(cb)
 
       override final def delay[A](t: => A): Task[A] =
         Task.delay(t)
 
-      override final def failed[T](e: Throwable): Task[T] =
-        Task.raiseError(e)
-
-      override final def flatMap[T, U](m: Task[T])(f: T => Task[U]): Task[U] =
+      override final def flatMap[A, B](m: Task[A])(f: A => Task[B]): Task[B] =
         m.flatMap(f)
+
+      override final def fromEither[A](e: => Either[Throwable,A]): Task[A] =
+        Task.suspend(Task.fromEither(e))
 
       override final def guarantee[A, B](fa: Task[A])
                                         (f: A => Task[B])
                                         (finalizer: (A, Option[Throwable]) => Task[Unit]): Task[B] =
         Resource.makeCase(fa) {
-          case (a, ExitCase.Completed | ExitCase.Canceled) => finalizer(a, None)
-          case (a, ExitCase.Error(ex))                     => finalizer(a, Some(ex))
+          case (a, ExitCase.Completed) => finalizer(a, None)
+          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.use(f)
 
-      override final def makeLock: Task[Lock] =
-        MVar.apply[Task].empty[Unit]().map { mvar =>
-          new Lock {
-            override final def acquire: Task[Unit] =
-              mvar.put(())
-
-            override final def release: Task[Unit] =
-              mvar.take
-          }
-        }
-
-      override final def map[T, U](m: Task[T])(f: T => U): Task[U] =
+      override final def map[A, B](m: Task[A])(f: A => B): Task[B] =
         m.map(f)
 
-      override final def recoverWith[T, U >: T](m: Task[T])(f: PartialFunction[Throwable, Task[U]]): Task[U] =
-        m.onErrorRecoverWith(f)
-
-      override final def resource[A](input: Task[A])(close: A => Task[Unit]): Resource[Task, A] =
-        Resource.make(input)(close)
+      override final def resource[A](input: => A)(close: A => Task[Unit]): Resource[Task, A] =
+        Resource.make(delay(input))(close)
     }
 }
