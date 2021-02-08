@@ -17,7 +17,7 @@ position: 10
 
 **neotypes** provides the `GraphDatabase` **factory** for creating a **Neo4j** `Driver`, which represents a connection with the Database.
 You can use this `Driver` to perform operations _(`Transactions`)_ over the Database.<br>
-Those **Scala** classes, are nothing more than simple wrappers over their **Java** counterparts. But providing a more _"Scala-friendly"_ and functional API.
+Those **Scala** classes are nothing more than simple wrappers over their **Java** counterparts, but providing a more _"Scala-friendly"_ and functional API.
 
 You can create wrappers for any effectual type _(`F[_]`)_ for which you have an implementation of the `neotypes.Async` **typeclass** in scope.
 The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](alternative_effects))_.
@@ -41,7 +41,7 @@ val result: Future[List[Movie]] =
 ```
 
 Please remember that, you have to make sure that the `Driver` is properly closed at the end of the application execution, to make sure all obtained resources _(such as network connections)_ are cleaned up properly.<br>
-**Note**: for other effect types instead of `Future`, for example `IO`. Then, the creation of the `Driver` will be wrapped over some kind of **Resource**.
+**Note**: for other effect types instead of `Future` _(e.g. `IO`)_, the creation of the `Driver` will be managed by the effect specific implementation of **Resource**; which usually ensures it is properly closed after its use.
 
 ## Query execution
 

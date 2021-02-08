@@ -213,7 +213,6 @@ lazy val monixStream = (project in file("monix-stream"))
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion,
-      "io.monix" %% "monix-reactive" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
   )
