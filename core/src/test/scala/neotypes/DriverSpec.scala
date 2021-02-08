@@ -1,40 +1,44 @@
 package neotypes
 
 import neotypes.generic.auto._
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.types.Node
 import shapeless._
 import scala.concurrent.Future
 
-/** Base class for testing the basic behaviour of Session[F] instances. */
-final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
-  behavior of s"Session[${effectName}]"
+/** Base class for testing the basic behaviour of Driver[F] instances. */
+final class DriverSpec[F[_]](
+  testkit: EffectTestkit[F]
+) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
+  behavior of s"Driver[${effectName}]"
 
-  import BasicSessionSpec._
+  import DriverSpec._
 
-  it should "map result to hlist and case classes" in executeAsFuture { s =>
+  it should "map result to simple values" in executeAsFuture { d =>
     for {
-      string <- "match (p:Person {name: 'Charlize Theron'}) return p.name".query[String].single(s)
-      int <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Int].single(s)
-      long <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Long].single(s)
-      double <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Double].single(s)
-      float <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[Float].single(s)
-      notString <- "match (p:Person {name: 'Charlize Theron'}) return p.born".query[String].single(s).recover { case ex => ex.toString }
-      cc <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Person].single(s)
-      cc2 <- "match (p:Person {name: 'Charlize Theron'}) return p.born as born, p.name as name".query[Person2].single(s)
-      emptyResult <- "match (p:Person {name: '1243'}) return p.born".query[Option[Int]].single(s)
-      emptyResultList <- "match (p:Person {name: '1243'}) return p.born".query[Int].list(s)
-      emptyResultEx <- "match (p:Person {name: '1243'}) return p.name".query[String].single(s).recover { case ex => ex.toString }
-      hlist <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[Person :: Movie :: HNil].list(s)
-      node <- "match (p:Person {name: 'Charlize Theron'}) return p".query[Node].list(s)
+      string <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+      int <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Int].single(d)
+      long <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Long].single(d)
+      double <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Double].single(d)
+      float <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Float].single(d)
+      node <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Node].list(d)
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)
       assert(long == 1975)
       assert((double - 1975).abs < 0.0001)
       assert((float - 1975).abs < 0.0001)
+      assert(node.head.get("name").asString == "Charlize Theron")
+    }
+  }
+
+  it should "map result to hlist and case classes" in executeAsFuture { d =>
+    for {
+      cc <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Person].single(d)
+      cc2 <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".query[Person2].single(d)
+      hlist <- "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[Person :: Movie :: HNil].list(d)
+    } yield {
       assert(cc.id >= 0)
       assert(cc.name.contains("Charlize Theron"))
       assert(cc.born == 1975)
@@ -44,18 +48,43 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
       assert(hlist.size == 1)
       assert(hlist.head.head.name.contains("Charlize Theron"))
       assert(hlist.head.last.title == "That Thing You Do")
-      assert(emptyResult.isEmpty)
-      assert(emptyResultList.isEmpty)
-      assert(emptyResultEx == "neotypes.exceptions$PropertyNotFoundException: Property  not found") // TODO test separately
-      assert(notString == "neotypes.exceptions$IncoercibleException: Cannot coerce INTEGER to Java String for field [p.born] with value [1975]") // TODO test separately
-      assert(node.head.get("name").asString() == "Charlize Theron")
     }
   }
 
-  it should "map result to tuples" in executeAsFuture { s =>
+  it should "map empty result to a single option" in executeAsFuture { d =>
+    "MATCH (p: Person { name: '1243' }) RETURN p.born".query[Option[Int]].single(d).map { emptyResult =>
+      assert(emptyResult.isEmpty)
+    }
+  }
+
+  it should "map empty result to an empty list" in executeAsFuture { d =>
+    "MATCH (p: Person { name: '1243' }) RETURN p.born".query[Int].list(d).map { emptyResultList =>
+      assert(emptyResultList.isEmpty)
+    }
+  }
+
+  it should "lift exceptions into failed effects" in {
+    recoverToExceptionIf[exceptions.IncoercibleException] {
+      executeAsFuture { d =>
+        "MATCH (p: Person { name: 'Charlize Theron'}) RETURN p.born".query[String].single(d)
+      }
+    } map { ex =>
+      assert(ex.getMessage == "Cannot coerce INTEGER to Java String for field [p.born] with value [1975]")
+    }
+
+    recoverToExceptionIf[exceptions.PropertyNotFoundException] {
+      executeAsFuture { d =>
+        "MATCH (p: Person { name: '1243' }) RETURN p.name".query[String].single(d)
+      }
+    } map { ex =>
+      assert(ex.getMessage == "Property  not found")
+    }
+  }
+
+  it should "map result to tuples" in executeAsFuture { d =>
     for {
-      tuple <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p,m".query[(Person, Movie)].list(s)
-      tuplePrimitives <- "match (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) return p.name,m.title".query[(String, String)].list(s)
+      tuple <- "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[(Person, Movie)].list(d)
+      tuplePrimitives <- "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p.name, m.title".query[(String, String)].list(d)
     } yield {
       assert(tuple.head._1.name.contains("Charlize Theron"))
       assert(tuple.head._2.title == "That Thing You Do")
@@ -64,23 +93,23 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
     }
   }
 
-  it should "map result to a case class with list" in executeAsFuture { s =>
+  it should "map result to a case class with list" in executeAsFuture { d =>
     for {
       сс3 <-
         """
-          MATCH (movie:Movie {title: 'That Thing You Do'})
-                 OPTIONAL MATCH (movie)<-[r]-(person:Person)
-                 RETURN movie.title as title, collect({name:person.name, job:head(split(toLower(type(r)),'_')), role:head(r.roles)}) as cast
+          MATCH (movie: Movie { title: 'That Thing You Do' })
+                 OPTIONAL MATCH (movie)<-[r]-(person: Person)
+                 RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
                  LIMIT 1
-        """.query[Movie2].single(s)
+        """.query[Movie2].single(d)
 
       ссOption <-
         """
-          MATCH (movie:Movie {title: 'That Thing You Do'})
-                 OPTIONAL MATCH (movie)<-[r]-(person:Person)
-                 RETURN movie.title as title, collect({name:person.name, job:head(split(toLower(type(r)),'_')), role:head(r.roles)}) as cast
+          MATCH (movie: Movie { title: 'That Thing You Do' })
+                 OPTIONAL MATCH (movie)<-[r]-(person: Person)
+                 RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
                  LIMIT 1
-        """.query[Option[Movie2]].single(s)
+        """.query[Option[Movie2]].single(d)
     } yield {
       assert(сс3.title == "That Thing You Do")
       assert(сс3.cast.size == 1)
@@ -98,13 +127,13 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
     for {
       hlist <-
         """
-        MATCH (p:Person)-[r:ACTED_IN]->(:Movie)
+        MATCH (p: Person)-[r: ACTED_IN]->(: Movie)
                RETURN p, r
                LIMIT 1
         """.query[Person :: Roles :: HNil].single(s)
       cc <-
         """
-        MATCH (p:Person)-[r:ACTED_IN]->(:Movie)
+        MATCH (p: Person)-[r: ACTED_IN]->(: Movie)
                RETURN p as person, r as roles
                LIMIT 1
         """.query[PersonWithRoles].single(s)
@@ -117,7 +146,7 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
   }
 
   it should "catch nulls and missing fields" in {
-    val queries: List[Session[F] => F[Option[String]]] = List(
+    val queries: List[Driver[F] => F[Option[String]]] = List(
       "RETURN NULL".query[Option[String]].single(_),
       "RETURN NULL".query[Option[String]].list(_).map(_.headOption.flatten),
       "RETURN NULL AS name".query[WrappedName].single(_).map(_.name),
@@ -129,14 +158,14 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
     )
 
     // Custom Future.traverse that runs sequentially.
-    queries.foldLeft(Future.successful(List.empty[Option[String]])) {
-      case (accF, query) =>
-        for {
-          acc <- accF
-          e <- executeAsFuture(s => query(s))
-        } yield e :: acc
-    } flatMap { results =>
-      assert(results.forall(_ == None))
+    queries.iterator.zipWithIndex.foldLeft(Future.successful(succeed)) {
+      case (accF, (query, idx)) =>
+        accF.flatMap { _ =>
+          executeAsFuture(s => query(s)).map {
+            case None    => succeed
+            case Some(x) => fail(s"query ${idx} RETURNed ${x} instead of None")
+          }
+        }
     }
   }
 
@@ -180,7 +209,7 @@ final class BasicSessionSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegr
   override final val initQuery: String = BaseIntegrationSpec.DEFAULT_INIT_QUERY
 }
 
-object BasicSessionSpec {
+object DriverSpec {
   final case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
 
   final case class Person2(born: Int, name: Option[String])

@@ -80,4 +80,4 @@ If you also need the system one then you can ask for the `_id` property.
 If you have a custom `_id` property, then yours will take precedence and the system id will be available in the `id` property.
 If you define both `id` and `_id` as custom properties, then both will take precedence and the system id would be unreachable.
 
-> Disclaimer: we also discourage you from using the system id; we only allow you to access it because the Java driver does.
+> Disclaimer: we also discourage you from using the system id; we only allow you to access it because the **Java** driver does.

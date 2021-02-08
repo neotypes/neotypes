@@ -9,7 +9,9 @@ object exceptions {
 
   final case class ConversionException(message: String) extends NeotypesException(message)
 
-  final case class NoFieldsDefinedException(message: String) extends NeotypesException(message)
-
   final case class IncoercibleException(message: String, cause: Uncoercible) extends NeotypesException(message, Option(cause))
+
+  final case object TransactionWasNotCreatedException extends NeotypesException(message = "Couldn't create a transaction")
+
+  final case object CancellationException extends NeotypesException(message = "An operation was cancelled")
 }

@@ -8,25 +8,25 @@ import org.neo4j.driver.Value
 import scala.jdk.CollectionConverters._
 
 /** Base class for testing queries which produce complex types. */
-final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
   behavior of s"Extracting complex types using: ${effectName}"
 
   import CompositeTypesSpec._
 
-  it should "create a map from a node" in executeAsFuture { s =>
+  it should "create a map from a node" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p"
       .query[Map[String, Value]]
-      .single(s)
+      .single(d)
       .map { map =>
         assert(map("name").asString == "Charlize Theron")
         assert(map("born").asInt == 1975)
       }
   }
 
-  it should "create a case class from a node" in executeAsFuture { s =>
+  it should "create a case class from a node" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p"
       .query[Person]
-      .single(s)
+      .single(d)
       .map { person =>
         assert(person.name == "Charlize Theron")
         assert(person.born == 1975)
@@ -34,10 +34,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
       }
   }
 
-  it should "create a map from a map projection" in executeAsFuture { s =>
+  it should "create a map from a map projection" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .*, extra: 1 }"
       .query[Map[String, Value]]
-      .single(s)
+      .single(d)
       .map { map =>
         assert(map("name").asString == "Charlize Theron")
         assert(map("born").asInt == 1975)
@@ -45,10 +45,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
       }
   }
 
-  it should "create a map from a map projection with a nested map" in executeAsFuture { s =>
+  it should "create a map from a map projection with a nested map" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .name, map: { foo: 3, bar: 5 } }"
       .query[Map[String, Value]]
-      .single(s)
+      .single(d)
       .map { map =>
         assert(map("name").asString == "Charlize Theron")
         val nestedMap = map("map").asMap[Value]((v: Value) => v).asScala
@@ -57,10 +57,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
       }
   }
 
-  it should "create a case class from a map projection" in executeAsFuture { s =>
+  it should "create a case class from a map projection" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .*, extra: 1 }"
       .query[Person]
-      .single(s)
+      .single(d)
       .map { person =>
         assert(person.name == "Charlize Theron")
         assert(person.born == 1975)
@@ -68,10 +68,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
       }
   }
 
-  it should "create a case class from a map projection with a nested map" in executeAsFuture { s =>
+  it should "create a case class from a map projection with a nested map" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .name, map: { foo: 3, bar: 5 } }"
       .query[PersonWithNestedMap]
-      .single(s)
+      .single(d)
       .map { person =>
         assert(person.name == "Charlize Theron")
         assert(person.map("foo") == 3)
@@ -79,10 +79,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
       }
   }
 
-  it should "create a nested case class from a map projection with a nested map" in executeAsFuture { s =>
+  it should "create a nested case class from a map projection with a nested map" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .name, fooBar: { foo: 3, bar: '5' } }"
       .query[PersonWithNestedClass]
-      .single(s)
+      .single(d)
       .map { person =>
         assert(person.name == "Charlize Theron")
         assert(person.fooBar.foo == 3)
@@ -90,28 +90,28 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
       }
   }
 
-  it should "create a List from a Neo4j LIST" in executeAsFuture { s =>
+  it should "create a List from a Neo4j LIST" in executeAsFuture { d =>
     "return [1, 2]"
       .query[List[Int]]
-      .single(s)
+      .single(d)
       .map { list =>
         assert(list == List(1, 2))
       }
   }
 
-  it should "create a nested List from a nested Neo4j LIST" in executeAsFuture { s =>
+  it should "create a nested List from a nested Neo4j LIST" in executeAsFuture { d =>
     "return [['a', 'b'], ['c', 'd']]"
       .query[List[List[String]]]
-      .single(s)
+      .single(d)
       .map { list =>
         assert(list == List(List("a", "b"), List("c", "d")))
       }
   }
 
-  it should "create a List from a map projection" in executeAsFuture { s =>
+  it should "create a List from a map projection" in executeAsFuture { d =>
     "match (p:Person {name: 'Charlize Theron'}) return p { .name, .born, extra: 1 }"
       .query[List[Value]]
-      .single(s)
+      .single(d)
       .map { list =>
         assert(list.length == 3)
         assert(list(0).asString == "Charlize Theron")
@@ -122,10 +122,10 @@ final class CompositeTypesSpec[F[_]](testkit: EffectTestkit[F]) extends BaseInte
 
   it should "construct an IncoercibleException message with a field name and value" in {
     recoverToExceptionIf[IncoercibleException] {
-      executeAsFuture { s =>
+      executeAsFuture { d =>
         "match (p:Person {name: 'Charlize Theron'}) return p"
           .query[PersonIntName]
-          .single(s)
+          .single(d)
       }
     } map { ex =>
       assert(ex.getMessage  == "Cannot coerce STRING to Java int for field [name] with value [\"Charlize Theron\"]")

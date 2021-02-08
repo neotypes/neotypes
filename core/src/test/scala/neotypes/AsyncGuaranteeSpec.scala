@@ -17,7 +17,7 @@ final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffe
     private[this] var counter = 0
 
     def assertFinalizerWasCalledOnlyOnce: Assertion = {
-      withClue("Finalizer was not called") {
+      withClue("Finalizer was not called -") {
         this.counter should not be 0
       }
 
@@ -35,13 +35,13 @@ final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffe
                inputEx: Option[Throwable] = None,
                finalizerEx: Option[Throwable] = None): Future[T] = {
       def fromOption(opt: Option[Throwable]): F[Unit] =
-        opt.fold(ifEmpty = F.delay(()))(ex => F.failed(ex))
+        F.fromEither(opt.toLeft(right = ()))
 
       fToFuture(
         F.guarantee[Unit, T](
           fa = fromOption(inputEx)
         ) (
-          _ => result.fold(ex => F.failed(ex), t => F.delay(t))
+          _ => F.fromEither(result)
         ) { (_, _) =>
           F.delay {
             counter += 1

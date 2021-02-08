@@ -36,7 +36,10 @@ jobs:
           restore-keys: |
             cache-v1-
 
-      - name: Compile and Test
+      - name: Compile
+        run: ./sbt +test:compile
+
+      - name: Test
         run: ./sbt +test
 
       - name: Setup Ruby

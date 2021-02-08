@@ -1,63 +1,67 @@
 package neotypes.akkastreams
 
-import akka.stream.scaladsl.{Flow, Source}
+import akka.stream.Materializer
+import akka.stream.scaladsl.{Sink, Source}
+import org.reactivestreams.Publisher
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
+import scala.collection.compat._
+import scala.util.{Failure, Success}
 
 /**
   * neotypes Akka Streams
   * @see <a href = https://neotypes.github.io/neotypes/docs/streams.html#akka-streams-neotypes-akka-stream>AkkaStreams example</a>
   */
 trait AkkaStreams {
-
   /** neotypes support for Akka Streams
     *
-    * @param ec implicit scala.concurrent ExecutionContext that will be passed down to all Akka Streams operations
+    * @param mat implicit akka.stream.Materializer that will be passed down to all Akka Streams operations
     * @return neotype AkkaStream with effect type as the scala.concurrent Future
     */
-  implicit final def akkaStream(implicit ec: ExecutionContext): neotypes.Stream.Aux[AkkaStream, Future] =
+  implicit final def akkaStream(implicit mat: Materializer): neotypes.Stream.Aux[AkkaStream, Future] =
     new neotypes.Stream[AkkaStream] {
+      implicit val ec = mat.executionContext
+
       /** Define effect type to be the scala Future
         *
         * @tparam T parametric type for scala Future
         */
-      override final type F[T] = Future[T]
+      override final type F[A] = Future[A]
 
-      /** Initialize AkkaStream
-        *
-        * @param value stream function to be applied
-        * @tparam T parametric type
-        * @return neotype AkkaStream
-        */
-      override final def init[T](value: () => Future[Option[T]]): AkkaStream[T] =
-        Source
-          .repeat(())
-          .mapAsync(1){ _ => value() }
-          .takeWhile(_.isDefined)
-          .map(_.get)
-          .viaMat(Flow[T]) { (_, _) => Future.successful(()) }
+      override final def fromRx[A](publisher: Publisher[A]): AkkaStream[A] =
+        Source.fromPublisher(publisher)
 
-      /** Apply side effect to AkkaStream
-        *
-        * @param s neotypes AkkaStream
-        * @param f lazily evaluated scala Future side effect
-        * @tparam T parametric type
-        * @return neotypes AkkaStream
-        */
-      override final def onComplete[T](s: AkkaStream[T])(f: => Future[Unit]): AkkaStream[T] =
-        s.watchTermination() { (_, done) =>
-          done.flatMap(_ => f)
+      override def fromF[A](future: Future[A]): AkkaStream[A] =
+        Source.future(future)
+
+      override final def resource[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
+        Source.future(r).flatMapConcat { a =>
+          f(a).watchTermination() {
+            case (mat, f) =>
+              f.onComplete {
+                case Success(_)  => finalizer(a, None)
+                case Failure(ex) => finalizer(a, Some(ex))
+              }
+              mat
+          }
         }
 
-      /** Evaluate Future AkkaStream
-        *
-        * @param f Future AkkaStream
-        * @tparam T parametric type
-        * @return the evaluated AkkaStream
-        */
-      override final def fToS[T](f: Future[AkkaStream[T]]): AkkaStream[T] =
-        Source
-          .futureSource(f)
-          .viaMat(Flow[T]) { (m, _) => m.flatMap(identity) }
+      override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
+        sa.map(f)
+
+      override final def flatMap[A, B](sa: AkkaStream[A])(f: A => AkkaStream[B]): AkkaStream[B] =
+        sa.flatMapConcat(f)
+
+      override final def evalMap[A, B](sa: AkkaStream[A])(f: A => Future[B]): AkkaStream[B] =
+        sa.mapAsync(parallelism = 1)(f)
+
+      override final def collectAs[A, C](sa: AkkaStream[A])(factory: Factory[A,C]): Future[C] =
+        sa.runWith(Sink.fold(factory.newBuilder)(_ += _)).map(_.result())
+
+      override final def single[A](sa: AkkaStream[A]): Future[Option[A]] =
+        sa.take(1).runWith(Sink.lastOption)
+
+      override final def void(s: AkkaStream[_]): Future[Unit] =
+        s.runWith(Sink.ignore).map(_ => ())
     }
 }

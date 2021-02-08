@@ -1,41 +1,51 @@
 package neotypes
 
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
+import neotypes.internal.syntax.stream._
+
 import org.neo4j.driver.exceptions.ClientException
 import org.scalatest.compatible.Assertion
+import org.scalatest.matchers.should.Matchers
+
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-/** Base class for testing the Session[F].transact method. */
-final class TransactIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends CleaningIntegrationSpec(testkit) {
-  behavior of s"Session[${effectName}].transact"
+/** Base class for testing the StreamingDriver[S, F].streamingTransact method. */
+final class StreamingTransactSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
+) extends StreamingDriverProvider[S, F](testkit) with CleaningIntegrationSpec[F] with Matchers {
+  behavior of s"StreamingDriver[${streamName}, ${effectName}].streamingTransact"
 
-  import TransactIntegrationSpec.CustomException
+  import StreamingTransactSpec.CustomException
 
-  private final def ensureCommitedTransaction[T](expectedResults: T)
-                                                (txF: Transaction[F] => F[T]): Future[Assertion] =
-    executeAsFuture(s => s.transact(txF)).map { results =>
-      assert(results == expectedResults)
+  private final def ensureCommittedTransaction[T](expectedResults: Iterable[T])
+                                                 (txF: StreamingTransaction[S, F] => S[T]): Future[Assertion] =
+    executeAsFutureList(_.streamingTransact(txF)).map { results =>
+      results should contain theSameElementsAs expectedResults
     }
 
-  private final def ensureRollbackedTransaction[E <: Throwable : ClassTag](txF: Transaction[F] => F[Unit]): Future[Assertion] =
+  private final def ensureRollbackedTransaction[E <: Throwable : ClassTag](
+    txF: StreamingTransaction[S, F] => F[Unit]
+  ): Future[Assertion] =
     recoverToSucceededIf[E] {
-      executeAsFuture(s => s.transact(txF))
+      executeAsFutureList(_.streamingTransact(txF andThen S.fromF))
     } flatMap { _ =>
       executeAsFuture(s => "MATCH (n) RETURN count(n)".query[Int].single(s))
     } map { count =>
-      assert(count == 0)
+      count shouldBe 0
     }
 
   it should "execute & commit multiple queries inside the same transact" in
-    ensureCommitedTransaction(expectedResults = List("Luis", "Dmitry")) { tx =>
-      for {
+    ensureCommittedTransaction(expectedResults = Set("Luis", "Dmitry")) { tx =>
+      val create = for {
         _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
         _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
-        r <- "MATCH (p: PERSON) RETURN p.name".query[String].list(tx)
-      } yield r
+      } yield ()
+
+      S.fromF(create).flatMapS { _ =>
+        "MATCH (p: PERSON) RETURN p.name".query[String].stream(tx)
+      }
     }
 
   it should "automatically rollback if any query fails inside a transact" in
@@ -50,13 +60,13 @@ final class TransactIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends Cle
     ensureRollbackedTransaction[CustomException] { tx =>
       for {
         _ <- "CREATE (p: PERSON { name: \"Luis\" })".query[Unit].execute(tx)
-        _ <- F.failed[Unit](CustomException)
+        _ <- F.fromEither[Unit](Left(CustomException))
         _ <- "CREATE (p: PERSON { name: \"Dmitry\" })".query[Unit].execute(tx)
       } yield ()
     }
 }
 
-object TransactIntegrationSpec {
+object StreamingTransactSpec {
   final object CustomException extends Throwable
   type CustomException = CustomException.type
 }

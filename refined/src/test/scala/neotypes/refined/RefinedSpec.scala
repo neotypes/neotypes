@@ -1,9 +1,8 @@
 package neotypes.refined
 
-import neotypes.{CleaningIntegrationSpec, FutureTestkit}
+import neotypes.{AsyncDriverProvider, CleaningIntegrationSpec, FutureTestkit}
 import neotypes.generic.auto._
 import neotypes.exceptions.IncoercibleException
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.cypher._
 import neotypes.implicits.syntax.string._
 import neotypes.refined.implicits._
@@ -15,7 +14,7 @@ import eu.timepit.refined.numeric.Interval
 
 import scala.concurrent.Future
 
-final class RefinedSpec extends CleaningIntegrationSpec[Future](FutureTestkit) {
+final class RefinedSpec extends AsyncDriverProvider(FutureTestkit) with CleaningIntegrationSpec[Future] {
   import RefinedSpec.{Level, User}
 
   it should "insert and retrieve one refined value" in executeAsFuture { s =>

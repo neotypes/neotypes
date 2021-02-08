@@ -9,16 +9,15 @@ val testcontainersNeo4jVersion = "1.15.1"
 val testcontainersScalaVersion = "0.39.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
-val slf4jVersion = "1.7.30"
+val logbackVersion = "1.2.3"
 val catsVersion = "2.3.1"
 val catsEffectsVersion = "2.3.1"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.12"
 val fs2Version = "2.5.0"
 val zioVersion = "1.0.4-2"
+val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
 val refinedVersion = "0.9.20"
-
-//lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
@@ -48,11 +47,23 @@ ThisBuild / scmInfo ~= {
     }
   }
 
+// Global settings.
+ThisBuild / scalaVersion := "2.12.12"
+ThisBuild / crossScalaVersions := Seq("2.13.4", "2.12.12")
+ThisBuild / organization := "com.dimafeng"
+
+def removeScalacOptionsInTest(scalaVersion: String) =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, 12)) => Seq("-Ywarn-value-discard", "-Ywarn-unused:params")
+    case _ => Seq("-Wvalue-discard", "-Wunused:explicits", "-Wunused:params", "-Wunused:imports")
+  }
+
+// Common settings.
 val commonSettings = Seq(
-  ThisBuild / scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
-  Test / scalacOptions := Seq("-feature", "-deprecation"),
+  Test / parallelExecution := false,
+  Test / fork := true,
+  Test / scalacOptions --= removeScalacOptionsInTest(scalaVersion.value),
 
   /**
     * Publishing
@@ -68,9 +79,6 @@ val commonSettings = Seq(
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
-  ThisBuild / organization := "com.dimafeng",
-
-  Global / parallelExecution := false,
 
   releaseCrossBuild := true
 )
@@ -127,7 +135,7 @@ lazy val core = (project in file("core"))
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
         "org.mockito" % "mockito-all" % mockitoVersion,
-        "org.slf4j" % "slf4j-simple" % slf4jVersion
+        "ch.qos.logback" % "logback-classic" % logbackVersion
       )
   )
 
@@ -190,7 +198,8 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffectsVersion,
-      "co.fs2" %% "fs2-core" % fs2Version
+      "co.fs2" %% "fs2-core" % fs2Version,
+      "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
   )
 
@@ -216,7 +225,8 @@ lazy val zioStream = (project in file("zio-stream"))
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion
+      "dev.zio" %% "zio-streams" % zioVersion,
+      "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
 

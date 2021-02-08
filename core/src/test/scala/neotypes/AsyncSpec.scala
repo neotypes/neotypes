@@ -1,11 +1,10 @@
 package neotypes
 
-import neotypes.implicits.mappers.all._
 import neotypes.implicits.syntax.string._
 import org.neo4j.driver.exceptions.ClientException
 
-/** Base class for testing the basic behavoir of Async[F] instances. */
-final class AsyncIntegrationSpec[F[_]](testkit: EffectTestkit[F]) extends BaseIntegrationSpec(testkit) {
+/** Base class for testing the basic behavior of Async[F] instances. */
+final class AsyncSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
   behavior of s"Async[${effectName}]"
 
   it should s"execute a simple query" in {
