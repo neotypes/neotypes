@@ -7,7 +7,7 @@ position: 100
 
 # Changelog
 
-## v0.16.0 _(2021-02-??)_
+## v0.16.0 _(2021-02-09)_
 
 ### Removing Session & Using the new Rx module for Streaming ([#221](https://github.com/neotypes/neotypes/pull/221){:target="_blank"})
 
