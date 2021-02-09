@@ -43,7 +43,7 @@ query2.query[Unit]
 A case class can be used directly in the interpolation:
 
 ```scala mdoc:nest
-import neotypes.generic.auto._
+import neotypes.generic.auto._ // Provides automatic derivation of ParameterMapper for any case class.
 
 final case class User(name: String, born: Int)
 final case class Cat(tag: String)

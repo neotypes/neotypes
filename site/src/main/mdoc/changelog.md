@@ -7,23 +7,31 @@ position: 100
 
 # Changelog
 
-## v0.16.0 _(2020-11-??)_
+## v0.16.0 _(2021-02-??)_
 
-### Add wrappers for the new Rx module ([#164](https://github.com/neotypes/neotypes/pull/164){:target="_blank"})
+### Removing Session & Using the new Rx module for Streaming ([#221](https://github.com/neotypes/neotypes/pull/221){:target="_blank"})
 
 We replaced our in-house implementation of **Streaming**
 with wrappers for the new `Rx` module of the **Java** driver.
 
-This change implies that now you can chose between a normal `Session[F]` or a `StreamingSession[F, S]`.
+During this change we also removed `Session` since it wasn't actually needed.
+
+This change implies that now you can chose between a
+normal `Driver[F]` or a `StreamingDriver[S, F]`,
+the latter can be used to create both a
+normal `Transaction[F]` or a `StreamingTransaction[S, F]`.
 The first one no longer supports streaming data from the database,
 but the second one implies that even no-streaming operations like `single`
-are implemented in terms of `ReactiveStreams`.
+are implemented in terms of `ReactiveStreams`.<br>
+However, if you use single query + auto-commit syntax
+provided by `DeferredQuery` then you will use normal _(asynchronous)_
+**Transactions** for most operations and **Streaming**
+**Transactions** only for `stream` queries.
 
 This is quite a big change, because now the `Stream` typeclass
 doesn't need to be in scope when calling `stream`,
-but rather when creating the **Session**;
-By calling `Driver[F[_]]#streamingSession[S[_]]`
-_(which instead of returning a **Resource** returns a single element **Stream**)_
+but rather when creating the **Driver**;
+By calling `GraphDatabase.streamingDriver[S[_]]`
 
 ```scala
 // Replace this:
@@ -38,23 +46,34 @@ val data = fs2.Stream.resource(sessionR).flatMap { s =>
 
 ```scala mdoc:invisible
 import cats.effect.{IO, Resource}
+import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.cats.effect.implicits._
 import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._
 import neotypes.implicits.syntax.string._
-def driverR: Resource[IO, neotypes.Driver[IO]] = ???
+import org.neo4j.driver.AuthTokens
+implicit val cs =IO.contextShift(scala.concurrent.ExecutionContext.global)
 ```
 
 ```scala mdoc:compile-only
 // With this:
+val driverR: Resource[IO, StreamingDriver[Fs2IoStream, IO]] =
+  GraphDatabase.streamingDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+
 val data = for {
   driver <- fs2.Stream.resource(driverR)
-  session <- driver.streamingSession[Fs2IoStream]
-  name <- "MATCH (p:Person) RETURN p.name".query[String].stream(session)
+  name <- "MATCH (p:Person) RETURN p.name".query[String].stream(driver)
 } yield name
 ```
 
 > For more information, please read [streaming](streams).
+
+### Rollback on cancellation ([c6c43d24f8e0c82db40387fa600490c4b85fa297](https://github.com/neotypes/neotypes/commit/c6c43d24f8e0c82db40387fa600490c4b85fa297){:target="_blank"})
+
+Cancelling an effectual operation that was using a **Transaction**
+will now `rollback` the **Transaction** instead of `commit` it.
+
+> **Note**: This should have been its own PR but due the problems on [#164](https://github.com/neotypes/neotypes/pull/164){:target="_blank"} it ended up being a commit on [#221](https://github.com/neotypes/neotypes/pull/221){:target="_blank"}.
 
 ### Add auto and semiauto derivation ([#199](https://github.com/neotypes/neotypes/pull/199){:target="_blank"})
 
@@ -85,6 +104,7 @@ this will add all their properties as parameters of the query.
 For example:
 
 ```scala mdoc:compile-only
+import neotypes.generic.auto._ // Provides automatic derivation of ParameterMapper for any case class.
 import neotypes.implicits.syntax.cypher._ // Adds the ` interpolator into the scope.
 
 final case class User(name: String, age: Int)
@@ -94,11 +114,6 @@ val query = c"""CREATE (u: User { $user }) RETURN u"""
 ```
 
 > For more information, please read [parameterized queries](parameterized_queries).
-
-### Rollback on cancellation ([#???](https://github.com/neotypes/neotypes/pull/???){:target="_blank"})
-
-Cancelling an effectual operation that was using a **Transaction**
-will now `rollback` the **Transaction** instead of `commit` it.
 
 ## v0.15.1 _(2020-09-08)_
 

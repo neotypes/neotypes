@@ -42,9 +42,9 @@ position: 30
 | `org.neo4j.driver.types.Node           ` | ✓            | ✓                     | |
 | `org.neo4j.driver.types.Relationship   ` | ✓            | ✓                     | |
 | `neotypes.types.Path                   ` | ✓            | ✓                     | |
-| `shapeless.HList +++                   ` | ✓            | ✓                     | |
-| `Tuple (1-22) +++                      ` | ✓            | ✓                     | |
-| `User defined case class +++           ` | ✓            | ✓                     | |
+| `shapeless.HList +++                   ` | ✓            | ✓                     | ✓ |
+| `Tuple (1-22) +++                      ` | ✓            | ✓                     | ✓ |
+| `User defined case class +++           ` | ✓            | ✓                     | ✓ |
 
 > `*` Generic types are supported as long as the the `T` is also supported.<br>
 > `**` `None` is converted into `null`.<br>
