@@ -91,7 +91,7 @@ object Driver {
         driver.rxSession(sessionConfig)
       }
 
-      /** Use when https://github.com/neo4j/neo4j-java-driver/issues/797 is fixed.
+      /* Use when https://github.com/neo4j/neo4j-java-driver/issues/797 is fixed.
       S.fromF(session).flatMapS { s =>
         s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
           Transaction[S, F](tx, s)
