@@ -18,8 +18,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                      nodeProjection: "Paper",
                      relationshipProjection: "CITES",
                      maxIterations: 20,
-                     dampingFactor: 0.85,
-                     writeProperty: "pagerank"
+                     dampingFactor: 0.85
                    })
                    YIELD nodeId, score AS rawScore
                    RETURN
@@ -30,11 +29,11 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                 """.query[ScoredPaper].list(d)
     } yield {
       result shouldBe List(
-        ScoredPaper(paper = "Paper 0", score = 35),
-        ScoredPaper(paper = "Paper 1", score = 32),
-        ScoredPaper(paper = "Paper 4", score = 21),
-        ScoredPaper(paper = "Paper 2", score = 21),
-        ScoredPaper(paper = "Paper 3", score = 18)
+        ScoredPaper(paper = "Paper 0", score = 76),
+        ScoredPaper(paper = "Paper 1", score = 56),
+        ScoredPaper(paper = "Paper 2", score = 31),
+        ScoredPaper(paper = "Paper 4", score = 28),
+        ScoredPaper(paper = "Paper 3", score = 23)
       )
     }
   }
@@ -52,23 +51,25 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                 }
               )
            """.query[Unit].execute(d)
-      result <- """CALL gds.triangleCount.mutate('myGraph', { mutateProperty: 'tc' })
+      result <- """CALL gds.triangleCount.mutate('myGraph', {
+                     mutateProperty: 'tc'
+                   })
                    YIELD globalTriangleCount
-                   CALL gds.localClusteringCoefficient.stream(
-                     'myGraph', {
+                   CALL gds.localClusteringCoefficient.stream('myGraph', {
                      triangleCountProperty: 'tc'
-                   }) YIELD nodeId, localClusteringCoefficient
-                   WITH
-                     round(100 * localClusteringCoefficient) AS coefficient,
+                   })
+                   YIELD nodeId, localClusteringCoefficient
+                   RETURN
                      gds.util.asNode(nodeId).name AS person,
+                     round(100 * localClusteringCoefficient) AS coefficient,
                      gds.util.nodeProperty('myGraph', nodeId, 'tc') AS triangleCount
-                   RETURN person, triangleCount, coefficient
                    ORDER BY
                      coefficient DESC,
                      triangleCount DESC,
                      person ASC
                    LIMIT 5
                 """.query[PersonTriangleCount].list(d)
+      _ <- "CALL gds.graph.drop('myGraph', false)".query[Unit].execute(d)
     } yield {
       result shouldBe List(
         PersonTriangleCount(person = "Karin", triangleCount = 1, coefficient = 100),
@@ -95,32 +96,36 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
   it should "execute the shortest path algorithm" in executeAsFuture { d =>
     for{
       _ <- shortestPathData.query[Unit].execute(d)
-      result <- """MATCH (start: Loc { name:'A' }), (end: Loc { name:'F' })
-                   CALL gds.alpha.shortestPath.write({
-                     nodeProjection: 'Loc',
-                     relationshipProjection: {
-                       ROAD: {
-                         type: 'ROAD',
-                         properties: 'cost',
-                         orientation: 'UNDIRECTED'
-                       }
-                     },
-                     startNode: start,
-                     endNode: end,
+      _ <- """CALL gds.graph.create(
+                'myGraph',
+                'Location',
+                'ROAD',
+                {
+                  relationshipProperties: 'cost'
+                }
+              )
+           """.query[Unit].execute(d)
+      result <- """MATCH (start: Location { name:'A' }), (target: Location { name:'F' })
+                   CALL gds.beta.shortestPath.dijkstra.stream('myGraph', {
+                     sourceNode: id(start),
+                     targetNode: id(target),
                      relationshipWeightProperty: 'cost'
                    })
-                   YIELD nodeCount, totalCost
-                   RETURN nodeCount, totalCost
+                   YIELD nodeIds, totalCost
+                   RETURN
+                     totalCost,
+                     [nodeId IN nodeIds | gds.util.asNode(nodeId).name] AS nodeNames
                 """.query[ShortestPath].single(d)
+      _ <- "CALL gds.graph.drop('myGraph', false)".query[Unit].execute(d)
     } yield {
       result shouldBe ShortestPath(
-        nodeCount = 5,
+        nodeNames = List("A", "B", "D", "E", "F"),
         totalCost = 160
       )
     }
   }
 
-  it should "execute the jaccard similarity algorithm" in executeAsFuture { d =>
+  it should "execute the Jaccard similarity algorithm" in executeAsFuture { d =>
     for{
       _ <- similarityData.query[Unit].execute(d)
       result <- """MATCH (p1: Person { name: 'Karin' })-[: LIKES]->(cuisine1)
@@ -138,17 +143,17 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
 object AlgorithmData {
   final case class ScoredPaper(paper:  String, score:  Int)
   final case class PersonTriangleCount(person:  String, triangleCount:  Int, coefficient:  Int)
-  final case class ShortestPath(nodeCount: Int, totalCost: Int)
+  final case class ShortestPath(nodeNames: List[String], totalCost: Int)
 
   val articleRankingData =
     """CREATE
-       (paper0: Paper  { name: 'Paper 0' }),
-       (paper1: Paper  { name: 'Paper 1' }),
-       (paper2: Paper  { name: 'Paper 2' }),
-       (paper3: Paper  { name: 'Paper 3' }),
-       (paper4: Paper  { name: 'Paper 4' }),
-       (paper5: Paper  { name: 'Paper 5' }),
-       (paper6: Paper  { name: 'Paper 6' }),
+       (paper0: Paper { name: 'Paper 0' }),
+       (paper1: Paper { name: 'Paper 1' }),
+       (paper2: Paper { name: 'Paper 2' }),
+       (paper3: Paper { name: 'Paper 3' }),
+       (paper4: Paper { name: 'Paper 4' }),
+       (paper5: Paper { name: 'Paper 5' }),
+       (paper6: Paper { name: 'Paper 6' }),
        (paper1)-[: CITES]->(paper0),
 
        (paper2)-[: CITES]->(paper0),
@@ -191,11 +196,11 @@ object AlgorithmData {
 
   val linkPredictionData =
     """CREATE
-       (zhen: Person  { name:  "Zhen" }),
-       (praveena: Person  { name:  "Praveena" }),
-       (michael: Person  { name:  "Michael" }),
-       (arya: Person  { name:  "Arya" }),
-       (karin: Person  { name:  "Karin" }),
+       (zhen: Person { name:  "Zhen" }),
+       (praveena: Person { name:  "Praveena" }),
+       (michael: Person { name:  "Michael" }),
+       (arya: Person { name:  "Arya" }),
+       (karin: Person { name:  "Karin" }),
 
        (zhen)-[: FRIENDS]->(arya),
        (zhen)-[: FRIENDS]->(praveena),
@@ -207,37 +212,37 @@ object AlgorithmData {
 
   val shortestPathData =
     """CREATE
-       (a: Loc  { name: 'A' }),
-       (b: Loc  { name: 'B' }),
-       (c: Loc  { name: 'C' }),
-       (d: Loc  { name: 'D' }),
-       (e: Loc  { name: 'E' }),
-       (f: Loc  { name: 'F' }),
+       (a: Location { name: 'A' }),
+       (b: Location { name: 'B' }),
+       (c: Location { name: 'C' }),
+       (d: Location { name: 'D' }),
+       (e: Location { name: 'E' }),
+       (f: Location { name: 'F' }),
 
-       (a)-[: ROAD  { cost: 50 }]->(b),
-       (a)-[: ROAD  { cost: 50 }]->(c),
-       (a)-[: ROAD  { cost: 100 }]->(d),
-       (b)-[: ROAD  { cost: 40 }]->(d),
-       (c)-[: ROAD  { cost: 40 }]->(d),
-       (c)-[: ROAD  { cost: 80 }]->(e),
-       (d)-[: ROAD  { cost: 30 }]->(e),
-       (d)-[: ROAD  { cost: 80 }]->(f),
-       (e)-[: ROAD  { cost: 40 }]->(f)
+       (a)-[: ROAD { cost: 50 }]->(b),
+       (a)-[: ROAD { cost: 50 }]->(c),
+       (a)-[: ROAD { cost: 100 }]->(d),
+       (b)-[: ROAD { cost: 40 }]->(d),
+       (c)-[: ROAD { cost: 40 }]->(d),
+       (c)-[: ROAD { cost: 80 }]->(e),
+       (d)-[: ROAD { cost: 30 }]->(e),
+       (d)-[: ROAD { cost: 80 }]->(f),
+       (e)-[: ROAD { cost: 40 }]->(f)
     """
 
   val similarityData =
     """CREATE
-       (french: Cuisine  { name: 'French' }),
-       (italian: Cuisine  { name: 'Italian' }),
-       (indian: Cuisine  { name: 'Indian' }),
-       (lebanese: Cuisine  { name: 'Lebanese' }),
-       (portuguese: Cuisine  { name: 'Portuguese' }),
+       (french: Cuisine { name: 'French' }),
+       (italian: Cuisine { name: 'Italian' }),
+       (indian: Cuisine { name: 'Indian' }),
+       (lebanese: Cuisine { name: 'Lebanese' }),
+       (portuguese: Cuisine { name: 'Portuguese' }),
 
-       (zhen: Person  { name:  "Zhen" }),
-       (praveena: Person  { name:  "Praveena" }),
-       (michael: Person  { name:  "Michael" }),
-       (arya: Person  { name:  "Arya" }),
-       (karin: Person  { name:  "Karin" }),
+       (zhen: Person { name:  "Zhen" }),
+       (praveena: Person { name:  "Praveena" }),
+       (michael: Person { name:  "Michael" }),
+       (arya: Person { name:  "Arya" }),
+       (karin: Person { name:  "Karin" }),
 
        (praveena)-[: LIKES]->(indian),
        (praveena)-[: LIKES]->(portuguese),

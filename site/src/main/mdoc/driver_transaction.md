@@ -2,7 +2,7 @@
 layout: page
 section: transaction
 title: "Transactions"
-position: 100
+position: 60
 ---
 
 # Driver -> Transaction
