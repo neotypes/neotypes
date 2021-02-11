@@ -2,10 +2,10 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.2.0"
+val neo4jDriverVersion = "4.2.1"
 val scalaCollectionCompatVersion = "2.4.1"
 val shapelessVersion = "2.3.3"
-val testcontainersNeo4jVersion = "1.15.1"
+val testcontainersNeo4jVersion = "1.15.2"
 val testcontainersScalaVersion = "0.39.0"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.3"
@@ -48,8 +48,8 @@ ThisBuild / scmInfo ~= {
   }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.12.12"
-ThisBuild / crossScalaVersions := Seq("2.13.4", "2.12.12")
+ThisBuild / scalaVersion := "2.12.13"
+ThisBuild / crossScalaVersions := Seq("2.13.4", "2.12.13")
 ThisBuild / organization := "com.dimafeng"
 
 def removeScalacOptionsInTest(scalaVersion: String) =
@@ -263,6 +263,8 @@ lazy val microsite = (project in file("site"))
     micrositeHighlightTheme := "atom-one-light",
     micrositeHomepage := "https://neotypes.github.io/neotypes/",
     micrositeDocumentationUrl := "docs.html",
+    micrositeHomeButtonTarget := "repo",
+    micrositeSearchEnabled := true,
     micrositeGithubOwner := "neotypes",
     micrositeGithubRepo := "neotypes",
     micrositeBaseUrl := "/neotypes",

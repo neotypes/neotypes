@@ -8,49 +8,50 @@ position: 30
 # Supported types
 
 {:.table}
-| Type                                       | Query result | Field of a case class | Query parameter |
-| -----------------------------------------  |:------------:|:---------------------:|:-----------------|
-| `scala.Boolean                           ` | ✓            | ✓                     | ✓ |
-| `scala.Int                               ` | ✓            | ✓                     | ✓ |
-| `scala.Long                              ` | ✓            | ✓                     | ✓ |
-| `scala.Double                            ` | ✓            | ✓                     | ✓ |
-| `scala.Float                             ` | ✓            | ✓                     | ✓ |
-| `java.lang.String                        ` | ✓            | ✓                     | ✓ |
-| `scala.Array[Byte]                       ` | ✓            | ✓                     | ✓ |
-| `scala.Option[T] *                       ` | ✓            | ✓                     | ✓ `**` |
-| `scala.collection._ *                    ` | ✓            | ✓                     | ✓ `***` |
-| `refined.Refined[T, P] * ****            ` | ✓            | ✓                     | ✓ |
-| `cats.data.Chain[T] * *****              ` | ✓            | ✓                     | ✓ |
-| `cats.data.Const[T, U] * *****           ` | ✓            | ✓                     | ✓ |
-| `cats.data.NonEmptyChain[T] * *****      ` | ✓            | ✓                     | ✓ |
-| `cats.data.NonEmptyList[T] * *****       ` | ✓            | ✓                     | ✓ |
-| `cats.data.NonEmptyMap[String, T] * *****` | ✓            | ✓                     | ✓ |
-| `cats.data.NonEmptySet[T] * *****        ` | ✓            | ✓                     | ✓ |
-| `cats.data.NonEmptyVector[T] * *****     ` | ✓            | ✓                     | ✓ |
-| `java.time.Duration                      ` | ✓            | ✓                     | ✓ |
-| `java.time.LocalDate                     ` | ✓            | ✓                     | ✓ |
-| `java.time.LocalDateTime                 ` | ✓            | ✓                     | ✓ |
-| `java.time.LocalTime                     ` | ✓            | ✓                     | ✓ |
-| `java.time.Period                        ` | ✓            | ✓                     | ✓ |
-| `java.time.OffsetDateTime                ` | ✓            | ✓                     | ✓ |
-| `java.time.OffsetTime                    ` | ✓            | ✓                     | ✓ |
-| `java.time.ZonedDateTime                 ` | ✓            | ✓                     | ✓ |
-| `java.util.UUID                          ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.Value                  ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.types.IsoDuration      ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.types.Point            ` | ✓            | ✓                     | ✓ |
-| `org.neo4j.driver.types.Node             ` | ✓            | ✓                     | |
-| `org.neo4j.driver.types.Relationship     ` | ✓            | ✓                     | |
-| `neotypes.types.Path                     ` | ✓            | ✓                     | |
-| `shapeless.HList                         ` | ✓            | ✓                     | |
-| `Tuple (1-22)                            ` | ✓            | ✓                     | |
-| `User defined case class                 ` | ✓            | ✓                     | |
+| Type                                     | Query result | Field of a case class | Query parameter |
+| ---------------------------------------- |:------------:|:---------------------:|:----------------|
+| `scala.Boolean                         ` | ✓            | ✓                     | ✓ |
+| `scala.Int                             ` | ✓            | ✓                     | ✓ |
+| `scala.Long                            ` | ✓            | ✓                     | ✓ |
+| `scala.Double                          ` | ✓            | ✓                     | ✓ |
+| `scala.Float                           ` | ✓            | ✓                     | ✓ |
+| `java.lang.String                      ` | ✓            | ✓                     | ✓ |
+| `scala.Array[Byte]                     ` | ✓            | ✓                     | ✓ |
+| `scala.Option[T] *                     ` | ✓            | ✓                     | ✓ `**` |
+| `scala.collection._ *                  ` | ✓            | ✓                     | ✓ `***` |
+| `refined.Refined[T, P] * +             ` | ✓            | ✓                     | ✓ |
+| `cats.data.Chain[T] * ++               ` | ✓            | ✓                     | ✓ |
+| `cats.data.Const[T, U] * ++            ` | ✓            | ✓                     | ✓ |
+| `cats.data.NonEmptyChain[T] * ++       ` | ✓            | ✓                     | ✓ |
+| `cats.data.NonEmptyList[T] * ++        ` | ✓            | ✓                     | ✓ |
+| `cats.data.NonEmptyMap[String, T] * ++ ` | ✓            | ✓                     | ✓ |
+| `cats.data.NonEmptySet[T] * ++         ` | ✓            | ✓                     | ✓ |
+| `cats.data.NonEmptyVector[T] * ++      ` | ✓            | ✓                     | ✓ |
+| `java.time.Duration                    ` | ✓            | ✓                     | ✓ |
+| `java.time.LocalDate                   ` | ✓            | ✓                     | ✓ |
+| `java.time.LocalDateTime               ` | ✓            | ✓                     | ✓ |
+| `java.time.LocalTime                   ` | ✓            | ✓                     | ✓ |
+| `java.time.Period                      ` | ✓            | ✓                     | ✓ |
+| `java.time.OffsetDateTime              ` | ✓            | ✓                     | ✓ |
+| `java.time.OffsetTime                  ` | ✓            | ✓                     | ✓ |
+| `java.time.ZonedDateTime               ` | ✓            | ✓                     | ✓ |
+| `java.util.UUID                        ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.Value                ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.types.IsoDuration    ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.types.Point          ` | ✓            | ✓                     | ✓ |
+| `org.neo4j.driver.types.Node           ` | ✓            | ✓                     | |
+| `org.neo4j.driver.types.Relationship   ` | ✓            | ✓                     | |
+| `neotypes.types.Path                   ` | ✓            | ✓                     | |
+| `shapeless.HList +++                   ` | ✓            | ✓                     | ✓ |
+| `Tuple (1-22) +++                      ` | ✓            | ✓                     | ✓ |
+| `User defined case class +++           ` | ✓            | ✓                     | ✓ |
 
 > `*` Generic types are supported as long as the the `T` is also supported.<br>
 > `**` `None` is converted into `null`.<br>
 > `***` Map-like collections are supported only if their keys are of type `String`. Any other kind of tuples is not supported.<br>
-> `****` Support is provided in the **neotypes-refined** _module_.<br>
-> `*****` Support is provided in the **neotypes-cats-data** _module_.<br>
+> `+` Support is provided in the **neotypes-refined** _module_.<br>
+> `++` Support is provided in the **neotypes-cats-data** _module_.<br>
+> `+++` Support for automatic and semiautomatic derivation is provided in the **generic** _module_. <br>
 
 ## Additional types
 

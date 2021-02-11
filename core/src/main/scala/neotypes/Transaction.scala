@@ -70,7 +70,7 @@ object Transaction {
         }
 
       override final def execute[T](query: String, params: Map[String,QueryParam])
-                                   (implicit executionMapper: mappers.ExecutionMapper[T]): F[T] =
+                                   (implicit executionMapper: ExecutionMapper[T]): F[T] =
         F.async { cb =>
           transaction
             .runAsync(query, QueryParam.toJavaMap(params))
