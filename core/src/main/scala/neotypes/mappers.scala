@@ -83,7 +83,7 @@ object mappers {
       *
       * @param fa A secondary [[neotypes.mappers.ResultMapper]] to try if the first one fails.
       * @tparam B The result type of your secondary [[neotypes.mappers.ResultMapper]].
-      * @return A [[neotypes.mappers.ResultMapper]] that, if sucessful, will return a value of either the original or secondary type.
+      * @return A [[neotypes.mappers.ResultMapper]] that, if successful, will return a value of either the original or secondary type.
       */
     def either[B](fa: ResultMapper[B]): ResultMapper[Either[A, B]] = new ResultMapper[Either[A, B]] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Either[A, B]] =
@@ -314,7 +314,7 @@ object mappers {
       *
       * @param fa A secondary [[ValueMapper]] to try if the first one fails.
       * @tparam B The result type of your secondary [[ValueMapper]].
-      * @return A [[ValueMapper]] that, if sucessful, will return a value of either the original or secondary type.
+      * @return A [[ValueMapper]] that, if successful, will return a value of either the original or secondary type.
       */
     def either[B](fa: ValueMapper[B]): ValueMapper[Either[A, B]] = new ValueMapper[Either[A, B]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Either[A, B]] =
