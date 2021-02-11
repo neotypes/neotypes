@@ -28,11 +28,11 @@ object mappers {
     def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A]
 
     /**
-      * Allows supplying a secondary [[ResultMapper]] to try if the original fails.
+      * Allows supplying a secondary [[neotypes.mappers.ResultMapper]] to try if the original fails.
       *
-      * @param mapper A [[ResultMapper]] to use if the current one fails.
-      * @tparam AA A type that is possibly a supertype of your original [[ResultMapper]] type.
-      * @return A new [[ResultMapper]] that returns the type of the supplied secondary mapper.
+      * @param mapper A [[neotypes.mappers.ResultMapper]] to use if the current one fails.
+      * @tparam AA A type that is possibly a supertype of your original [[neotypes.mappers.ResultMapper]] type.
+      * @return A new [[neotypes.mappers.ResultMapper]] that returns the type of the supplied secondary mapper.
       */
     def or[AA >: A](mapper: => ResultMapper[AA]): ResultMapper[AA] = new ResultMapper[AA] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, AA] = {
@@ -41,7 +41,7 @@ object mappers {
     }
 
     /**
-      * Creates a new [[ResultMapper]] by applying a function to the result value, if successful.
+      * Creates a new [[neotypes.mappers.ResultMapper]] by applying a function to the result value, if successful.
       *
       * @param f A function to apply to the result value of this ResultMapper.
       * @tparam B The return type of your supplied function.
@@ -53,12 +53,12 @@ object mappers {
     }
 
     /**
-      * Bind a function over this [[ResultMapper]], if successful.
+      * Bind a function over this [[neotypes.mappers.ResultMapper]], if successful.
       * Useful for creating decoders that depend on multiple values in sequence.
       *
-      * @param f A function that returns a new [[ResultMapper]].
-      * @tparam B The result type of your new [[ResultMapper]] from your function.
-      * @return A new [[ResultMapper]] derived from the value your original [[ResultMapper]] outputs.
+      * @param f A function that returns a new [[neotypes.mappers.ResultMapper]].
+      * @tparam B The result type of your new [[neotypes.mappers.ResultMapper]] from your function.
+      * @return A new [[neotypes.mappers.ResultMapper]] derived from the value your original [[neotypes.mappers.ResultMapper]] outputs.
       */
     def flatMap[B](f: A => ResultMapper[B]): ResultMapper[B] = new ResultMapper[B] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
@@ -66,11 +66,11 @@ object mappers {
     }
 
     /**
-      * Combines the results of this [[ResultMapper]] with another as a tuple pair.
+      * Combines the results of this [[neotypes.mappers.ResultMapper]] with another as a tuple pair.
       *
-      * @param fa A second [[ResultMapper]] that reads the same input values.
-      * @tparam B The type of your second [[ResultMapper]] results.
-      * @return A [[ResultMapper]] that produces a pair of values.
+      * @param fa A second [[neotypes.mappers.ResultMapper]] that reads the same input values.
+      * @tparam B The type of your second [[neotypes.mappers.ResultMapper]] results.
+      * @return A [[neotypes.mappers.ResultMapper]] that produces a pair of values.
       */
     def product[B](fa: ResultMapper[B]): ResultMapper[(A, B)] = new ResultMapper[(A, B)] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, (A, B)] =
@@ -78,12 +78,12 @@ object mappers {
     }
 
     /**
-      * Produces a [[ResultMapper]] where either the original or secondary mapper succeeds.
+      * Produces a [[neotypes.mappers.ResultMapper]] where either the original or secondary mapper succeeds.
       * The original mapper result is on the Left side, and the secondary mapper is on the Right.
       *
-      * @param fa A secondary [[ResultMapper]] to try if the first one fails.
-      * @tparam B The result type of your secondary [[ResultMapper]].
-      * @return A [[ResultMapper]] that, if sucessful, will return a value of either the original or secondary type.
+      * @param fa A secondary [[neotypes.mappers.ResultMapper]] to try if the first one fails.
+      * @tparam B The result type of your secondary [[neotypes.mappers.ResultMapper]].
+      * @return A [[neotypes.mappers.ResultMapper]] that, if sucessful, will return a value of either the original or secondary type.
       */
     def either[B](fa: ResultMapper[B]): ResultMapper[Either[A, B]] = new ResultMapper[Either[A, B]] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Either[A, B]] =
@@ -99,55 +99,55 @@ object mappers {
 
   object ResultMapper extends ResultMappers with ResultMappersLowPriority {
     /**
-      * Summons an implicit [[ResultMapper]] already in scope by result type.
+      * Summons an implicit [[neotypes.mappers.ResultMapper]] already in scope by result type.
       *
-      * @param mapper A [[ResultMapper]] in scope of the desired type.
+      * @param mapper A [[neotypes.mappers.ResultMapper]] in scope of the desired type.
       * @tparam A The result type of the mapper.
-      * @return A [[ResultMapper]] for the given type currently in implicit scope.
+      * @return A [[neotypes.mappers.ResultMapper]] for the given type currently in implicit scope.
       */
     def apply[A](implicit mapper: ResultMapper[A]): ResultMapper[A] = mapper
 
     /**
-      * Constructs a [[ResultMapper]] that always returns a constant result value.
+      * Constructs a [[neotypes.mappers.ResultMapper]] that always returns a constant result value.
       *
       * @param a The value to always return.
       * @tparam A The type of the result value.
-      * @return A [[ResultMapper]] that always returns the supplied value and never errors.
+      * @return A [[neotypes.mappers.ResultMapper]] that always returns the supplied value and never errors.
       */
     def const[A](a: A): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Right(a)
     }
 
     /**
-      * Constructs a [[ResultMapper]] from a function that parses the results of a Neo4j query.
+      * Constructs a [[neotypes.mappers.ResultMapper]] from a function that parses the results of a Neo4j query.
       *
       * The supplied function takes a sequence of String/Value pairs in the order they are returned from the query per-row.
       * It also takes a TypeHint to indicate whether or not the values are a tuple, if relevant.
       *
       * @param f A function that parses a list of returned field names/values and a supplied [[TypeHint]].
-      * @tparam A The result type of this [[ResultMapper]]
-      * @return A new [[ResultMapper]] that parses query results with the supplied function.
+      * @tparam A The result type of this [[neotypes.mappers.ResultMapper]]
+      * @return A new [[neotypes.mappers.ResultMapper]] that parses query results with the supplied function.
       */
     def instance[A](f: (List[(String, Value)], Option[TypeHint]) => Either[Throwable, A]): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = f(value, typeHint)
     }
 
     /**
-      * Constructs a [[ResultMapper]] that always returns the specified Throwable.
+      * Constructs a [[neotypes.mappers.ResultMapper]] that always returns the specified Throwable.
       *
       * @param failure A throwable error.
-      * @tparam A The result type (never returned) of this [[ResultMapper]]
-      * @return A [[ResultMapper]] that always returns a throwable error.
+      * @tparam A The result type (never returned) of this [[neotypes.mappers.ResultMapper]]
+      * @return A [[neotypes.mappers.ResultMapper]] that always returns a throwable error.
       */
     def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
     }
 
     /**
-      * Constructs a [[ResultMapper]] from a [[ValueMapper]].
+      * Constructs a [[neotypes.mappers.ResultMapper]] from a [[ValueMapper]].
       *
-      * @tparam A the type of both the [[ResultMapper]] and the [[ValueMapper]].
-      * @return A [[ResultMapper]] that delegates its behaviour to a [[ValueMapper]].
+      * @tparam A the type of both the [[neotypes.mappers.ResultMapper]] and the [[ValueMapper]].
+      * @return A [[neotypes.mappers.ResultMapper]] that delegates its behaviour to a [[ValueMapper]].
       */
     def fromValueMapper[A](implicit marshallable: ValueMapper[A]): ResultMapper[A] =
       new ResultMapper[A] {
