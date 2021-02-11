@@ -39,6 +39,9 @@ jobs:
       - name: Compile
         run: ./sbt +test:compile
 
+      - name: Scaladoc
+        run: ./sbt +doc
+
       - name: Test
         run: ./sbt +test
 
