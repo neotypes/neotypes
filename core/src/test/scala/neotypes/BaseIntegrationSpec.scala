@@ -1,17 +1,16 @@
 package neotypes
 
 import neotypes.internal.utils.toJavaDuration
-
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import org.neo4j.{driver => neo4j}
-import org.scalatest.flatspec.AsyncFlatSpecLike
+import org.scalatest.wordspec.AsyncWordSpecLike
 import org.testcontainers.images.{ImagePullPolicy, PullPolicy}
 import org.testcontainers.utility.DockerImageName
 
 import scala.concurrent.duration._
 
 /** Base class for writing integration specs. */
-trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
+trait BaseIntegrationSpec[F[_]] extends AsyncWordSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
   protected def initQuery: String
 
   override final val container =

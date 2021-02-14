@@ -2,6 +2,7 @@ package neotypes.generic
 
 import neotypes.{CaseClassArgMapper, QueryArg}
 import neotypes.types.QueryParam
+import org.scalatest.matchers.should.Matchers._
 
 import org.scalatest.freespec.AnyFreeSpec
 
@@ -25,7 +26,7 @@ final class CaseClassArgMapperSemiautoSpec extends AnyFreeSpec {
         )
       )
 
-      assert(result == expected)
+      result shouldBe expected
     }
 
     "should derive an instance of a product (tuple)" in {
@@ -40,7 +41,7 @@ final class CaseClassArgMapperSemiautoSpec extends AnyFreeSpec {
         )
       )
 
-      assert(result == expected)
+      result shouldBe expected
     }
 
     "should not derive an instance of nested classes" in {
