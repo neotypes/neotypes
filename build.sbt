@@ -17,7 +17,7 @@ val akkaStreamVersion = "2.6.12"
 val fs2Version = "2.5.0"
 val zioVersion = "1.0.4-2"
 val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
-val refinedVersion = "0.9.20"
+val refinedVersion = "0.9.21"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
