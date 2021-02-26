@@ -51,25 +51,6 @@ abstract class StreamingDriverProviderWordSpec[S[_], F[_]](testkit: StreamTestki
     }
 }
 
-///** Provides an StreamingDriver[S, F] instance for streaming tests. */
-//abstract class StreamingDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
-//  override type DriverType = StreamingDriver[S, F]
-//
-//  override protected final lazy val driver: DriverType =
-//    Driver[S, F](self.neoDriver)
-//
-//  protected final def executeAsFuture[A](work: DriverType => F[A]): Future[A] =
-//    fToFuture(work(driver))
-//
-//  protected final def executeAsFutureList[A](work: DriverType => S[A]): Future[List[A]] =
-//    executeAsFuture(work andThen streamToFList)
-//
-//  protected final def debugMetrics(): F[Unit] =
-//    F.map(driver.metrics) { metrics =>
-//      println(s"METRICS: ${metrics}")
-//    }
-//}
-
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
   new StreamSpec(testkit),
