@@ -21,7 +21,7 @@ trait CatsEffect {
         F.flatMap(m)(f)
 
       override final def fromEither[A](e: => Either[Throwable, A]): F[A] =
-        F.suspend(F.fromEither(e))
+        F.defer(F.fromEither(e))
 
       override final def guarantee[A, B](fa: F[A])
                                         (f: A => F[B])
