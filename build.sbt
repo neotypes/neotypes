@@ -18,6 +18,7 @@ val fs2Version = "2.5.3"
 val zioVersion = "1.0.5"
 val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
 val refinedVersion = "0.9.21"
+val enumeratumVersion = "1.6.1"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
@@ -98,7 +99,8 @@ lazy val root = (project in file("."))
     monixStream,
     zioStream,
     refined,
-    catsData
+    catsData,
+    enumeratum
   )
   .settings(noPublishSettings)
   .settings(
@@ -247,6 +249,16 @@ lazy val catsData = (project in file("cats-data"))
     name := "neotypes-cats-data",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion
+    )
+  )
+
+lazy val enumeratum = (project in file("enumeratum"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings)
+  .settings(
+    name := "neotypes-enumeratum",
+    libraryDependencies ++= PROVIDED(
+      "com.beachape" %% "enumeratum" % enumeratumVersion
     )
   )
 
