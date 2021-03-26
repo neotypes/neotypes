@@ -23,6 +23,63 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 object mappers {
+  @annotation.implicitNotFound("${A} is not a valid type for keys")
+  trait KeyMapper[A] { self =>
+    /**
+      * Encodes a value as a key.
+      *
+      * @param a The value to encode.
+      * @tparam A The type of the value to encode.
+      * @return The key corresponding to that value.
+      */
+    def encodeKey(a: A): String
+
+    /**
+      * Decodes a key as a value.
+      *
+      * @param key The key to decode.
+      * @tparam A The type of the value to decode.
+      * @return The value corresponding to that key or an error.
+      */
+    def decodeKey(key: String): Either[Throwable, A]
+
+    /**
+      * Creates a new [[KeyMapper]] by providing
+      * transformation functions to and from A.
+      *
+      * @param f The function to apply before the encoding.
+      * @param g The function to apply after the decoding.
+      * @tparam B The type of the new [[KeyMapper]]
+      * @return A new [[KeyMapper]] for values of type B.
+      */
+    final def imap[B](f: B => A)(g: A => Either[Throwable, B]): KeyMapper[B] = new KeyMapper[B] {
+      override def encodeKey(b: B): String =
+        self.encodeKey(f(b))
+
+      override def decodeKey(key: String): Either[Throwable, B] =
+        self.decodeKey(key).flatMap(g)
+    }
+  }
+
+  object KeyMapper {
+    /**
+      * Summons an implicit [[KeyMapper]] already in scope by result type.
+      *
+      * @param mapper A [[KeyMapper]] in scope of the desired type.
+      * @tparam A The result type of the mapper.
+      * @return A [[KeyMapper]] for the given type currently in implicit scope.
+      */
+    def apply[A](implicit mapper: KeyMapper[A]): KeyMapper[A] = mapper
+
+    implicit final val StringKeyMapper: KeyMapper[String] = new KeyMapper[String] {
+      override def encodeKey(key: String): String =
+        key
+
+      override def decodeKey(key: String): Either[Throwable, String] =
+        Right(key)
+    }
+  }
+
   @annotation.implicitNotFound("Could not find the ResultMapper for ${A}")
   trait ResultMapper[A] { self =>
     def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A]
@@ -230,10 +287,14 @@ object mappers {
     implicit final val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
       ResultMapper.fromValueMapper
 
-    implicit final def iterableResultMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ResultMapper[I[T]] =
+    implicit final def iterableResultMapper[T, I[_]](
+      implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]
+    ): ResultMapper[I[T]] =
       ResultMapper.fromValueMapper
 
-    implicit final def mapResultMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ResultMapper[M[String, V]] =
+    implicit final def mapResultMapper[K, V, M[_, _]](
+      implicit factory: Factory[(K, V), M[K, V]], keyMapper: KeyMapper[K], valueMapper: ValueMapper[V]
+    ): ResultMapper[M[K, V]] =
       ResultMapper.fromValueMapper
 
     implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
@@ -396,7 +457,6 @@ object mappers {
   }
 
   trait ValueMappers {
-
     implicit final val BooleanValueMapper: ValueMapper[Boolean] =
       ValueMapper.fromCast(v => v.asBoolean)
 
@@ -498,9 +558,11 @@ object mappers {
     private def getKeyValuesFrom(nmap: NMap): Iterator[(String, Value)] =
       nmap.keys.asScala.iterator.map(key => key -> nmap.get(key))
 
-    implicit final def mapValueMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ValueMapper[M[String, V]] =
-      new ValueMapper[M[String, V]] {
-        override def to(fieldName: String, value: Option[Value]): Either[Throwable, M[String, V]] =
+    implicit final def mapValueMapper[K, V, M[_, _]](
+      implicit factory: Factory[(K, V), M[K, V]], keyMapper: KeyMapper[K], valueMapper: ValueMapper[V]
+    ): ValueMapper[M[K, V]] =
+      new ValueMapper[M[K, V]] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, M[K, V]] =
           value match {
             case None =>
               Right(factory.newBuilder.result())
@@ -508,7 +570,10 @@ object mappers {
             case Some(value) =>
               traverseAs(factory)(getKeyValuesFrom(value)) {
                 case (key, value) =>
-                  mapper.to("", Option(value)).map(v => key -> v)
+                  for {
+                    k <- keyMapper.decodeKey(key)
+                    v <- valueMapper.to(fieldName = "", value = Option(value))
+                  } yield k -> v
               }
           }
       }
@@ -671,7 +736,6 @@ object mappers {
   }
 
   trait ParameterMappers {
-
     implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
       ParameterMapper.fromCast(Boolean.box)
 
@@ -734,18 +798,25 @@ object mappers {
         col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
       }
 
-    implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]): ParameterMapper[C[T]] =
+    implicit final def collectionParameterMapper[T, C[_]](
+      implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]
+    ): ParameterMapper[C[T]] =
       iterableParameterMapper(mapper).contramap(ev)
 
-    private final def iterableMapParameterMapper[V](mapper: ParameterMapper[V]): ParameterMapper[Iterable[(String, V)]] =
+    private final def iterableMapParameterMapper[K, V](
+      keyMapper: KeyMapper[K], valueMapper: ParameterMapper[V]
+    ): ParameterMapper[Iterable[(K, V)]] =
       ParameterMapper.fromCast { col =>
         col.iterator.map {
-          case (key, v) => key -> mapper.toQueryParam(v).underlying
+          case (key, v) =>
+            keyMapper.encodeKey(key) -> valueMapper.toQueryParam(v).underlying
         }.toMap.asJava
       }
 
-    implicit final def mapParameterMapper[V, M[_, _]](implicit mapper: ParameterMapper[V], ev: M[String, V] <:< Iterable[(String, V)]): ParameterMapper[M[String, V]] =
-      iterableMapParameterMapper(mapper).contramap(ev)
+    implicit final def mapParameterMapper[K, V, M[_, _]](
+      implicit keyMapper: KeyMapper[K], valueMapper: ParameterMapper[V], ev: M[K, V] <:< Iterable[(K, V)]
+    ): ParameterMapper[M[K, V]] =
+      iterableMapParameterMapper(keyMapper, valueMapper).contramap(ev)
 
     implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
       ParameterMapper.fromCast { optional =>

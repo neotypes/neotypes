@@ -1,7 +1,7 @@
 package neotypes
 package enumeratum
 
-import mappers.{ParameterMapper, ResultMapper, ValueMapper}
+import mappers.{KeyMapper, ParameterMapper, ResultMapper, ValueMapper}
 
 import _root_.enumeratum.{Enum, EnumEntry}
 import _root_.enumeratum.values._
@@ -17,6 +17,7 @@ trait NeotypesEnum[EntryType <: EnumEntry] {
 trait NeotypesKeyEnum[EntryType <: EnumEntry] {
   self: Enum[EntryType] =>
 
+  implicit final val keyMapper: KeyMapper[EntryType] = ???
 }
 
 sealed trait NeotypesValueEnum[ValueType, EntryType <: ValueEnumEntry[ValueType]] {
@@ -73,4 +74,6 @@ trait NeotypesStringEnum[EntryType <: StringEnumEntry] extends NeotypesValueEnum
   override implicit final val parameterMapper: ParameterMapper[EntryType] = ???
   override implicit final val resultMapper: ResultMapper[EntryType] = ???
   override implicit final val valueMapper: ValueMapper[EntryType] = ???
+
+  implicit final val keyMapper: KeyMapper[EntryType] = ???
 }
