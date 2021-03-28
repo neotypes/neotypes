@@ -308,5 +308,6 @@ lazy val microsite = (project in file("site"))
     monixStream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
-    refined % "compile->compile;provided->provided"
+    refined % "compile->compile;provided->provided",
+    enumeratum % "compile->compile;provided->provided"
   )
