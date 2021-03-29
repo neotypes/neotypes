@@ -16,12 +16,12 @@ final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with Clean
 
   it should "work with a simple Enums" in {
     forAll(SimpleEnum.values) { enumValue =>
-      executeAsFuture { s =>
+      executeAsFuture { d =>
         for {
-          _ <- c"CREATE (: Data { name: ${enumValue.entryName}, value: ${enumValue} })".query[Unit].execute(s)
-          r1 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query[String].single(s)
-          r2 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query[SimpleEnum].single(s)
-          r3 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data".query[DataWithSimpleEnum].single(s)
+          _ <- c"CREATE (: Data { name: ${enumValue.entryName}, value: ${enumValue} })".query[Unit].execute(d)
+          r1 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query[String].single(d)
+          r2 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query[SimpleEnum].single(d)
+          r3 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data".query[DataWithSimpleEnum].single(d)
         } yield {
           assert(r1 == enumValue.entryName)
           assert(r2 == enumValue)
@@ -31,20 +31,20 @@ final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with Clean
     }
   }
 
-  it should "fail if retrieving a non-valid value as simple Enum" in executeAsFuture { s =>
+  it should "fail if retrieving a non-valid value as simple Enum" in executeAsFuture { d =>
     recoverToSucceededIf[IncoercibleException] {
-      "RETURN 'Quax'".query[SimpleEnum].single(s)
+      "RETURN 'Quax'".query[SimpleEnum].single(d)
     }
   }
 
   it should "work with a value Enums" in {
     forAll(ValueEnum.values) { enumValue =>
-      executeAsFuture { s =>
+      executeAsFuture { d =>
         for {
-          _ <- c"CREATE (: Data { name: ${enumValue.name}, value: ${enumValue} })".query[Unit].execute(s)
-          r1 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query[Int].single(s)
-          r2 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query[ValueEnum].single(s)
-          r3 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data".query[DataWithValueEnum].single(s)
+          _ <- c"CREATE (: Data { name: ${enumValue.name}, value: ${enumValue} })".query[Unit].execute(d)
+          r1 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query[Int].single(d)
+          r2 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query[ValueEnum].single(d)
+          r3 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data".query[DataWithValueEnum].single(d)
         } yield {
           assert(r1 == enumValue.value)
           assert(r2 == enumValue)
@@ -54,13 +54,13 @@ final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with Clean
     }
   }
 
-  it should "fail if retrieving a non-valid value as value Enum" in executeAsFuture { s =>
+  it should "fail if retrieving a non-valid value as value Enum" in executeAsFuture { d =>
     recoverToSucceededIf[IncoercibleException] {
-      "RETURN 10".query[ValueEnum].single(s)
+      "RETURN 10".query[ValueEnum].single(d)
     }
   }
 
-  it should "use a key Enum as keys of the properties of a node" in executeAsFuture { s =>
+  it should "use a key Enum as keys of the properties of a node" in executeAsFuture { d =>
     val data = Map(
       KeyEnum.Key1 -> 0,
       KeyEnum.Key2 -> 10,
@@ -68,20 +68,20 @@ final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with Clean
     )
 
     for {
-      _ <- c"CREATE (: Data ${data})".query[Unit].execute(s)
-      r <- "MATCH (data: Data) RETURN data".query[Map[KeyEnum, Int]].single(s)
+      _ <- c"CREATE (: Data ${data})".query[Unit].execute(d)
+      r <- "MATCH (data: Data) RETURN data".query[Map[KeyEnum, Int]].single(d)
     } yield {
       assert(r == data)
     }
   }
 
-  it should "fail if retrieving a non-valid value as a key Enum" in executeAsFuture { s =>
+  it should "fail if retrieving a non-valid value as a key Enum" in executeAsFuture { d =>
     recoverToSucceededIf[IncoercibleException] {
-      "RETURN { quax : 7 }".query[Map[KeyEnum, Int]].single(s)
+      "RETURN { quax : 7 }".query[Map[KeyEnum, Int]].single(d)
     }
   }
 
-  it should "use a string Enum as keys of the properties of a node" in executeAsFuture { s =>
+  it should "use a string Enum as keys of the properties of a node" in executeAsFuture { d =>
     val data = Map(
       KeyStringEnum.KeyA -> 0,
       KeyStringEnum.KeyB -> 10,
@@ -89,16 +89,16 @@ final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with Clean
     )
 
     for {
-      _ <- c"CREATE (: Data ${data})".query[Unit].execute(s)
-      r <- "MATCH (data: Data) RETURN data".query[Map[KeyStringEnum, Int]].single(s)
+      _ <- c"CREATE (: Data ${data})".query[Unit].execute(d)
+      r <- "MATCH (data: Data) RETURN data".query[Map[KeyStringEnum, Int]].single(d)
     } yield {
       assert(r == data)
     }
   }
 
-  it should "fail if retrieving a non-valid value as key string Enum" in executeAsFuture { s =>
+  it should "fail if retrieving a non-valid value as key string Enum" in executeAsFuture { d =>
     recoverToSucceededIf[IncoercibleException] {
-      "RETURN { quax : 7 }".query[Map[KeyStringEnum, Int]].single(s)
+      "RETURN { quax : 7 }".query[Map[KeyStringEnum, Int]].single(d)
     }
   }
 }
