@@ -18,10 +18,10 @@ object semiauto {
   final def deriveUnwrappedParameterMapper[A, R](
     implicit gen: Lazy[Generic.Aux[A, R :: HNil]], mapper: ParameterMapper[R]
   ): ParameterMapper[A] =
-    ???
+    mapper.contramap(a => gen.value.to(a).head)
 
   final def deriveUnwrappedValueMapper[A, R](
     implicit gen: Lazy[Generic.Aux[A, R :: HNil]], mapper: ValueMapper[R]
   ): ValueMapper[A] =
-    ???
+    mapper.map(r => gen.value.from(r :: HNil))
 }
