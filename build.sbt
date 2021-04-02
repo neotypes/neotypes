@@ -51,6 +51,7 @@ ThisBuild / scmInfo ~= {
 ThisBuild / scalaVersion := "2.12.13"
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
 ThisBuild / organization := "com.dimafeng"
+ThisBuild / versionScheme := Some("semver-spec")
 
 def removeScalacOptionsInTest(scalaVersion: String) =
   CrossVersion.partialVersion(scalaVersion) match {
