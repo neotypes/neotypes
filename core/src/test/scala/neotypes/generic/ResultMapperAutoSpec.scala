@@ -8,6 +8,7 @@ import org.neo4j.driver.internal.InternalNode
 import org.neo4j.driver.internal.value.{IntegerValue, NodeValue, StringValue}
 import org.scalatest.freespec.AnyFreeSpec
 import shapeless.{::, HNil}
+import org.scalatest.matchers.should.Matchers._
 
 final class ResultMapperAutoSpec extends AnyFreeSpec {
 
@@ -26,7 +27,7 @@ final class ResultMapperAutoSpec extends AnyFreeSpec {
       )
 
       val result = mapper.to(input, None)
-      assert(result == Right("twelve chars" :: 12 :: HNil))
+      result shouldBe Right("twelve chars" :: 12 :: HNil)
     }
 
     "should derive an instance of a product (case class)" in {
@@ -38,7 +39,7 @@ final class ResultMapperAutoSpec extends AnyFreeSpec {
       )
 
       val result = mapper.to(input, None)
-      assert(result == Right(MyCaseClass("twelve chars", 12)))
+      result shouldBe Right(MyCaseClass("twelve chars", 12))
     }
 
     "should derive an instance of a product (tuple)" in {
@@ -50,7 +51,7 @@ final class ResultMapperAutoSpec extends AnyFreeSpec {
       )
 
       val result = mapper.to(input, None)
-      assert(result == Right(("twelve chars", 12)))
+      result shouldBe Right(("twelve chars", 12))
     }
 
     "should prioritize an instance from companion object over derived" in {
@@ -70,8 +71,8 @@ final class ResultMapperAutoSpec extends AnyFreeSpec {
         ("v2", new NodeValue(node))
       )
 
-      assert(ResultMapper[ObjectScopeResultMapper].to(input, None) == Right(const))
-      assert(tupleMapper.to(input, None) == Right((const, const)))
+      ResultMapper[ObjectScopeResultMapper].to(input, None) shouldBe Right(const)
+      tupleMapper.to(input, None) shouldBe Right((const, const))
     }
 
   }

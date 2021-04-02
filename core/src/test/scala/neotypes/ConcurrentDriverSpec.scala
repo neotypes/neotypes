@@ -9,7 +9,6 @@ import scala.concurrent.ExecutionContext
 final class ConcurrentDriverSpec[F[_]](
   testkit: EffectTestkit[F]
 ) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] with Matchers {
-  behavior of s"Concurrent use of Driver[${effectName}]"
 
   // Use a custom ec to ensure the tasks run concurrently.
   override implicit final lazy val executionContext: ExecutionContext =
@@ -17,16 +16,18 @@ final class ConcurrentDriverSpec[F[_]](
       java.util.concurrent.Executors.newFixedThreadPool(2)
     )
 
-  it should "work and not throw an exception when the driver is used concurrently" in {
-    executeAsFuture { d =>
-      def query(name: String): F[Unit] =
-        c"CREATE (p: PERSON { name: ${name} })".query[Unit].execute(d)
+  s"Concurrent use of Driver[${effectName}]" should {
+    "work and not throw an exception when the driver is used concurrently" in {
+      executeAsFuture { d =>
+        def query(name: String): F[Unit] =
+          c"CREATE (p: PERSON { name: ${name} })".query[Unit].execute(d)
 
-      runConcurrently(query(name = "name1"), query(name = "name2")).flatMap { _ =>
-        c"MATCH (p: PERSON) RETURN p.name".query[String].list(d)
+        runConcurrently(query(name = "name1"), query(name = "name2")).flatMap { _ =>
+          c"MATCH (p: PERSON) RETURN p.name".query[String].list(d)
+        }
+      } map { result =>
+        result should contain theSameElementsAs List("name1", "name2")
       }
-    } map { result =>
-      result should contain theSameElementsAs List("name1", "name2")
     }
   }
 

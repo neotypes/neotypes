@@ -2,6 +2,7 @@ package neotypes.generic
 
 import neotypes.{CaseClassArgMapper, QueryArg}
 import neotypes.types.QueryParam
+import org.scalatest.matchers.should.Matchers._
 
 import org.scalatest.freespec.AnyFreeSpec
 
@@ -25,7 +26,7 @@ final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
         )
       )
 
-      assert(result == expected)
+      result shouldBe expected
     }
 
     "should derive an instance of a product (tuple)" in {
@@ -40,7 +41,7 @@ final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
         )
       )
 
-      assert(result == expected)
+      result shouldBe expected
     }
 
     "should prioritize an instance from companion object over derived" in {
@@ -49,7 +50,7 @@ final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
 
       val expected = QueryArg.CaseClass(Map("const" -> QueryParam("const")))
 
-      assert(mapper.toArg(input) == expected)
+      mapper.toArg(input) shouldBe expected
     }
 
     "should not derive an instance of nested classes" in {

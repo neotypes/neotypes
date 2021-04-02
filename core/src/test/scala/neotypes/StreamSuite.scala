@@ -33,7 +33,7 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
 }
 
 /** Provides an StreamingDriver[S, F] instance for streaming tests. */
-abstract class StreamingDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
+abstract class StreamingDriverProviderWordSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
   override type DriverType = StreamingDriver[S, F]
 
   override protected final lazy val driver: DriverType =
