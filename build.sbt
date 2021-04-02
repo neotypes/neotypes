@@ -3,21 +3,21 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.2.4"
-val scalaCollectionCompatVersion = "2.4.2"
+val scalaCollectionCompatVersion = "2.4.3"
 val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.15.2"
 val testcontainersScalaVersion = "0.39.3"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.6"
 val logbackVersion = "1.2.3"
-val catsVersion = "2.4.2"
-val catsEffectsVersion = "2.4.0"
+val catsVersion = "2.5.0"
+val catsEffectsVersion = "2.4.1"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.13"
-val fs2Version = "2.5.3"
+val fs2Version = "2.5.4"
 val zioVersion = "1.0.5"
 val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
-val refinedVersion = "0.9.21"
+val refinedVersion = "0.9.22"
 val enumeratumVersion = "1.6.1"
 
 // Fix scmInfo in Github Actions.
@@ -52,6 +52,7 @@ ThisBuild / scmInfo ~= {
 ThisBuild / scalaVersion := "2.12.13"
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
 ThisBuild / organization := "com.dimafeng"
+ThisBuild / versionScheme := Some("semver-spec")
 
 def removeScalacOptionsInTest(scalaVersion: String) =
   CrossVersion.partialVersion(scalaVersion) match {
