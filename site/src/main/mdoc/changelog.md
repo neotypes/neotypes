@@ -7,7 +7,7 @@ position: 100
 
 # Changelog
 
-## v0.17.0 _(2021-04-??)_
+## v0.17.0 _(2021-04-04)_
 
 ### Adding the enumeratum module ([#291](https://github.com/neotypes/neotypes/pull/291){:target="_blank"})
 
@@ -50,6 +50,22 @@ object KeyStringEnum extends StringEnum[KeyStringEnum] with NeotypesStringEnum[K
 }
 implicitly[neotypes.mappers.ParameterMapper[Map[KeyStringEnum, Int]]]
 implicitly[neotypes.mappers.ValueMapper[KeyStringEnum]]
+```
+
+> For more information, please read [supported types](types).
+
+### Adding UnwrappedMappers semiauto derivation ([#294](https://github.com/neotypes/neotypes/pull/294){:target="_blank"})
+
+We added a new semiauto derivation of mappers for
+`AnyVal` case classes that act like the underlying type.
+
+```scala mdoc:reset-object
+import neotypes.generic.semiauto
+import neotypes.mappers.{ParameterMapper, ValueMapper}
+
+final case class Id(value: String) extends AnyVal
+implicit final val idParameterMapper: ParameterMapper[Id] = semiauto.deriveUnwrappedParameterMapper
+implicit final val idValueMapper: ValueMapper[Id] = semiauto.deriveUnwrappedValueMapper
 ```
 
 > For more information, please read [supported types](types).

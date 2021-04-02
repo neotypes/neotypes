@@ -81,6 +81,25 @@ You can create a new instance:
 You can create a new instance:
   + Casting an already existing mapper using `imap`.
 
+# AnyVal classes.
+
+You can semiautomatically derive mapper for `AnyVal` case classes that act like the underlying type.
+
+This may be useful for quick modelling but note that `AnyVal` classes have
+some [known limitations](https://docs.scala-lang.org/overviews/core/value-classes.html#when-allocation-is-necessary).<br>
+We recommend using [**scala-newtype**](https://github.com/estatico/scala-newtype) instead.
+
+```scala mdoc:reset-object
+import neotypes.generic.semiauto
+import neotypes.mappers.{ParameterMapper, ValueMapper}
+
+final case class Id(value: String) extends AnyVal
+implicit final val idParameterMapper: ParameterMapper[Id] = semiauto.deriveUnwrappedParameterMapper
+implicit final val idValueMapper: ValueMapper[Id] = semiauto.deriveUnwrappedValueMapper
+```
+
+> **Note** this actually works for any case class of a single field, no need to extend `AnyVal`.
+
 # Neo4j Id
 
 Even if [**neo4j** does not recommend the use of the of the system id](https://neo4j.com/blog/dark-side-neo4j-worst-practices/), **neotypes** allows you to easily retrieve it.
