@@ -42,6 +42,7 @@ The project aims to provide seamless integration with most popular scala infrast
 |`"com.dimafeng" %% "neotypes-zio-stream" % version`|result streaming for ZIO ZStreams.|
 |`"com.dimafeng" %% "neotypes-refined" % version`|support to insert and retrieve refined values.|
 |`"com.dimafeng" %% "neotypes-cats-data" % version`|support to insert and retrieve `cats.data` values.|
+|`"com.dimafeng" %% "neotypes-enumeratum" % version`|support to insert and retrieve Enumeratum enums.|
 
 ## Showcase
 

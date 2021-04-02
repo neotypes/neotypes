@@ -7,6 +7,60 @@ position: 100
 
 # Changelog
 
+## v0.17.0 _(2021-04-??)_
+
+### Adding the enumeratum module ([#291](https://github.com/neotypes/neotypes/pull/291){:target="_blank"})
+
+We added a new `neotypes-enumeratum` module which allow the use of
+[**Enumeratum**](https://github.com/lloydmeta/enumeratum) enums.
+
+```scala mdoc:compile-only
+import enumeratum.{Enum, EnumEntry}
+import enumeratum.values.{StringEnum, StringEnumEntry}
+import neotypes.enumeratum.{NeotypesEnum, NeotypesKeyEnum, NeotypesStringEnum}
+
+sealed trait SimpleEnum extends EnumEntry with Product with Serializable
+object SimpleEnum extends Enum[SimpleEnum] with NeotypesEnum[SimpleEnum] {
+  final case object Foo extends SimpleEnum
+  final case object Bar extends SimpleEnum
+  final case object Baz extends SimpleEnum
+
+  val values = findValues
+}
+implicitly[neotypes.mappers.ResultMapper[SimpleEnum]]
+implicitly[neotypes.mappers.ParameterMapper[SimpleEnum]]
+
+sealed trait KeyEnum extends EnumEntry with Product with Serializable
+object KeyEnum extends Enum[KeyEnum] with NeotypesKeyEnum[KeyEnum] {
+  final case object Key1 extends KeyEnum
+  final case object Key2 extends KeyEnum
+  final case object Key3 extends KeyEnum
+
+  val values = findValues
+}
+implicitly[neotypes.mappers.ParameterMapper[Map[KeyEnum, Int]]]
+
+sealed abstract class KeyStringEnum (val value: String) extends StringEnumEntry with Product with Serializable
+object KeyStringEnum extends StringEnum[KeyStringEnum] with NeotypesStringEnum[KeyStringEnum] {
+  final case object KeyA extends KeyStringEnum(value = "keyA")
+  final case object KeyB extends KeyStringEnum(value = "keyB")
+  final case object KeyC extends KeyStringEnum(value = "keyC")
+
+  val values = findValues
+}
+implicitly[neotypes.mappers.ParameterMapper[Map[KeyStringEnum, Int]]]
+implicitly[neotypes.mappers.ValueMapper[KeyStringEnum]]
+```
+
+> For more information, please read [supported types](types).
+
+### Adding version scheme ([#281](https://github.com/neotypes/neotypes/pull/281){:target="_blank"})
+
+Since this version, **neotypes** artifacts include its version scheme
+which can be read by **sbt** to produce more accurate eviction errors.
+
+> For more information, please read [this blog post](https://scala-lang.org/blog/2021/02/16/preventing-version-conflicts-with-versionscheme.html).
+
 ## v0.16.0 _(2021-02-09)_
 
 ### Removing Session & Using the new Rx module for Streaming ([#221](https://github.com/neotypes/neotypes/pull/221){:target="_blank"})
