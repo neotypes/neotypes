@@ -28,6 +28,8 @@ The project aims to provide seamless integration with most popular scala infrast
 
 ## Setup
 
+:warning: The library is under heavy development. Production use is at your own risk and is not recommended. :warning:
+
 {:.table}
 | ----------------------------------------- |:--------------|
 |`"com.dimafeng" %% "neotypes" % version`|core functionality. Supports `scala.concurrent.Future`.|
@@ -40,6 +42,7 @@ The project aims to provide seamless integration with most popular scala infrast
 |`"com.dimafeng" %% "neotypes-zio-stream" % version`|result streaming for ZIO ZStreams.|
 |`"com.dimafeng" %% "neotypes-refined" % version`|support to insert and retrieve refined values.|
 |`"com.dimafeng" %% "neotypes-cats-data" % version`|support to insert and retrieve `cats.data` values.|
+|`"com.dimafeng" %% "neotypes-enumeratum" % version`|support to insert and retrieve Enumeratum enums.|
 
 ## Showcase
 
@@ -91,7 +94,10 @@ Await.ready(driver.close, 1.second)
 
 ## Compatibility matrix
 
-| Neo4j version | Neotypes version |
-| :-----------: | :--------------: |
-| 3.5.x         | <= 0.13          |
-| 4.y.x         | >= 0.14          |
+| Java driver version | Neotypes version |
+| :-----------------: | :--------------: |
+| 1.7.x               | <= 0.13          |
+| 4.y.x               | >= 0.14          |
+
+For info on the compatibility with **Java** runtimes or **Neo4j** servers,
+please check the the [**Java** driver docs](https://github.com/neo4j/neo4j-java-driver).

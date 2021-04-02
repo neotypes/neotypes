@@ -1,12 +1,11 @@
 package neotypes
 package cats.data
 
-import internal.utils.traverse.{traverseAsList, traverseAsMap, traverseAsSet, traverseAsVector}
 import exceptions.{PropertyNotFoundException, IncoercibleException}
-import mappers.{ParameterMapper, ResultMapper, ValueMapper}
+import internal.utils.traverse._
+import mappers.{KeyMapper, ParameterMapper, ResultMapper, ValueMapper}
 
 import org.neo4j.driver.Value
-import _root_.cats.Order
 import _root_.cats.data.{
   Chain,
   Const,
@@ -17,13 +16,14 @@ import _root_.cats.data.{
   NonEmptyVector
 }
 
+import scala.collection.compat._
 import scala.collection.immutable.{SortedMap, SortedSet}
 import scala.jdk.CollectionConverters._
 
 trait CatsData {
   // Chain.
   private final def traverseAsChain[A, B](iter: Iterator[A])
-                                   (f: A => Either[Throwable, B]): Either[Throwable, Chain[B]] = {
+                                         (f: A => Either[Throwable, B]): Either[Throwable, Chain[B]] = {
     @annotation.tailrec
     def loop(acc: Chain[B]): Either[Throwable, Chain[B]] =
       if (iter.hasNext) f(iter.next()) match {
@@ -128,39 +128,44 @@ trait CatsData {
 
 
   // NonEmptyMap.
-  implicit final def nonEmptyMapValueMapper[T](implicit mapper: ValueMapper[T]): ValueMapper[NonEmptyMap[String, T]] =
-    new ValueMapper[NonEmptyMap[String, T]] {
-      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyMap[String, T]] =
+  implicit final def nonEmptyMapValueMapper[K, V](
+    implicit order: Ordering[K], keyMapper: KeyMapper[K], mapper: ValueMapper[V]
+  ): ValueMapper[NonEmptyMap[K, V]] =
+    new ValueMapper[NonEmptyMap[K, V]] {
+      override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyMap[K, V]] =
         value match {
           case None =>
             Left(PropertyNotFoundException(s"Property $fieldName not found"))
 
           case Some(value) =>
-            traverseAsMap(value.keys.asScala.iterator) { key: String =>
-              mapper.to(key, Option(value.get(key))).map { value =>
-                key -> value
-              }
-            }.flatMap { map =>
-              NonEmptyMap.fromMap(SortedMap.empty[String, T] ++ map) match {
-                case None =>
-                  Left(IncoercibleException("NonEmptyMap from an empty map", None.orNull))
-
-                case Some(nonEmptyMap) =>
-                  Right(nonEmptyMap)
-              }
+            traverseAs(SortedMap : Factory[(K, V), SortedMap[K, V]])(value.keys.asScala.iterator) { key =>
+              for {
+                v <- mapper.to(fieldName = key, Option(value.get(key)))
+                k <- keyMapper.decodeKey(key)
+              } yield k -> v
+            } flatMap { map =>
+              NonEmptyMap.fromMap(map).toRight(
+                left = IncoercibleException("NonEmptyMap from an empty map", None.orNull)
+              )
             }
         }
     }
 
-  implicit final def nonEmptyMapResultMapper[T](implicit mapper: ValueMapper[T]): ResultMapper[NonEmptyMap[String, T]] =
+  implicit final def nonEmptyMapResultMapper[K, V](
+    implicit oder: Ordering[K], keyMapper: KeyMapper[K], valueMapper: ValueMapper[V]
+  ): ResultMapper[NonEmptyMap[K, V]] =
     ResultMapper.fromValueMapper
 
-  implicit final def nonEmptyMapParameterMapper[T](implicit mapper: ParameterMapper[Map[String, T]]): ParameterMapper[NonEmptyMap[String, T]] =
+  implicit final def nonEmptyMapParameterMapper[K, V](
+    implicit mapper: ParameterMapper[Map[K, V]]
+  ): ParameterMapper[NonEmptyMap[K, V]] =
     mapper.contramap(nonEmptyMap => nonEmptyMap.toSortedMap)
 
 
   // NonEmptySet.
-  implicit final def nonEmptySetValueMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ValueMapper[NonEmptySet[T]] =
+  implicit final def nonEmptySetValueMapper[T](
+    implicit order: Ordering[T], mapper: ValueMapper[T]
+  ): ValueMapper[NonEmptySet[T]] =
     new ValueMapper[NonEmptySet[T]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptySet[T]] =
         value match {
@@ -168,24 +173,24 @@ trait CatsData {
             Left(PropertyNotFoundException(s"Property $fieldName not found"))
 
           case Some(value) =>
-            traverseAsSet(value.values.asScala.iterator) { v: Value =>
-              mapper.to("", Option(v))
-            }.flatMap { set =>
-              NonEmptySet.fromSet(SortedSet.empty[T](order.toOrdering) | set) match {
-                case None =>
-                  Left(IncoercibleException("NonEmptySet from an empty list", None.orNull))
-
-                case Some(nonEmptySet) =>
-                  Right(nonEmptySet)
-              }
+            traverseAs(SortedSet : Factory[T, SortedSet[T]])(value.values.asScala.iterator) { v =>
+              mapper.to(fieldName = "", Option(v))
+            } flatMap { set =>
+              NonEmptySet.fromSet(set).toRight(
+                left = IncoercibleException("NonEmptySet from an empty list", None.orNull)
+              )
             }
         }
     }
 
-  implicit final def nonEmptySetResultMapper[T](implicit mapper: ValueMapper[T], order: Order[T]): ResultMapper[NonEmptySet[T]] =
+  implicit final def nonEmptySetResultMapper[T](
+    implicit order: Ordering[T], mapper: ValueMapper[T]
+  ): ResultMapper[NonEmptySet[T]] =
     ResultMapper.fromValueMapper
 
-  implicit final def nonEmptySetParameterMapper[T](implicit mapper: ParameterMapper[Set[T]]): ParameterMapper[NonEmptySet[T]] =
+  implicit final def nonEmptySetParameterMapper[T](
+    implicit mapper: ParameterMapper[Set[T]]
+  ): ParameterMapper[NonEmptySet[T]] =
     mapper.contramap(nonEmptySet => nonEmptySet.toSortedSet)
 
 

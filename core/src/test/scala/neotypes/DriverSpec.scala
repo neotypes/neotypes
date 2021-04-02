@@ -4,13 +4,13 @@ import neotypes.generic.auto._
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import org.neo4j.driver.types.Node
+import org.scalatest.Inspectors
 import shapeless._
-import scala.concurrent.Future
 
 /** Base class for testing the basic behaviour of Driver[F] instances. */
 final class DriverSpec[F[_]](
   testkit: EffectTestkit[F]
-) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
+) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] with Inspectors {
   behavior of s"Driver[${effectName}]"
 
   import DriverSpec._
@@ -157,15 +157,12 @@ final class DriverSpec[F[_]](
       "RETURN NULL".query[WrappedName].list(_).map(_.headOption.flatMap(_.name))
     )
 
-    // Custom Future.traverse that runs sequentially.
-    queries.iterator.zipWithIndex.foldLeft(Future.successful(succeed)) {
-      case (accF, (query, idx)) =>
-        accF.flatMap { _ =>
-          executeAsFuture(s => query(s)).map {
-            case None    => succeed
-            case Some(x) => fail(s"query ${idx} RETURNed ${x} instead of None")
-          }
+    forAll(queries) { query =>
+      executeAsFuture { s =>
+        query(s).map { opt =>
+          assert(opt.isEmpty)
         }
+      }
     }
   }
 
