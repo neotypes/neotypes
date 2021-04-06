@@ -285,7 +285,7 @@ lazy val microsite = (project in file("site"))
     mdocIn := (Compile / sourceDirectory).value / "mdoc",
     autoAPIMappings := true,
     docsMappingsAPIDir := "api",
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
@@ -295,7 +295,7 @@ lazy val microsite = (project in file("site"))
       "-doc-source-url",
       scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
       "-sourcepath",
-      baseDirectory.in(LocalRootProject).value.getAbsolutePath,
+      (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
     ),
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
