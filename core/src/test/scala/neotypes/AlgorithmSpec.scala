@@ -220,10 +220,10 @@ object AlgorithmData {
        (f: Location { name: 'F' }),
 
        (a)-[: ROAD { cost: 50 }]->(b),
-       (a)-[: ROAD { cost: 50 }]->(c),
+       (a)-[: ROAD { cost: 60 }]->(c),
        (a)-[: ROAD { cost: 100 }]->(d),
        (b)-[: ROAD { cost: 40 }]->(d),
-       (c)-[: ROAD { cost: 40 }]->(d),
+       (c)-[: ROAD { cost: 50 }]->(d),
        (c)-[: ROAD { cost: 80 }]->(e),
        (d)-[: ROAD { cost: 30 }]->(e),
        (d)-[: ROAD { cost: 80 }]->(f),

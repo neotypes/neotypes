@@ -8,16 +8,17 @@ val shapelessVersion = "2.3.3"
 val testcontainersNeo4jVersion = "1.15.2"
 val testcontainersScalaVersion = "0.39.3"
 val mockitoVersion = "1.10.19"
-val scalaTestVersion = "3.2.6"
+val scalaTestVersion = "3.2.7"
 val logbackVersion = "1.2.3"
 val catsVersion = "2.5.0"
 val catsEffectsVersion = "2.4.1"
 val monixVersion = "3.3.0"
-val akkaStreamVersion = "2.6.13"
-val fs2Version = "3.0.1"
+val akkaStreamVersion = "2.6.14"
+val fs2Version = "2.5.4"
 val zioVersion = "1.0.5"
 val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
-val refinedVersion = "0.9.22"
+val refinedVersion = "0.9.23"
+val enumeratumVersion = "1.6.1"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
@@ -51,6 +52,7 @@ ThisBuild / scmInfo ~= {
 ThisBuild / scalaVersion := "2.12.13"
 ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
 ThisBuild / organization := "com.dimafeng"
+ThisBuild / versionScheme := Some("semver-spec")
 
 def removeScalacOptionsInTest(scalaVersion: String) =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -98,7 +100,8 @@ lazy val root = (project in file("."))
     monixStream,
     zioStream,
     refined,
-    catsData
+    catsData,
+    enumeratum
   )
   .settings(noPublishSettings)
   .settings(
@@ -250,6 +253,16 @@ lazy val catsData = (project in file("cats-data"))
     )
   )
 
+lazy val enumeratum = (project in file("enumeratum"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings)
+  .settings(
+    name := "neotypes-enumeratum",
+    libraryDependencies ++= PROVIDED(
+      "com.beachape" %% "enumeratum" % enumeratumVersion
+    )
+  )
+
 lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
 
 lazy val microsite = (project in file("site"))
@@ -296,5 +309,6 @@ lazy val microsite = (project in file("site"))
     monixStream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
-    refined % "compile->compile;provided->provided"
+    refined % "compile->compile;provided->provided",
+    enumeratum % "compile->compile;provided->provided"
   )
