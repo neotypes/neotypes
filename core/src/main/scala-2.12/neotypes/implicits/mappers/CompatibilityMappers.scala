@@ -22,7 +22,7 @@ import scala.reflect.ClassTag
  * We may as well remove this, and force them to import scala.collection.compat._
  *
  * The original definitions of the conversions can be found here:
- * https://github.com/scala/scala-collection-compat/blob/master/compat/src/main/scala-2.11_2.12/scala/collection/compat/PackageShared.scala#L47-L86
+ * https://github.com/scala/scala-collection-compat/blob/main/compat/src/main/scala-2.11_2.12/scala/collection/compat/PackageShared.scala
  */
 trait CompatibilityMappers {
   implicit final def neotypesGenericCompanionToCBF[A, CC[X] <: c.GenTraversable[X]](fact: GenericCompanion[CC]): CanBuildFrom[Any, A, CC[A]] =

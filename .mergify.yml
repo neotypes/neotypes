@@ -2,6 +2,7 @@ pull_request_rules:
   - name: merge scala-steward's PRs
     conditions:
       - author=scala-steward
+      - base=main
       - status-success=Build and Test (ubuntu-latest, adopt@1.8)
       - status-success=Build and Test (ubuntu-latest, graalvm-ce-java11@20.3.0)
     actions:
