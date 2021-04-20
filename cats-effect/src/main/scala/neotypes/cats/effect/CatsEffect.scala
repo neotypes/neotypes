@@ -12,7 +12,7 @@ trait CatsEffect {
       override final type R[A] = Resource[F, A]
 
       override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A] =
-        F.async(cb)
+        F.async_(cb)
 
       override final def delay[A](t: => A): F[A] =
         F.delay(t)
