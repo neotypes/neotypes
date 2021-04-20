@@ -5,18 +5,18 @@ import ReleaseTransformations._
 val neo4jDriverVersion = "4.2.4"
 val scalaCollectionCompatVersion = "2.4.3"
 val shapelessVersion = "2.3.4"
-val testcontainersNeo4jVersion = "1.15.2"
+val testcontainersNeo4jVersion = "1.15.3"
 val testcontainersScalaVersion = "0.39.3"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.7"
 val logbackVersion = "1.2.3"
-val catsVersion = "2.5.0"
-val catsEffectsVersion = "3.0.2"
+val catsVersion = "2.6.0"
+val catsEffectsVersion = "2.4.1"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.14"
 val fs2Version = "2.5.4"
-val zioVersion = "1.0.5"
-val zioInteropReactiveStreamsVersion = "1.3.0.7-2"
+val zioVersion = "1.0.6"
+val zioInteropReactiveStreamsVersion = "1.3.3"
 val refinedVersion = "0.9.23"
 val enumeratumVersion = "1.6.1"
 
@@ -293,7 +293,7 @@ lazy val microsite = (project in file("site"))
     ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",
-      scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
+      scmInfo.value.get.browseUrl + "/tree/main€{FILE_PATH}.scala",
       "-sourcepath",
       (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
