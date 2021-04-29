@@ -358,14 +358,16 @@ private[neotypes] object DeferredQuery {
   * }}}
   */
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
-  import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query}
+  import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query, SubQueryParam}
 
   /** Creates a [DeferredQuery] from this builder.
     *
     * @tparam T the result type of the constructed query.
     * @return A [DeferredQuery[T]]
     */
-  def query[T]: DeferredQuery[T] = {
+  def query[T]: DeferredQuery[T] = query(PARAMETER_NAME_PREFIX)
+
+  private[neotypes] def query[T](parameterNamePrefix: String): DeferredQuery[T] = {
     @annotation.tailrec
     def loop(remaining: List[Part], queryBuilder: StringBuilder, accParams: Map[String, QueryParam], nextParamIdx: Int): DeferredQuery[T] =
       remaining match {
@@ -392,12 +394,20 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
           )
 
         case Param(param) :: xs =>
-          val paramName = s"${PARAMETER_NAME_PREFIX}${nextParamIdx}"
+          val paramName = s"${parameterNamePrefix}${nextParamIdx}"
           loop(
             remaining = xs,
             queryBuilder.append("$").append(paramName),
             accParams + (paramName -> param),
             nextParamIdx + 1
+          )
+
+        case SubQueryParam(name, value) :: xs =>
+          loop(
+            remaining = xs,
+            queryBuilder,
+            accParams + (name -> value),
+            nextParamIdx
           )
       }
 
@@ -434,4 +444,6 @@ private[neotypes] object DeferredQueryBuilder {
   final case class Query(part: String) extends Part
 
   final case class Param(value: QueryParam) extends Part
+
+  final case class SubQueryParam(name: String, value: QueryParam) extends Part
 }

@@ -2,6 +2,7 @@ package neotypes
 
 import generic.Exported
 import mappers.ParameterMapper
+import neotypes.DeferredQueryBuilder.PARAMETER_NAME_PREFIX
 import types.QueryParam
 
 import scala.reflect.macros.blackbox
@@ -17,24 +18,32 @@ object CypherStringInterpolator {
     val params = parameters.iterator
 
     @annotation.tailrec
-    def loop(paramNext: Boolean, output: List[DeferredQueryBuilder.Part]): List[DeferredQueryBuilder.Part] =
+    def loop(paramNext: Boolean, nextSubQuery: Int, output: List[DeferredQueryBuilder.Part]): List[DeferredQueryBuilder.Part] =
       if (paramNext && params.hasNext) {
         params.next() match {
-          case QueryArg.Param(value)      => loop(paramNext = false, output :+ DeferredQueryBuilder.Param(value))
-          case QueryArg.CaseClass(params) => loop(paramNext = false, output ++ caseClassParts(params))
+          case QueryArg.Param(value)          => loop(paramNext = false, nextSubQuery, output :+ DeferredQueryBuilder.Param(value))
+          case QueryArg.CaseClass(params)     => loop(paramNext = false, nextSubQuery, output ++ caseClassParts(params))
+          case QueryArg.QueryBuilder(builder) => loop(paramNext = false, nextSubQuery + 1, output ++ subQueryParts(builder, nextSubQuery))
         }
       } else if (queries.hasNext) {
-        loop(paramNext = true, output :+ DeferredQueryBuilder.Query(queries.next()))
+        loop(paramNext = true, nextSubQuery, output :+ DeferredQueryBuilder.Query(queries.next()))
       } else {
         output
       }
 
-    val queryParts = loop(paramNext = false, Nil)
+    val queryParts = loop(paramNext = false, 1, Nil)
 
     new DeferredQueryBuilder(queryParts)
   }
 
   private val CommaQuery = DeferredQueryBuilder.Query(",")
+
+  private def subQueryParts(queryBuilder: DeferredQueryBuilder, index: Int): List[DeferredQueryBuilder.Part] = {
+    val deferredQuery = queryBuilder.query(s"q${index}_${PARAMETER_NAME_PREFIX}")
+    val query = DeferredQueryBuilder.Query(deferredQuery.query)
+    val params = deferredQuery.params.map { case (name, value) => DeferredQueryBuilder.SubQueryParam(name, value) }.toList
+    query +: params
+  }
 
   private def caseClassParts(params: Map[String, QueryParam]): List[DeferredQueryBuilder.Part] = {
 
@@ -81,6 +90,7 @@ sealed trait QueryArg
 object QueryArg {
   final case class Param(value: QueryParam) extends QueryArg
   final case class CaseClass(params: Map[String, QueryParam]) extends QueryArg
+  final case class QueryBuilder[T](value: DeferredQueryBuilder) extends QueryArg
 }
 
 @annotation.implicitNotFound("Could not find the QueryArgMapper for ${A}.")
@@ -88,7 +98,7 @@ trait QueryArgMapper[A] {
   def toArg(value: A): QueryArg
 }
 
-object QueryArgMapper extends QueryOrgMappersLowPriority {
+object QueryArgMapper extends QueryArgMappersLowPriority {
 
   def apply[A](implicit ev: QueryArgMapper[A]): QueryArgMapper[A] = ev
 
@@ -97,9 +107,11 @@ object QueryArgMapper extends QueryOrgMappersLowPriority {
 
 }
 
-trait QueryOrgMappersLowPriority {
+trait QueryArgMappersLowPriority {
   implicit def fromCaseClassArgMapper[A: CaseClassArgMapper]: QueryArgMapper[A] =
     CaseClassArgMapper[A]
+
+  implicit val deferredQueryBuilderArgMapper: QueryArgMapper[DeferredQueryBuilder] = QueryArg.QueryBuilder(_)
 }
 
 @annotation.implicitNotFound(

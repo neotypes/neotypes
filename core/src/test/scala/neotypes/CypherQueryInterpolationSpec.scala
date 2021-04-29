@@ -69,6 +69,26 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
     assert(query.query == expected)
   }
 
+  it should "interpolate DeferredQueryBuilders" in {
+    val subQuery1 = c"""user.id = "1""""
+    val query1 = c"""MATCH (user:User) WHERE $subQuery1 RETURN user"""
+    val expected1 = DeferredQuery(
+      query = """MATCH (user:User) WHERE  user.id = "1"  RETURN user""",
+      params = Map.empty
+    )
+    assert(query1.query == expected1)
+
+    val subQuery2Param1 = 1
+    val subQuery2Param2 = false
+    val subQuery2 = c"""user.id = $subQuery2Param1 AND $subQuery2Param2"""
+    val query2 = c"""MATCH (user:User) WHERE $subQuery2 RETURN user"""
+    val expected2 = DeferredQuery(
+      query = """MATCH (user:User) WHERE  user.id = $q1_p1 AND $q1_p2 RETURN user""",
+      params = Map("q1_p1" -> QueryParam(subQuery2Param1), "q1_p2" -> QueryParam(subQuery2Param2))
+    )
+    assert(query2.query == expected2)
+  }
+
   it should "concat multiple parts correctly" in {
     val firstName = "John"
     val lastName = "Smith"
