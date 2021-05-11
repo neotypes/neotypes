@@ -52,6 +52,7 @@ Await.ready(program, 5.seconds)
 
 ```scala mdoc:compile-only
 import cats.effect.{IO, Resource}
+import cats.effect.unsafe.implicits.global // Brings the implicit IORuntime instance into the scope.
 import fs2.Stream
 import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.cats.effect.implicits._ // Brings the implicit Async[IO] instance into the scope.
@@ -59,9 +60,6 @@ import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2IOStream] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import org.neo4j.driver.AuthTokens
-
-implicit val cs =
-  IO.contextShift(scala.concurrent.ExecutionContext.global)
 
 val driver: Resource[IO, StreamingDriver[Fs2IoStream, IO]] =
   GraphDatabase.streamingDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -85,7 +83,7 @@ And replacing the `neotypes.fs2.Fs2IoStream` type alias with `neotypes.fs2.Fs2FS
 
 ### Monix Observables _(neotypes-monix-stream)_
 
-```scala mdoc:compile-only
+```scala
 import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
@@ -148,7 +146,6 @@ import cats.effect.IO
 import neotypes.GraphDatabase
 import neotypes.cats.effect.implicits._
 import neotypes.fs2.implicits._
-implicit val cs = IO.contextShift(scala.concurrent.ExecutionContext.global)
 val uri: String = ""
 def query: neotypes.DeferredQuery[String] = ???
 ```

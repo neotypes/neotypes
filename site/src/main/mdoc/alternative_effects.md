@@ -35,6 +35,7 @@ val data: String = Await.result(program, 1.second)
 
 ```scala mdoc:compile-only
 import cats.effect.{IO, Resource}
+import cats.effect.unsafe.implicits.global // Brings the implicit IORuntime instance into the scope.
 import neotypes.{GraphDatabase, Driver}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
@@ -54,6 +55,7 @@ val data: String = program.unsafeRunSync()
 
 ```scala mdoc:compile-only
 import cats.effect.{Async, IO, Resource}
+import cats.effect.unsafe.implicits.global // Brings the implicit IORuntime instance into the scope.
 import neotypes.{GraphDatabase, Driver}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
@@ -71,7 +73,7 @@ val data: String = program[IO].unsafeRunSync()
 
 ### monix.eval.Task _(neotypes-monix)_
 
-```scala mdoc:compile-only
+```scala
 import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global

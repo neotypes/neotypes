@@ -114,7 +114,7 @@ val data = fs2.Stream.resource(sessionR).flatMap { s =>
 }
 ```
 
-```scala mdoc:invisible
+```scala
 import cats.effect.{IO, Resource}
 import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.cats.effect.implicits._
@@ -125,7 +125,7 @@ import org.neo4j.driver.AuthTokens
 implicit val cs =IO.contextShift(scala.concurrent.ExecutionContext.global)
 ```
 
-```scala mdoc:compile-only
+```scala
 // With this:
 val driverR: Resource[IO, StreamingDriver[Fs2IoStream, IO]] =
   GraphDatabase.streamingDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))

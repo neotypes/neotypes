@@ -4,7 +4,7 @@ import neotypes.{Stream, StreamSuite, StreamTestkit}
 import neotypes.cats.effect.IOTestkit
 import neotypes.fs2.implicits._
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 
 import scala.concurrent.ExecutionContext
 
@@ -12,9 +12,6 @@ import scala.concurrent.ExecutionContext
 object Fs2Testkit extends StreamTestkit[Fs2IoStream, IO](IOTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      implicit val cs: ContextShift[IO] =
-        IO.contextShift(ec)
-
       override def streamToFList[A](stream: Fs2IoStream[A]): IO[List[A]] =
         stream.compile.toList
 

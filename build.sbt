@@ -11,10 +11,10 @@ val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.8"
 val logbackVersion = "1.2.3"
 val catsVersion = "2.6.0"
-val catsEffectsVersion = "2.5.0"
+val catsEffectsVersion = "3.1.0"
 val monixVersion = "3.3.0"
 val akkaStreamVersion = "2.6.14"
-val fs2Version = "2.5.5"
+val fs2Version = "3.0.2"
 val zioVersion = "1.0.7"
 val zioInteropReactiveStreamsVersion = "1.3.4"
 val refinedVersion = "0.9.24"
@@ -166,8 +166,6 @@ lazy val monix = (project in file("monix"))
   .settings(
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
-      "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
@@ -213,8 +211,6 @@ lazy val monixStream = (project in file("monix-stream"))
   .settings(
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
-      "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
