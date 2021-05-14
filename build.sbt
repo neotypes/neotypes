@@ -3,7 +3,7 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.2.5"
-val scalaCollectionCompatVersion = "2.4.3"
+val scalaCollectionCompatVersion = "2.4.4"
 val shapelessVersion = "2.3.6"
 val testcontainersNeo4jVersion = "1.15.3"
 val testcontainersScalaVersion = "0.39.4"
