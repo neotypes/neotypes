@@ -18,35 +18,44 @@ import scala.jdk.CollectionConverters._
   * @tparam F effect type for driver
   */
 sealed trait Driver[F[_]] {
+  def transactionConfig: TransactionConfig
+
   def metrics: F[List[ConnectionPoolMetrics]]
 
   def transaction(config: TransactionConfig): F[Transaction[F]]
 
-  final def transaction: F[Transaction[F]]  =
-    transaction(config = TransactionConfig.default)
+  final def transaction: F[Transaction[F]] =
+    transaction(config = transactionConfig)
 
   def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
 
   final def transact[T](txF: Transaction[F] => F[T]): F[T] =
-    transact(config = TransactionConfig.default)(txF)
+    transact(config = transactionConfig)(txF)
 
   /** Close the resources assigned to the neo4j driver.
     *
     *  @return an effect F of Unit.
     */
   def close: F[Unit]
+
+  /** Creates a new driver instance using the provided transaction configuration as default. NB. This does NOT create
+   * a new instance of the underlying Java driver.
+   */
+  def withTransactionConfig(config: TransactionConfig): Driver[F]
 }
 
 sealed trait StreamingDriver[S[_], F[_]] extends Driver[F] {
   def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]]
 
   final def streamingTransaction: S[StreamingTransaction[S, F]] =
-    streamingTransaction(config = TransactionConfig.default)
+    streamingTransaction(config = transactionConfig)
 
   def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
 
   final def streamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
-    streamingTransact(config = TransactionConfig.default)(txF)
+    streamingTransact(config = transactionConfig)(txF)
+
+  override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F]
 }
 
 object Driver {
@@ -55,7 +64,8 @@ object Driver {
     case (tx, Some(_)) => tx.rollback
   }
 
-  private class DriverImpl[F[_]](driver: NeoDriver)
+  private class DriverImpl[F[_]](driver: NeoDriver,
+                                 override val transactionConfig: TransactionConfig = TransactionConfig.default)
                                 (implicit F: Async[F]) extends Driver[F] {
     override final def metrics: F[List[ConnectionPoolMetrics]] =
       F.fromEither(
@@ -79,11 +89,16 @@ object Driver {
       F.async { cb =>
         driver.closeAsync().acceptVoid(cb)
       }
+
+    override def withTransactionConfig(config: TransactionConfig): Driver[F] = new DriverImpl(driver, config)
   }
 
-  private final class StreamingDriverImpl[S[_], F[_]](driver: NeoDriver)
+  private final class StreamingDriverImpl[S[_], F[_]](driver: NeoDriver,
+                                                      override val transactionConfig: TransactionConfig =
+                                                        TransactionConfig.default)
                                                      (implicit S: Stream.Aux[S, F], F: Async[F])
-                                                     extends DriverImpl[F](driver) with StreamingDriver[S, F] {
+                                                     extends DriverImpl[F](driver, transactionConfig)
+                                                       with StreamingDriver[S, F] {
     override def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
@@ -123,6 +138,9 @@ object Driver {
 
       S.resource(tx)(txF)(txFinalizer)
     }
+
+    override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F] =
+      new StreamingDriverImpl(driver, config)
   }
 
   private[neotypes] def apply[F[_]](driver: NeoDriver)
