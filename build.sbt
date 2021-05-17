@@ -50,7 +50,7 @@ ThisBuild / scmInfo ~= {
 
 // Global settings.
 ThisBuild / scalaVersion := "2.12.13"
-ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
+ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.6")
 ThisBuild / organization := "com.dimafeng"
 ThisBuild / versionScheme := Some("semver-spec")
 
