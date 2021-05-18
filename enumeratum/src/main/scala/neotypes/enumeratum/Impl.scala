@@ -12,7 +12,10 @@ private[enumeratum] object Impl {
     enum: Enum[EntryType], name: String
   ): Either[IncoercibleException, EntryType] =
     enum.withNameEither(name).left.map { ex =>
-      IncoercibleException(ex.getMessage, None.orNull)
+      IncoercibleException(
+        message = ex.getMessage,
+        cause = Some(ex)
+      )
     }
 
   def parameterMapper[EntryType <: EnumEntry]: ParameterMapper[EntryType] =
@@ -32,7 +35,10 @@ private[enumeratum] object Impl {
       enum: ValueEnum[ValueType, EntryType], value: ValueType
     ): Either[IncoercibleException, EntryType] =
       enum.withValueEither(value).left.map { ex =>
-        IncoercibleException(ex.getMessage, None.orNull)
+        IncoercibleException(
+          message = ex.getMessage,
+          cause = Some(ex)
+        )
       }
 
     def parameterMapper[ValueType, EntryType <: ValueEnumEntry[ValueType]](
