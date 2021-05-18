@@ -4,18 +4,18 @@ import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.2.5"
 val scalaCollectionCompatVersion = "2.4.4"
-val shapelessVersion = "2.3.6"
+val shapelessVersion = "2.3.7"
 val testcontainersNeo4jVersion = "1.15.3"
 val testcontainersScalaVersion = "0.39.4"
 val mockitoVersion = "1.10.19"
-val scalaTestVersion = "3.2.8"
+val scalaTestVersion = "3.2.9"
 val logbackVersion = "1.2.3"
 val catsVersion = "2.6.1"
 val catsEffectsVersion = "2.5.1"
 val monixVersion = "3.4.0"
 val akkaStreamVersion = "2.6.14"
-val fs2Version = "3.0.3"
-val zioVersion = "1.0.7"
+val fs2Version = "2.5.6"
+val zioVersion = "1.0.8"
 val zioInteropReactiveStreamsVersion = "1.3.4"
 val refinedVersion = "0.9.25"
 val enumeratumVersion = "1.6.1"
@@ -50,7 +50,7 @@ ThisBuild / scmInfo ~= {
 
 // Global settings.
 ThisBuild / scalaVersion := "2.12.13"
-ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.5")
+ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.6")
 ThisBuild / organization := "com.dimafeng"
 ThisBuild / versionScheme := Some("semver-spec")
 
