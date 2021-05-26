@@ -3,7 +3,7 @@ package neotypes
 import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
 
-import exceptions.{ConversionException, IncoercibleException, PropertyNotFoundException}
+import exceptions.{IncoercibleException, PropertyNotFoundException}
 import generic.Exported
 import types.{Path, QueryParam}
 import internal.utils.traverse.{traverseAs, traverseAsList}
@@ -11,7 +11,6 @@ import internal.utils.traverse.{traverseAs, traverseAsList}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.Value
-import org.neo4j.driver.exceptions.value.Uncoercible
 import org.neo4j.driver.summary.ResultSummary
 import org.neo4j.driver.types.{IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
 import shapeless.HNil
@@ -446,8 +445,11 @@ object mappers {
         value match {
           case Some(v) =>
             Try(f(v)).toEither.left.map {
-              case ex: Uncoercible => IncoercibleException(s"${ex.getLocalizedMessage} for field [${fieldName}] with value [${v}]", ex)
-              case ex: Throwable => ex
+              case ex =>
+                IncoercibleException(
+                  message = s"${ex.getLocalizedMessage} for field [${fieldName}] with value [${v}]",
+                  cause = Some(ex)
+                )
             }
 
           case None =>
@@ -595,7 +597,7 @@ object mappers {
         override def to(fieldName: String, value: Option[Value]): Either[Throwable, Path[N, R]] =
           value match {
             case None =>
-              Left(PropertyNotFoundException(s"Property $fieldName not found"))
+              Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
             case Some(value) =>
               if (value.`type` == InternalTypeSystem.TYPE_SYSTEM.PATH) {
@@ -614,7 +616,9 @@ object mappers {
                   relationships <- relationships
                 } yield Path(nodes, relationships, path)
               } else {
-                Left(ConversionException(s"$fieldName of type ${value.`type`} cannot be converted into a Path"))
+                Left(IncoercibleException(
+                  message = s"${fieldName} of type ${value.`type`} cannot be converted into a Path"
+                ))
               }
           }
       }
@@ -630,7 +634,9 @@ object mappers {
               resultMapper.to((fieldName -> value) :: Nil, Some(TypeHint(ct)))
 
             case None =>
-              Left(ConversionException(s"Cannot convert $fieldName [$value]"))
+              Left(IncoercibleException(
+                message = s"${fieldName} cannot be converted ${value} into a ${ct.runtimeClass.getCanonicalName}"
+              ))
           }
       }
   }

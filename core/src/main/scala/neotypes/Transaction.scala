@@ -4,6 +4,7 @@ import internal.utils.traverse._
 import internal.syntax.async._
 import internal.syntax.stage._
 import internal.syntax.stream._
+import exceptions.IncoercibleException
 import mappers.{ExecutionMapper, ResultMapper}
 import types.QueryParam
 
@@ -142,9 +143,10 @@ object Transaction {
         for {
           // Ensure to process all records before asking for the result summary.
           _ <- rxResult.records.toStream[S].void[F]
-          r <- rxResult.consume.toStream[S].single[F]
-          t <- F.fromEither(r.toRight(left = exceptions.ConversionException("Empty result summary")).flatMap(executionMapper.to))
-        } yield t
+          rs <- rxResult.consume.toStream[S].single[F]
+          t = rs.toRight(left = IncoercibleException(message = "Missing ResultSummary")).flatMap(executionMapper.to)
+          result <- F.fromEither(t)
+        } yield result
       }
 
       override final def collectAs[C, T](factory: Factory[T, C])

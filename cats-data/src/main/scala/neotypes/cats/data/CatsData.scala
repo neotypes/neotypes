@@ -73,7 +73,7 @@ trait CatsData {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyChain[T]] =
         value match {
           case None =>
-            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+            Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
           case Some(value) =>
             traverseAsChain(value.values.asScala.iterator) { v: Value =>
@@ -81,7 +81,9 @@ trait CatsData {
             }.flatMap { chain =>
               NonEmptyChain.fromChain(chain) match {
                 case None =>
-                  Left(IncoercibleException("NonEmptyChain from an empty list", None.orNull))
+                  Left(IncoercibleException(
+                    message = "NonEmptyChain from an empty list"
+                  ))
 
                 case Some(nonEmptyChain) =>
                   Right(nonEmptyChain)
@@ -103,7 +105,7 @@ trait CatsData {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyList[T]] =
         value match {
           case None =>
-            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+            Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
           case Some(value) =>
             traverseAsList(value.values.asScala.iterator) { v: Value =>
@@ -111,7 +113,9 @@ trait CatsData {
             }.flatMap { list =>
               NonEmptyList.fromList(list) match {
                 case None =>
-                  Left(IncoercibleException("NonEmptyList from an empty list", None.orNull))
+                  Left(IncoercibleException(
+                    message = "NonEmptyList from an empty list"
+                  ))
 
                 case Some(nonEmptyList) =>
                   Right(nonEmptyList)
@@ -135,7 +139,7 @@ trait CatsData {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyMap[K, V]] =
         value match {
           case None =>
-            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+            Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
           case Some(value) =>
             traverseAs(SortedMap : Factory[(K, V), SortedMap[K, V]])(value.keys.asScala.iterator) { key =>
@@ -145,7 +149,7 @@ trait CatsData {
               } yield k -> v
             } flatMap { map =>
               NonEmptyMap.fromMap(map).toRight(
-                left = IncoercibleException("NonEmptyMap from an empty map", None.orNull)
+                left = IncoercibleException(message = "NonEmptyMap from an empty map")
               )
             }
         }
@@ -170,14 +174,14 @@ trait CatsData {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptySet[T]] =
         value match {
           case None =>
-            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+            Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
           case Some(value) =>
             traverseAs(SortedSet : Factory[T, SortedSet[T]])(value.values.asScala.iterator) { v =>
               mapper.to(fieldName = "", Option(v))
             } flatMap { set =>
               NonEmptySet.fromSet(set).toRight(
-                left = IncoercibleException("NonEmptySet from an empty list", None.orNull)
+                left = IncoercibleException("NonEmptySet from an empty list")
               )
             }
         }
@@ -200,7 +204,7 @@ trait CatsData {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, NonEmptyVector[T]] =
         value match {
           case None =>
-            Left(PropertyNotFoundException(s"Property $fieldName not found"))
+            Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
           case Some(value) =>
             traverseAsVector(value.values.asScala.iterator) { v: Value =>
@@ -208,7 +212,9 @@ trait CatsData {
             }.flatMap { vector =>
               NonEmptyVector.fromVector(vector) match {
                 case None =>
-                  Left(IncoercibleException("NonEmptyVector from an empty list", None.orNull))
+                  Left(IncoercibleException(
+                    message = "NonEmptyVector from an empty list"
+                  ))
 
                 case Some(nonEmptyVector) =>
                   Right(nonEmptyVector)
