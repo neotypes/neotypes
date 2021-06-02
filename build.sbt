@@ -51,7 +51,7 @@ ThisBuild / scmInfo ~= {
 // Global settings.
 ThisBuild / scalaVersion := "2.12.14"
 ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
-ThisBuild / organization := "com.dimafeng"
+ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 
 def removeScalacOptionsInTest(scalaVersion: String) =
@@ -124,7 +124,7 @@ lazy val root = (project in file("."))
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
-    name := "neotypes",
+    name := "neotypes-core",
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
