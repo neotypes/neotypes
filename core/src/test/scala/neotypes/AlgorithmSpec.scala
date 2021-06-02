@@ -14,7 +14,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
   it should "execute the article rank centrality algorithm" in executeAsFuture { d =>
     for {
       _ <- articleRankingData.query[Unit].execute(d)
-      result <- """CALL gds.alpha.articleRank.stream({
+      result <- """CALL gds.articleRank.stream({
                      nodeProjection: "Paper",
                      relationshipProjection: "CITES",
                      maxIterations: 20,
@@ -106,7 +106,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
               )
            """.query[Unit].execute(d)
       result <- """MATCH (start: Location { name:'A' }), (target: Location { name:'F' })
-                   CALL gds.beta.shortestPath.dijkstra.stream('myGraph', {
+                   CALL gds.shortestPath.dijkstra.stream('myGraph', {
                      sourceNode: id(start),
                      targetNode: id(target),
                      relationshipWeightProperty: 'cost'

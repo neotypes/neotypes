@@ -2,11 +2,11 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.2.5"
+val neo4jDriverVersion = "4.3.0"
 val scalaCollectionCompatVersion = "2.4.4"
 val shapelessVersion = "2.3.7"
 val testcontainersNeo4jVersion = "1.15.3"
-val testcontainersScalaVersion = "0.39.4"
+val testcontainersScalaVersion = "0.39.5"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.9"
 val logbackVersion = "1.2.3"
@@ -14,10 +14,10 @@ val catsVersion = "2.6.1"
 val catsEffectsVersion = "2.5.1"
 val monixVersion = "3.4.0"
 val akkaStreamVersion = "2.6.14"
-val fs2Version = "3.0.4"
-val zioVersion = "1.0.8"
-val zioInteropReactiveStreamsVersion = "1.3.4"
-val refinedVersion = "0.9.25"
+val fs2Version = "2.5.6"
+val zioVersion = "1.0.9"
+val zioInteropReactiveStreamsVersion = "1.3.5"
+val refinedVersion = "0.9.26"
 val enumeratumVersion = "1.6.1"
 
 // Fix scmInfo in Github Actions.
@@ -49,8 +49,8 @@ ThisBuild / scmInfo ~= {
   }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.12.13"
-ThisBuild / crossScalaVersions := Seq("2.12.13", "2.13.6")
+ThisBuild / scalaVersion := "2.12.14"
+ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
 ThisBuild / organization := "com.dimafeng"
 ThisBuild / versionScheme := Some("semver-spec")
 

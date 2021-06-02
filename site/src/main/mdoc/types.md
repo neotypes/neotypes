@@ -38,6 +38,7 @@ position: 30
 | `java.time.OffsetTime                  ` | ✓            | ✓                     | ✓ |
 | `java.time.ZonedDateTime               ` | ✓            | ✓                     | ✓ |
 | `java.util.UUID                        ` | ✓            | ✓                     | ✓ |
+| `neotypes.DeferredQuery °°             ` | |            | |                     | ✓ |
 | `org.neo4j.driver.Value                ` | ✓            | ✓                     | ✓ |
 | `org.neo4j.driver.types.IsoDuration    ` | ✓            | ✓                     | ✓ |
 | `org.neo4j.driver.types.Point          ` | ✓            | ✓                     | ✓ |
@@ -55,6 +56,7 @@ position: 30
 > `++` Support is provided in the **neotypes-cats-data** _module_.<br>
 > `+++` Support is provided in the **neotypes-enumeratum** _module_.<br>
 > `°` Support for automatic and semiautomatic derivation is provided in the **generic** _module_.<br>
+> `°°` Nested queries are expanded at compile time.<br>
 
 ## Additional types
 
