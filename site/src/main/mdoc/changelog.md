@@ -7,7 +7,9 @@ position: 100
 
 # Changelog
 
-## v0.18.0 _(2021-06-xx)_
+## v0.18.1 _(2021-06-08)_
+
+(v0.18.0 was published by accident)
 
 ### Update organization id ([#359](https://github.com/neotypes/neotypes/pull/359){:target="_blank"})
 
