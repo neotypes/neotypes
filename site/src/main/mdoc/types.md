@@ -38,7 +38,7 @@ position: 30
 | `java.time.OffsetTime                  ` | ✓            | ✓                     | ✓ |
 | `java.time.ZonedDateTime               ` | ✓            | ✓                     | ✓ |
 | `java.util.UUID                        ` | ✓            | ✓                     | ✓ |
-| `neotypes.DeferredQuery °°             ` | |            | |                     | ✓ |
+| `neotypes.DeferredQuery °°             ` |              |                       | ✓ |
 | `org.neo4j.driver.Value                ` | ✓            | ✓                     | ✓ |
 | `org.neo4j.driver.types.IsoDuration    ` | ✓            | ✓                     | ✓ |
 | `org.neo4j.driver.types.Point          ` | ✓            | ✓                     | ✓ |
