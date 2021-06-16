@@ -7,7 +7,7 @@ position: 100
 
 # Changelog
 
-## v0.18.1 _(2021-06-17)_
+## v0.18.2 _(2021-06-16)_
 
 ### Don't override driver's tx-config from DeferredQuery ([#362](https://github.com/neotypes/neotypes/pull/362){:target="_blank"})
 
