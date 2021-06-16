@@ -7,9 +7,16 @@ position: 100
 
 # Changelog
 
-## v0.18.1 _(2021-06-08)_
+## v0.18.1 _(2021-06-17)_
 
-(v0.18.0 was published by accident)
+### Don't override driver's tx-config from DeferredQuery ([#362](https://github.com/neotypes/neotypes/pull/362){:target="_blank"})
+
+This a bug fix that complements #341
+
+It ensures that when you run a query using the standard **DeferredQuery** syntax,
+it would respect the current **Driver's** default config.
+
+## v0.18.1 _(2021-06-08)_
 
 ### Update organization id ([#359](https://github.com/neotypes/neotypes/pull/359){:target="_blank"})
 
@@ -61,6 +68,12 @@ this method can be used to crate a new `Driver[F]` whose default `TransactionCon
 will be the one passed to the previous method.
 
 This is very useful when you need to use a custom config across all the application, or for tests.
+
+## v0.18.0 _(2021-06-08)_
+
+**DO NOT USE!**
+
+`v0.18.0` was published by accident, use `v0.18.1` which contains all the planned changes for this version.
 
 ## v0.17.0 _(2021-04-04)_
 
