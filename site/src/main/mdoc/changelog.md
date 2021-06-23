@@ -7,6 +7,74 @@ position: 100
 
 # Changelog
 
+## v0.18.2 _(2021-06-16)_
+
+### Don't override driver's tx-config from DeferredQuery ([#362](https://github.com/neotypes/neotypes/pull/362){:target="_blank"})
+
+This a bug fix that complements #341
+
+It ensures that when you run a query using the standard **DeferredQuery** syntax,
+it would respect the current **Driver's** default config.
+
+## v0.18.1 _(2021-06-08)_
+
+### Update organization id ([#359](https://github.com/neotypes/neotypes/pull/359){:target="_blank"})
+
+This is the first version to be released to `io.github.neotypes` rather than to `com.dimafeng`
+
+This releases also changed the name of the **core** module from just `neotypes` to `neotypes-core`
+
+### Ensuring all casting errors during mapping are encapsulated in a NeotypesException ([#345](https://github.com/neotypes/neotypes/pull/345){:target="_blank"})
+
+This is basically a bug fix that ensures that any exception thrown
+during the _"casting"_ of **Neo4j** values to **Scala** ones
+are catch by the underlying `ValueMapper`
+and wrapped in the optional cause of a `neotypes.exceptions.IncoercibleException`
+
+We also removed `neotypes.exceptions.ConversionException`
+and replaced its only usage with a `neotypes.exceptions.IncoercibleException`
+for consistency.
+
+### Add cypher interpolation of DeferredQueryBuilder ([#344](https://github.com/neotypes/neotypes/pull/344){:target="_blank"})
+
+We added the capability to embedded `DeferredQueryBuilders` inside other queries,
+which helps a lot to share and reuse common _(sub)_ queries.
+
+Which means that the following examples now compile out-of-the-box and behave as expected.
+
+```scala mdoc:compile-only
+import neotypes.implicits.syntax.cypher._
+
+// Two sub-queries.
+val subQuery1Param = 1
+val subQuery1 = c"user.id = ${subQuery1Param}"
+val subQuery2Param = "Luis"
+val subQuery2 = c"user.name = ${subQuery2Param}"
+val query1 = c"MATCH (user: User) WHERE ${subQuery1} OR ${subQuery2} RETURN user"
+
+// Sub.query with a sub-query.
+val subSubQueryParam = 1
+val subSubQuery = c"user.id = ${subSubQueryParam}"
+val subQuery = c"""${subSubQuery} OR user.name = "Luis""""
+val query2 = c"MATCH (user: User) WHERE ${subQuery} RETURN user"
+```
+
+> Special thanks to @tjarvstrand for all the hard work in this PR!
+
+### Make default transaction config configurable ([#341](https://github.com/neotypes/neotypes/pull/341){:target="_blank"})
+
+We added a new `withTransactionConfig` method to the `Driver` interface,
+this method can be used to crate a new `Driver[F]` whose default `TransactionConfig`
+will be the one passed to the previous method.
+
+This is very useful when you need to use a custom config across all the application, or for tests.
+
+## v0.18.0 _(2021-06-08)_
+
+**DO NOT USE!**
+
+`v0.18.0` was published by accident, use `v0.18.1` which contains all the planned changes for this version.
+
 ## v0.17.0 _(2021-04-04)_
 
 ### Adding the enumeratum module ([#291](https://github.com/neotypes/neotypes/pull/291){:target="_blank"})

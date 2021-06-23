@@ -2,7 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.3.0"
+val neo4jDriverVersion = "4.3.1"
 val scalaCollectionCompatVersion = "2.4.4"
 val shapelessVersion = "2.3.7"
 val testcontainersNeo4jVersion = "1.15.3"
@@ -13,12 +13,12 @@ val logbackVersion = "1.2.3"
 val catsVersion = "2.6.1"
 val catsEffectsVersion = "2.5.1"
 val monixVersion = "3.4.0"
-val akkaStreamVersion = "2.6.14"
-val fs2Version = "3.0.4"
+val akkaStreamVersion = "2.6.15"
+val fs2Version = "2.5.6"
 val zioVersion = "1.0.9"
 val zioInteropReactiveStreamsVersion = "1.3.5"
 val refinedVersion = "0.9.26"
-val enumeratumVersion = "1.6.1"
+val enumeratumVersion = "1.7.0"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
@@ -51,7 +51,7 @@ ThisBuild / scmInfo ~= {
 // Global settings.
 ThisBuild / scalaVersion := "2.12.14"
 ThisBuild / crossScalaVersions := Seq("2.12.14", "2.13.6")
-ThisBuild / organization := "com.dimafeng"
+ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 
 def removeScalacOptionsInTest(scalaVersion: String) =
@@ -71,7 +71,7 @@ val commonSettings = Seq(
     * Publishing
     */
   publishTo := {
-    val nexus = "https://oss.sonatype.org/"
+    val nexus = "https://s01.oss.sonatype.org/"
     if (isSnapshot.value)
       Some("snapshots" at nexus + "content/repositories/snapshots")
     else
@@ -124,7 +124,7 @@ lazy val root = (project in file("."))
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
-    name := "neotypes",
+    name := "neotypes-core",
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
