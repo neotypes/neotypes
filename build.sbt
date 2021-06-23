@@ -18,7 +18,7 @@ val fs2Version = "2.5.6"
 val zioVersion = "1.0.9"
 val zioInteropReactiveStreamsVersion = "1.3.5"
 val refinedVersion = "0.9.26"
-val enumeratumVersion = "1.6.1"
+val enumeratumVersion = "1.7.0"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
