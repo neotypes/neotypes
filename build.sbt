@@ -13,12 +13,12 @@ val logbackVersion = "1.2.3"
 val catsVersion = "2.6.1"
 val catsEffectsVersion = "2.5.1"
 val monixVersion = "3.4.0"
-val akkaStreamVersion = "2.6.14"
+val akkaStreamVersion = "2.6.15"
 val fs2Version = "2.5.6"
 val zioVersion = "1.0.9"
 val zioInteropReactiveStreamsVersion = "1.3.5"
 val refinedVersion = "0.9.26"
-val enumeratumVersion = "1.6.1"
+val enumeratumVersion = "1.7.0"
 
 // Fix scmInfo in Github Actions.
 // See: https://github.com/sbt/sbt-git/issues/171
