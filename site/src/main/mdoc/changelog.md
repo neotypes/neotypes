@@ -7,6 +7,16 @@ position: 100
 
 # Changelog
 
+## v0.18.3 _(2021-06-25)_
+
+### Reverting the neo4j#797 workaround ([#364](https://github.com/neotypes/neotypes/pull/364){:target="_blank"})
+
+This is just an internal code refactor thanks to a bug fix in the underlying **Java** driver.
+
+However, this refactor implies that users need to update their underlying **Java** driver
+to the latest patch versions.<br>
+As of the writing date: `4.3.2`, `4.2.7` & `4.1.4`; `4.0` seems to be not longer maintained.
+
 ## v0.18.2 _(2021-06-16)_
 
 ### Don't override driver's tx-config from DeferredQuery ([#362](https://github.com/neotypes/neotypes/pull/362){:target="_blank"})
