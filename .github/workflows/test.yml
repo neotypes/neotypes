@@ -68,7 +68,7 @@ jobs:
           releases-only: false
         id: latestTag
 
-      - run: echo "Latest release ${{ steps.octokit.outputs.tag }}"
+      - run: echo "Latest release ${{ steps.latestTag.outputs.tag }}"
 
       - uses: actions/checkout@v2
         with:
