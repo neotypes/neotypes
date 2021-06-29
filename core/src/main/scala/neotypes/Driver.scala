@@ -106,29 +106,11 @@ object Driver {
         driver.rxSession(sessionConfig)
       }
 
-      /* Use when https://github.com/neo4j/neo4j-java-driver/issues/797 is fixed.
       S.fromF(session).flatMapS { s =>
         s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
           Transaction[S, F](tx, s)
         }
       }
-      */
-
-      // Workaround for neo4j-java-driver#797 -------------------------------------------
-      val streamingTx = session.flatMap { s =>
-        F.async[StreamingTransaction[S, F]] { cb =>
-          val rxs = s.asInstanceOf[org.neo4j.driver.internal.reactive.InternalRxSession]
-          val f = rxs.getClass.getDeclaredField("session")
-          f.setAccessible(true)
-          val ns = f.get(rxs).asInstanceOf[org.neo4j.driver.internal.async.NetworkSession]
-          ns.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
-            val rxtx = new org.neo4j.driver.internal.reactive.InternalRxTransaction(tx)
-            Right(Transaction(rxtx, s))
-          }
-        }
-      }
-      S.fromF(streamingTx)
-      // --------------------------------------------------------------------------------
     }
 
     override def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
