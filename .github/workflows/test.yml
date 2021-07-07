@@ -26,15 +26,7 @@ jobs:
           java-version: ${{ matrix.java }}
 
       - name: Restore cache
-        uses: actions/cache@v2
-        with:
-          path: |
-            ~/.sbt
-            ~/.ivy2/cache
-            ~/.cache/coursier
-          key: cache-v1-${{ hashFiles('build.sbt') }}
-          restore-keys: |
-            cache-v1-
+        uses: coursier/cache-action@v6
 
       - name: Compile
         run: ./sbt +test:compile
@@ -87,6 +79,9 @@ jobs:
 
       - name: Setup Jekyll
         run: gem install jekyll -v 4.0.0
+
+      - name: Restore cache
+        uses: coursier/cache-action@v6
 
       - name: Build the microsite
         run: ./sbt microsite/makeMicrosite
