@@ -12,6 +12,7 @@ abstract class StreamTestkit[S[_], F[_]](val effectTestkit: EffectTestkit[F])
   trait Behaviour {
     def streamToFList[A](stream: S[A]): F[List[A]]
     def streamInstance: Stream.Aux[S, F]
+    def streamConcurrently(stream1: S[Unit], stream2: S[Unit]): S[Unit]
   }
 
   def createBehaviour(implicit ec: ExecutionContext): Behaviour
@@ -30,6 +31,8 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
 
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance
+
+  protected final def streamConcurrently[A](stream1: S[Unit], stream2: S[Unit]) = behaviour.streamConcurrently(stream1, stream2)
 }
 
 /** Provides an StreamingDriver[S, F] instance for streaming tests. */
@@ -55,5 +58,6 @@ abstract class StreamingDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
   new StreamSpec(testkit),
   new StreamingTransactSpec(testkit),
-  new StreamingTransactionSpec(testkit)
+  new StreamingTransactionSpec(testkit),
+  new ConcurrentStreamingDriverSpec(testkit)
 )

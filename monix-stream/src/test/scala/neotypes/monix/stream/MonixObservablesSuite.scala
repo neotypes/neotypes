@@ -17,6 +17,8 @@ object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTas
 
       override final val streamInstance: Stream.Aux[MonixStream, Task] =
         implicitly
+
+      override def streamConcurrently(stream1: MonixStream[Unit], stream2: MonixStream[Unit]): MonixStream[Unit] = stream1.combineLatest(stream2).map(_ => ())
     }
 }
 
