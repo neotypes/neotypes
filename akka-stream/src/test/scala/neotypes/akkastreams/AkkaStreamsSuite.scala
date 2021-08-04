@@ -4,7 +4,7 @@ import neotypes.{FutureTestkit, Stream, StreamSuite, StreamTestkit}
 import neotypes.akkastreams.implicits._
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.{Merge, Sink, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -20,6 +20,9 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
 
       override final val streamInstance: Stream.Aux[AkkaStream, Future] =
         implicitly
+
+      override def streamConcurrently(stream1: AkkaStream[Unit], stream2: AkkaStream[Unit]): AkkaStream[Unit] =
+        Source.combine(stream1, stream2)(Merge(_))
     }
 }
 

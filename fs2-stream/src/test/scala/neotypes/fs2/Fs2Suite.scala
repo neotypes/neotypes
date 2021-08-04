@@ -20,6 +20,9 @@ object Fs2Testkit extends StreamTestkit[Fs2IoStream, IO](IOTestkit) {
 
       override final val streamInstance: Stream.Aux[Fs2IoStream, IO] =
         implicitly
+
+      override def streamConcurrently(stream1: Fs2IoStream[Unit], stream2: Fs2IoStream[Unit]): Fs2IoStream[Unit] =
+        stream1.merge(stream2)
     }
 }
 
