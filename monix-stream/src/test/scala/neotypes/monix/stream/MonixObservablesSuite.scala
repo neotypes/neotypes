@@ -3,8 +3,8 @@ package neotypes.monix.stream
 import neotypes.{Stream, StreamSuite, StreamTestkit}
 import neotypes.monix.MonixTaskTestkit
 import neotypes.monix.stream.implicits._
-
 import monix.eval.Task
+import monix.reactive.Observable
 
 import scala.concurrent.ExecutionContext
 
@@ -18,7 +18,8 @@ object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTas
       override final val streamInstance: Stream.Aux[MonixStream, Task] =
         implicitly
 
-      override def streamConcurrently(stream1: MonixStream[Unit], stream2: MonixStream[Unit]): MonixStream[Unit] = stream1.combineLatest(stream2).map(_ => ())
+      override def streamConcurrently(stream1: MonixStream[Unit], stream2: MonixStream[Unit]): MonixStream[Unit] =
+        Observable(stream1, stream2).merge
     }
 }
 

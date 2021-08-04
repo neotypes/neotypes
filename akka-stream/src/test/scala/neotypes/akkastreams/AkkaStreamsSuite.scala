@@ -21,7 +21,8 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
       override final val streamInstance: Stream.Aux[AkkaStream, Future] =
         implicitly
 
-      override def streamConcurrently(stream1: AkkaStream[Unit], stream2: AkkaStream[Unit]): AkkaStream[Unit] = Source.combine(stream1, stream2)(Merge(_))
+      override def streamConcurrently(stream1: AkkaStream[Unit], stream2: AkkaStream[Unit]): AkkaStream[Unit] =
+        Source.combine(stream1, stream2)(Merge(_))
     }
 }
 

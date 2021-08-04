@@ -4,11 +4,11 @@ import neotypes.implicits.syntax.cypher._
 import org.scalatest.matchers.should.Matchers
 import scala.concurrent.ExecutionContext
 
-/** Base class for testing the concurrent use of a Driver. */
+/** Base class for testing the concurrent use of a StreamingDriver. */
 final class ConcurrentStreamingDriverSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
 ) extends StreamingDriverProvider(testkit) with BaseIntegrationSpec[F] with Matchers {
-  behavior of s"Concurrent use of Driver[${effectName}]"
+  behavior of s"Concurrent use of StreamingDriver[${streamName}, ${effectName}]"
 
   // Use a custom ec to ensure the tasks run concurrently.
   override implicit final lazy val executionContext: ExecutionContext =
@@ -22,11 +22,11 @@ final class ConcurrentStreamingDriverSpec[S[_], F[_]](
         c"CREATE (p: PERSON { name: ${name} })".query[Unit].stream(d)
 
       streamConcurrently(insertPerson(name = "name1"), insertPerson(name = "name2"))
-    }.flatMap{ _ =>
+    } flatMap { _ =>
       executeAsFuture{ d =>
         c"MATCH (p: PERSON) RETURN p.name".query[String].list(d)
       }
-    }.map { result =>
+    } map { result =>
       result should contain theSameElementsAs List("name1", "name2")
     }
   }

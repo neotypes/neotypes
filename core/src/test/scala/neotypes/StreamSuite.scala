@@ -32,7 +32,8 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance
 
-  protected final def streamConcurrently[A](stream1: S[Unit], stream2: S[Unit]) = behaviour.streamConcurrently(stream1, stream2)
+  protected final def streamConcurrently[A](stream1: S[Unit], stream2: S[Unit]): S[Unit] =
+    behaviour.streamConcurrently(stream1, stream2)
 }
 
 /** Provides an StreamingDriver[S, F] instance for streaming tests. */
