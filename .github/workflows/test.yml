@@ -28,14 +28,8 @@ jobs:
       - name: Restore cache
         uses: coursier/cache-action@v6
 
-      - name: Compile
-        run: ./sbt +test:compile
-
-      - name: Scaladoc
-        run: ./sbt +doc
-
-      - name: Test
-        run: ./sbt +test
+      - name: Compile & Test
+        run: sbt +test
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
@@ -45,8 +39,11 @@ jobs:
       - name: Setup Jekyll
         run: gem install jekyll -v 4.0.0
 
+      - name: Setup graphviz
+        run: sudo apt install -y graphviz
+
       - name: Build the microsite
-        run: ./sbt microsite/makeMicrosite
+        run: sbt microsite/makeMicrosite
 
   deploy-site:
     needs: build
@@ -80,11 +77,14 @@ jobs:
       - name: Setup Jekyll
         run: gem install jekyll -v 4.0.0
 
+      - name: Setup graphviz
+        run: sudo apt install -y graphviz
+
       - name: Restore cache
         uses: coursier/cache-action@v6
 
       - name: Build the microsite
-        run: ./sbt microsite/makeMicrosite
+        run: sbt microsite/makeMicrosite
 
       - name: Deploy
         uses: peaceiris/actions-gh-pages@v3
