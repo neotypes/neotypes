@@ -4,9 +4,8 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{Sink, Source}
 import org.reactivestreams.Publisher
 
-import scala.concurrent.Future
 import scala.collection.compat._
-import scala.util.{Failure, Success}
+import scala.concurrent.Future
 
 /**
   * neotypes Akka Streams
@@ -34,15 +33,18 @@ trait AkkaStreams {
       override def fromF[A](future: Future[A]): AkkaStream[A] =
         Source.future(future)
 
-      override final def resource[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
+      override final def guarantee[A, B](r: Future[A])
+                                        (f: A => AkkaStream[B])
+                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
         Source.future(r).flatMapConcat { a =>
-          f(a).watchTermination() {
-            case (mat, f) =>
-              f.onComplete {
-                case Success(_)  => finalizer(a, None)
-                case Failure(ex) => finalizer(a, Some(ex))
-              }
-              mat
+          f(a).recover{
+            case e =>
+              finalizer(a, Some(e))
+              throw e
+          }.flatMapConcat{ b =>
+            Source.future(finalizer(a, None)).map{
+              _ => b
+            }
           }
         }
 
