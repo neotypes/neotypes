@@ -33,25 +33,23 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
       }
 
     def runStreaming[T](result: Either[Throwable, T],
-               inputEx: Option[Throwable] = None,
-               finalizerEx: Option[Throwable] = None): Future[List[T]] = {
-
-      def fromOption(opt: Option[Throwable]): F[Unit] =
-        F.fromEither(opt.toLeft(right = ()))
+               inputEx: Either[Throwable, Unit] = Right(()),
+               finalizerEx: Either[Throwable, Unit] = Right(())): Future[List[T]] = {
 
       def streamFromEither(either: Either[Throwable, T]): S[T] =
         S.fromF(F.fromEither(either))
 
-      fToFuture(
-      streamToFList(
-       S.guarantee(r = fromOption(inputEx))(_ => streamFromEither(result)){ (_, _) =>
-         F.delay{
-           counter += 1
-         } flatMap { _ =>
-           fromOption(finalizerEx)
-         }
-       })
-      )
+      val res =
+        S.guarantee(r = F.fromEither(inputEx))(_ => streamFromEither(result))
+        { (_, _) =>
+           F.delay {
+             counter += 1
+           } flatMap { _ =>
+             F.fromEither(finalizerEx)
+           }
+        }
+
+      fToFuture(streamToFList(res))
     }
   }
 
@@ -71,7 +69,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when input fails" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Some(InputException), result = Right("result"))
+      fixture.runStreaming(inputEx = Left(InputException), result = Right("result"))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -87,26 +85,23 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when input and use fail" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Some(InputException), result = Left(UseException))
+      fixture.runStreaming(inputEx = Left(InputException), result = Left(UseException))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
   }
 
   it should "execute finalizer and return finalizer exception when finalizer fails" in { fixture =>
-    recoverToSucceededIf[FinalizerException] {
-      val res = fixture.runStreaming(result = Right("result"), finalizerEx = Some(FinalizerException))
-      Thread.sleep(1000)
-      println("The futures is: " + res)
-      res
-    } map { _ =>
+    recoverToSucceededIf[FinalizerException]{
+      fixture.runStreaming(result = Right("result"), finalizerEx = Left(FinalizerException))
+    }.map { r =>
       fixture.assertFinalizerWasCalledOnlyOnce
     }
   }
 
   it should "not execute finalizer and return input exception when input and finalizer fail" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Some(InputException), result = Right("result"), finalizerEx = Some(FinalizerException))
+      fixture.runStreaming(inputEx = Left(InputException), result = Right("result"), finalizerEx = Left(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -114,7 +109,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
     recoverToSucceededIf[UseException] {
-      fixture.runStreaming(result = Left(UseException), finalizerEx = Some(FinalizerException))
+      fixture.runStreaming(result = Left(UseException), finalizerEx = Left(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasCalledOnlyOnce
     }
@@ -122,7 +117,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when all fail" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Some(InputException), result = Left(UseException), finalizerEx = Some(FinalizerException))
+      fixture.runStreaming(inputEx = Left(InputException), result = Left(UseException), finalizerEx = Left(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }

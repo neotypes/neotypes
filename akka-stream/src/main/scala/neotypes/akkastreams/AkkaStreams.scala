@@ -1,11 +1,11 @@
 package neotypes.akkastreams
-
-import akka.stream.Materializer
+import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.reactivestreams.Publisher
 
 import scala.collection.compat._
-import scala.concurrent.Future
+import scala.concurrent.{ExecutionContext, Future}
 
 /**
   * neotypes Akka Streams
@@ -33,20 +33,8 @@ trait AkkaStreams {
       override def fromF[A](future: Future[A]): AkkaStream[A] =
         Source.future(future)
 
-      override final def guarantee[A, B](r: Future[A])
-                                        (f: A => AkkaStream[B])
-                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.future(r).flatMapConcat { a =>
-          f(a).recover{
-            case e =>
-              finalizer(a, Some(e))
-              throw e
-          }.flatMapConcat{ b =>
-            Source.future(finalizer(a, None)).map{
-              _ => b
-            }
-          }
-        }
+      override final def guarantee[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
+        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat(a => f(a))
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -67,3 +55,43 @@ trait AkkaStreams {
         s.runWith(Sink.ignore).map(_ => ())
     }
 }
+
+object AkkaStreams {
+  private final class ResourceStage[A] private[AkkaStreams] (factory: Future[A], finalizer: (A, Option[Throwable]) => Future[Unit])
+                                                            (implicit ec: ExecutionContext) extends GraphStage[SourceShape[A]] {
+    val out: Outlet[A] = Outlet("NeotypesResourceSource")
+    override val shape: SourceShape[A] = SourceShape(out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      private var alreadyCreated = false
+      private var resource: A = _
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          if (!alreadyCreated) {
+            val callback = getAsyncCallback[A] { a =>
+              alreadyCreated = true
+              resource = a
+              push(out, a)
+            }
+            factory.foreach(callback.invoke)
+          } else {
+            val callback = getAsyncCallback[Unit](_ => complete(out))
+            finalizer(resource, None)
+            .recover{
+              case e =>
+                fail(out, e)
+            }.foreach{r =>
+              callback.invoke(r)}
+          }
+        }
+
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          val callback = getAsyncCallback[Unit](_ => complete(out))
+          finalizer(resource, Option(cause)).foreach(callback.invoke)
+        }
+      })
+    }
+  }
+}
+
