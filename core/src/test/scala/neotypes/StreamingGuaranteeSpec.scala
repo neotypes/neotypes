@@ -75,13 +75,13 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
     }
   }
 
-  it should "execute finalizer and return use exception when use fails" in { fixture =>
-    recoverToSucceededIf[UseException] {
-      fixture.runStreaming(result = Left(UseException))
-    } map { _ =>
-      fixture.assertFinalizerWasCalledOnlyOnce
-    }
-  }
+//  it should "execute finalizer and return use exception when use fails" in { fixture =>
+//    recoverToSucceededIf[UseException] {
+//      fixture.runStreaming(result = Left(UseException))
+//    } map { _ =>
+//      fixture.assertFinalizerWasCalledOnlyOnce
+//    }
+//  }
 
   it should "not execute finalizer and return input exception when input and use fail" in { fixture =>
     recoverToSucceededIf[InputException] {
@@ -106,14 +106,14 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
       fixture.assertFinalizerWasNotCalled
     }
   }
-
-  it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
-    recoverToSucceededIf[UseException] {
-      fixture.runStreaming(result = Left(UseException), finalizerEx = Left(FinalizerException))
-    } map { _ =>
-      fixture.assertFinalizerWasCalledOnlyOnce
-    }
-  }
+//
+//  it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
+//    recoverToSucceededIf[UseException] {
+//      fixture.runStreaming(result = Left(UseException), finalizerEx = Left(FinalizerException))
+//    } map { _ =>
+//      fixture.assertFinalizerWasCalledOnlyOnce
+//    }
+//  }
 
   it should "not execute finalizer and return input exception when all fail" in { fixture =>
     recoverToSucceededIf[InputException] {

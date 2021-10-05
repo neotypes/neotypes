@@ -34,7 +34,11 @@ trait AkkaStreams {
         Source.future(future)
 
       override final def guarantee[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat(a => f(a))
+        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat(a => f(a).recover {
+          case e =>
+            finalizer(a, Some(e))
+            throw e
+        })
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -62,6 +66,7 @@ object AkkaStreams {
     val out: Outlet[A] = Outlet("NeotypesResourceSource")
     override val shape: SourceShape[A] = SourceShape(out)
 
+
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var alreadyCreated = false
       private var resource: A = _
@@ -69,20 +74,29 @@ object AkkaStreams {
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
           if (!alreadyCreated) {
+            val failCallback = getAsyncCallback[Throwable](t => fail(out, t))
             val callback = getAsyncCallback[A] { a =>
               alreadyCreated = true
               resource = a
               push(out, a)
             }
-            factory.foreach(callback.invoke)
+            factory
+              .onComplete{
+                case scala.util.Failure(e) =>
+                  failCallback.invoke(e)
+                case scala.util.Success(v) =>
+                  callback.invoke(v)
+              }
           } else {
             val callback = getAsyncCallback[Unit](_ => complete(out))
+            val failCallback = getAsyncCallback[Throwable](t => fail(out, t))
             finalizer(resource, None)
-            .recover{
-              case e =>
-                fail(out, e)
-            }.foreach{r =>
-              callback.invoke(r)}
+              .onComplete{
+              case scala.util.Failure(e) =>
+                failCallback.invoke(e)
+              case scala.util.Success(v) =>
+                callback.invoke(v)
+            }
           }
         }
 
