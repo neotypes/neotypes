@@ -5,6 +5,8 @@ import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.reactivestreams.Publisher
 
 import scala.collection.compat._
+import scala.util.Failure
+import scala.util.Success
 import scala.concurrent.{ExecutionContext, Future}
 
 /**
@@ -34,11 +36,13 @@ trait AkkaStreams {
         Source.future(future)
 
       override final def guarantee[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat(a => f(a).recover {
+        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat{a =>
+          f(a).recover {
           case e =>
             finalizer(a, Some(e))
             throw e
-        })
+          }
+        }
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -70,11 +74,11 @@ object AkkaStreams {
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var alreadyCreated = false
       private var resource: A = _
+      val failCallback = getAsyncCallback[Throwable](t => fail(out, t))
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = {
           if (!alreadyCreated) {
-            val failCallback = getAsyncCallback[Throwable](t => fail(out, t))
             val callback = getAsyncCallback[A] { a =>
               alreadyCreated = true
               resource = a
@@ -82,19 +86,18 @@ object AkkaStreams {
             }
             factory
               .onComplete{
-                case scala.util.Failure(e) =>
+                case Failure(e) =>
                   failCallback.invoke(e)
-                case scala.util.Success(v) =>
+                case Success(v) =>
                   callback.invoke(v)
               }
           } else {
             val callback = getAsyncCallback[Unit](_ => complete(out))
-            val failCallback = getAsyncCallback[Throwable](t => fail(out, t))
             finalizer(resource, None)
               .onComplete{
-              case scala.util.Failure(e) =>
+              case Failure(e) =>
                 failCallback.invoke(e)
-              case scala.util.Success(v) =>
+              case Success(v) =>
                 callback.invoke(v)
             }
           }
