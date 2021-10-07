@@ -36,13 +36,7 @@ trait AkkaStreams {
         Source.future(future)
 
       override final def guarantee[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat{a =>
-          f(a).recover {
-          case e =>
-            finalizer(a, Some(e))
-            throw e
-          }
-        }
+        Source.fromGraph(new AkkaStreams.ResourceStage[A](r, finalizer)).flatMapConcat(f)
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -69,7 +63,6 @@ object AkkaStreams {
                                                             (implicit ec: ExecutionContext) extends GraphStage[SourceShape[A]] {
     val out: Outlet[A] = Outlet("NeotypesResourceSource")
     override val shape: SourceShape[A] = SourceShape(out)
-
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
       private var alreadyCreated = false

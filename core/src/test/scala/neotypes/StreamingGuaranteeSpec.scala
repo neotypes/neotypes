@@ -1,6 +1,5 @@
 package neotypes
 
-import neotypes.internal.syntax.async._
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.FixtureAsyncFlatSpecLike
@@ -42,11 +41,8 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
       val res =
         S.guarantee(r = F.fromEither(inputEx))(_ => streamFromEither(result))
         { (_, _) =>
-           F.delay {
              counter += 1
-           } flatMap { _ =>
              F.fromEither(finalizerEx)
-           }
         }
 
       fToFuture(streamToFList(res))
@@ -107,13 +103,13 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
     }
   }
 
-//  it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
-//    recoverToSucceededIf[UseException] {
-//      fixture.runStreaming(result = Left(UseException), finalizerEx = Left(FinalizerException))
-//    } map { _ =>
-//      fixture.assertFinalizerWasCalledOnlyOnce
-//    }
-//  }
+  it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
+    recoverToSucceededIf[UseException] {
+      fixture.runStreaming(result = Left(UseException), finalizerEx = Left(FinalizerException))
+    } map { _ =>
+      fixture.assertFinalizerWasCalledOnlyOnce
+    }
+  }
 
   it should "not execute finalizer and return input exception when all fail" in { fixture =>
     recoverToSucceededIf[InputException] {
