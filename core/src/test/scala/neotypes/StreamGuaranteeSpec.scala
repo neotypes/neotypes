@@ -1,5 +1,6 @@
 package neotypes
 
+import neotypes.internal.syntax.async._
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.FixtureAsyncFlatSpecLike
@@ -7,9 +8,9 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.Future
 
-/** Base class for testing the Stream[S, F].guarantee method. */
-final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) with FixtureAsyncFlatSpecLike with Matchers {
-  behavior of s"Stream[${effectName}].guarantee"
+/** Base class for testing the Stream.Aux[S, F].guarantee method. */
+final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) with FixtureAsyncFlatSpecLike with Matchers {
+  behavior of s"Stream.Aux[${streamName}, ${effectName}].guarantee"
 
   import StreamingGuaranteeSpec._
 
@@ -32,20 +33,24 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
       }
 
     def runStreaming[T](result: Either[Throwable, T],
-               inputEx: Either[Throwable, Unit] = Right(()),
-               finalizerEx: Either[Throwable, Unit] = Right(())): Future[List[T]] = {
+                        inputEx: Option[Throwable] = None,
+                        finalizerEx: Option[Throwable] = None): Future[List[T]] = {
+      def effectFromOption(opt: Option[Throwable]): F[Unit] =
+        F.fromEither(opt.toLeft(right = ()))
 
-      def streamFromEither(either: Either[Throwable, T]): S[T] =
-        S.fromF(F.fromEither(either))
-
-      val res =
-        S.guarantee(r = F.fromEither(inputEx))(_ => streamFromEither(result))
-        { (_, _) =>
-             counter += 1
-             F.fromEither(finalizerEx)
+      fToFuture(streamToFList(
+        S.guarantee(
+          r = effectFromOption(inputEx)
+        ) (
+          _ => S.fromF(F.fromEither(result))
+        ) { (_, _) =>
+          F.delay {
+            counter += 1
+          } flatMap { _ =>
+            effectFromOption(finalizerEx)
+          }
         }
-
-      fToFuture(streamToFList(res))
+      ))
     }
   }
 
@@ -65,7 +70,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when input fails" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Left(InputException), result = Right("result"))
+      fixture.runStreaming(inputEx = Some(InputException), result = Right("result"))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -81,7 +86,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when input and use fail" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Left(InputException), result = Left(UseException))
+      fixture.runStreaming(inputEx = Some(InputException), result = Left(UseException))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -89,7 +94,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "execute finalizer and return finalizer exception when finalizer fails" in { fixture =>
     recoverToSucceededIf[FinalizerException]{
-      fixture.runStreaming(result = Right("result"), finalizerEx = Left(FinalizerException))
+      fixture.runStreaming(result = Right("result"), finalizerEx = Some(FinalizerException))
     }.map { r =>
       fixture.assertFinalizerWasCalledOnlyOnce
     }
@@ -97,7 +102,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when input and finalizer fail" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Left(InputException), result = Right("result"), finalizerEx = Left(FinalizerException))
+      fixture.runStreaming(inputEx = Some(InputException), result = Right("result"), finalizerEx = Some(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -105,7 +110,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "execute finalizer and return use exception when use and finalizer fail" in { fixture =>
     recoverToSucceededIf[UseException] {
-      fixture.runStreaming(result = Left(UseException), finalizerEx = Left(FinalizerException))
+      fixture.runStreaming(result = Left(UseException), finalizerEx = Some(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasCalledOnlyOnce
     }
@@ -113,7 +118,7 @@ final class StreamingGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) ext
 
   it should "not execute finalizer and return input exception when all fail" in { fixture =>
     recoverToSucceededIf[InputException] {
-      fixture.runStreaming(inputEx = Left(InputException), result = Left(UseException), finalizerEx = Left(FinalizerException))
+      fixture.runStreaming(inputEx = Some(InputException), result = Left(UseException), finalizerEx = Some(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -130,6 +135,3 @@ object StreamingGuaranteeSpec {
   final case object FinalizerException extends Exception("Finalizer failed")
   type FinalizerException = FinalizerException.type
 }
-
-
-
