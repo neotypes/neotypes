@@ -1,11 +1,12 @@
 package neotypes.akkastreams
 
-import akka.stream.Materializer
+import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
 import org.reactivestreams.Publisher
 
-import scala.concurrent.Future
 import scala.collection.compat._
+import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
 /**
@@ -13,6 +14,8 @@ import scala.util.{Failure, Success}
   * @see <a href = https://neotypes.github.io/neotypes/docs/streams.html#akka-streams-neotypes-akka-stream>AkkaStreams example</a>
   */
 trait AkkaStreams {
+  import AkkaStreams.GuaranteeStage
+
   /** neotypes support for Akka Streams
     *
     * @param mat implicit akka.stream.Materializer that will be passed down to all Akka Streams operations
@@ -34,17 +37,10 @@ trait AkkaStreams {
       override def fromF[A](future: Future[A]): AkkaStream[A] =
         Source.future(future)
 
-      override final def resource[A, B](r: Future[A])(f: A => AkkaStream[B])(finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.future(r).flatMapConcat { a =>
-          f(a).watchTermination() {
-            case (mat, f) =>
-              f.onComplete {
-                case Success(_)  => finalizer(a, None)
-                case Failure(ex) => finalizer(a, Some(ex))
-              }
-              mat
-          }
-        }
+      override final def guarantee[A, B](r: Future[A])
+                                        (f: A => AkkaStream[B])
+                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
+        Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -64,4 +60,48 @@ trait AkkaStreams {
       override final def void(s: AkkaStream[_]): Future[Unit] =
         s.runWith(Sink.ignore).map(_ => ())
     }
+}
+
+object AkkaStreams {
+  private final class GuaranteeStage[A](factory: Future[A], finalizer: (A, Option[Throwable]) => Future[Unit])
+                                      (implicit ec: ExecutionContext) extends GraphStage[SourceShape[A]] {
+    val out: Outlet[A] = Outlet("NeotypesGuaranteeSource")
+    override val shape: SourceShape[A] = SourceShape(out)
+
+    override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
+      private var alreadyCreated = false
+      private var resource: A = _
+
+      setHandler(out, new OutHandler {
+        override def onPull(): Unit = {
+          val failureCallback = getAsyncCallback[Throwable](t => fail(out, t))
+
+          if (!alreadyCreated) {
+            val successCallback = getAsyncCallback[A] { a =>
+              alreadyCreated = true
+              resource = a
+              push(out, a)
+            }
+
+            factory.onComplete {
+              case Success(v) => successCallback.invoke(v)
+              case Failure(e) => failureCallback.invoke(e)
+            }
+          } else {
+            val successCallback = getAsyncCallback[Unit](_ => complete(out))
+
+            finalizer(resource, None).onComplete {
+              case Success(v) => successCallback.invoke(v)
+              case Failure(e) => failureCallback.invoke(e)
+            }
+          }
+        }
+
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          val callback = getAsyncCallback[Unit](_ => complete(out))
+          finalizer(resource, Option(cause)).foreach(callback.invoke)
+        }
+      })
+    }
+  }
 }

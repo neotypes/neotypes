@@ -118,7 +118,7 @@ object Driver {
         F.fromEither(opt.toRight(left = exceptions.TransactionWasNotCreatedException))
       }
 
-      S.resource(tx)(txF)(txFinalizer)
+      S.guarantee(tx)(txF)(txFinalizer)
     }
 
     override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F] =

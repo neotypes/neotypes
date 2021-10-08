@@ -19,7 +19,9 @@ trait Fs2Streams {
       override def fromF[A](fa: F[A]): Stream[F, A] =
         Stream.eval(fa)
 
-      override final def resource[A, B](r: F[A])(f: A => Stream[F, B])(finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, B] =
+      override final def guarantee[A, B](r: F[A])
+                                        (f: A => Stream[F, B])
+                                        (finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, B] =
         Stream.bracketCase(acquire = r) {
           case (a, ExitCase.Completed) => finalizer(a, None)
           case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))

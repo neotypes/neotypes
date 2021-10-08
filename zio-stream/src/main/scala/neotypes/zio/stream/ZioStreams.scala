@@ -20,7 +20,9 @@ trait ZioStreams {
       override def fromF[A](task: Task[A]): ZioStream[A] =
         ZStream.fromEffect(task)
 
-      override final def resource[A, B](r: Task[A])(f: A => ZioStream[B])(finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
+      override final def guarantee[A, B](r: Task[A])
+                                        (f: A => ZioStream[B])
+                                        (finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
         ZStream.bracketExit(acquire = r) {
           case (a, Exit.Failure(cause))          => cause.failureOrCause match {
             case Left(ex: Throwable)             => finalizer(a, Some(ex)).ignore
