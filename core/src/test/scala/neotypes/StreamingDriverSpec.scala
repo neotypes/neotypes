@@ -5,6 +5,7 @@ import neotypes.implicits.syntax.string._
 import org.neo4j.driver.types.Node
 import org.scalatest.Inspectors
 import org.scalatest.matchers.should.Matchers
+import org.scalatest.LoneElement.convertToCollectionLoneElementWrapper
 import shapeless._
 
 
@@ -25,10 +26,10 @@ final class StreamingDriverSpec[S[_], F[_]](
       float <- executeAsFutureList { "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Float].stream(_) }
       node <- executeAsFutureList { "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Node].stream(_) }
     } yield {
-      string shouldBe List("Charlize Theron")
-      int shouldBe List(1975)
-      long shouldBe List(1975)
-      node.head.get("name").asString shouldBe "Charlize Theron"
+      string.loneElement shouldBe "Charlize Theron"
+      int.loneElement shouldBe 1975
+      long.loneElement shouldBe 1975
+      node.loneElement.get("name").asString shouldBe "Charlize Theron"
       (double.head - 1975).abs should be < 0.0001
       (float.head - 1975).abs should be < 0.0001F
     }
@@ -40,15 +41,15 @@ final class StreamingDriverSpec[S[_], F[_]](
       cc2 <- executeAsFutureList{  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".query[Person2].stream(_) }
       hlist <- executeAsFutureList{ "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[Person :: Movie :: HNil].stream(_) }
     } yield {
-      cc.head.id should be >= 0L
-      cc.head.name.contains("Charlize Theron") shouldBe true
-      cc.head.born shouldBe 1975
-      cc.head.f.isEmpty shouldBe  true
-      cc2.head.name.contains("Charlize Theron") shouldBe true
-      cc2.head.born shouldBe 1975
+      cc.loneElement.id should be >= 0L
+      cc.loneElement.name.contains("Charlize Theron") shouldBe true
+      cc.loneElement.born shouldBe 1975
+      cc.loneElement.f.isEmpty shouldBe  true
+      cc2.loneElement.name.contains("Charlize Theron") shouldBe true
+      cc2.loneElement.born shouldBe 1975
       hlist.size shouldBe 1
-      hlist.head.head.name.contains("Charlize Theron") shouldBe true
-      hlist.head.last.title shouldBe "That Thing You Do"
+      hlist.loneElement.head.name.contains("Charlize Theron") shouldBe true
+      hlist.loneElement.last.title shouldBe "That Thing You Do"
     }
   }
 
@@ -81,10 +82,10 @@ final class StreamingDriverSpec[S[_], F[_]](
       tuple <- executeAsFutureList{ "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[(Person, Movie)].stream(_) }
       tuplePrimitives <- executeAsFutureList{ "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p.name, m.title".query[(String, String)].stream(_) }
     } yield {
-      tuple.head._1.name.contains("Charlize Theron") shouldBe true
-      tuple.head._2.title shouldBe "That Thing You Do"
-      tuplePrimitives.head._1 shouldBe "Charlize Theron"
-      tuplePrimitives.head._2 shouldBe "That Thing You Do"
+      tuple.loneElement._1.name.contains("Charlize Theron") shouldBe true
+      tuple.loneElement._2.title shouldBe "That Thing You Do"
+      tuplePrimitives.loneElement._1 shouldBe "Charlize Theron"
+      tuplePrimitives.loneElement._2 shouldBe "That Thing You Do"
     }
   }
 
@@ -107,14 +108,14 @@ final class StreamingDriverSpec[S[_], F[_]](
                  LIMIT 1
         """.query[Option[Movie2]].stream(_) }
     } yield {
-      сс3.head.title shouldBe "That Thing You Do"
-      сс3.head.cast.size shouldBe 1
-      сс3.head.cast.head.job shouldBe "acted"
-      сс3.head.cast.head.name shouldBe "Charlize Theron"
-      сс3.head.cast.head.role shouldBe "Tina"
-      ссOption.head.isDefined shouldBe true
-      ссOption.head.get.title shouldBe "That Thing You Do"
-      ссOption.head.get.cast.size shouldBe 1
+      сс3.loneElement.title shouldBe "That Thing You Do"
+      сс3.loneElement.cast.size shouldBe 1
+      сс3.loneElement.cast.head.job shouldBe "acted"
+      сс3.loneElement.cast.head.name shouldBe "Charlize Theron"
+      сс3.loneElement.cast.head.role shouldBe "Tina"
+      ссOption.loneElement.isDefined shouldBe true
+      ссOption.loneElement.get.title shouldBe "That Thing You Do"
+      ссOption.loneElement.get.cast.size shouldBe 1
     }
   }
 
@@ -133,10 +134,10 @@ final class StreamingDriverSpec[S[_], F[_]](
                LIMIT 1
         """.query[PersonWithRoles].stream(_) }
     } yield {
-      hlist.head.head.name.get shouldBe "Charlize Theron"
-      hlist.head.tail.head.roles shouldBe List("Tina")
-      cc.head.person.name.get shouldBe "Charlize Theron"
-      cc.head.roles.roles shouldBe List("Tina")
+      hlist.loneElement.head.name.get shouldBe "Charlize Theron"
+      hlist.loneElement.tail.head.roles shouldBe List("Tina")
+      cc.loneElement.person.name.get shouldBe "Charlize Theron"
+      cc.loneElement.roles.roles shouldBe List("Tina")
     }
   }
 
@@ -147,10 +148,10 @@ final class StreamingDriverSpec[S[_], F[_]](
         r3 <- executeAsFutureList{ "RETURN 0".query[WrappedName].stream(_) }
         r4 <- executeAsFutureList{ "RETURN NULL".query[WrappedName].stream(_) }
       } yield {
-        r1.head.isEmpty shouldBe true
-        r2.head.name.isEmpty  shouldBe true
-        r3.head.name.isEmpty shouldBe true
-        r4.head.name.isEmpty shouldBe true
+        r1.loneElement.isEmpty shouldBe true
+        r2.loneElement.name.isEmpty  shouldBe true
+        r3.loneElement.name.isEmpty shouldBe true
+        r4.loneElement.name.isEmpty shouldBe true
       }
   }
 
@@ -160,34 +161,34 @@ final class StreamingDriverSpec[S[_], F[_]](
       _ <- executeAsFutureList{ "CREATE (n: WithId { name: 'node2', id: 135 })".query[Unit].stream(_) }
       _ <- executeAsFutureList{ "CREATE (n: WithId { name: 'node3', _id: 135 })".query[Unit].stream(_) }
       _ <- executeAsFutureList{ "CREATE (n: WithId { name: 'node4', id: 135, _id: 531 })".query[Unit].stream(_) }
-      node1 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node1' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }.map(_.head)
-      node2 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node2' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }.map(_.head)
-      node3 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }.map(_.head)
-      node4 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }.map(_.head)
+      node1 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node1' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }
+      node2 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node2' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }
+      node3 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }
+      node4 <- executeAsFutureList{ "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".query[(WithId, Int)].stream(_) }
     } yield {
       // Node 1 doesn't have any custom id property.
       // Thus the id field should contain the neo4j id.
       // and the _id field should also contain the neo4j id.
-      assert(node1._1.id == node1._2)
-      assert(node1._1._id == node1._2)
+      node1.loneElement._1.id shouldBe node1.loneElement._2
+      node1.loneElement._1._id shouldBe node1.loneElement._2
 
       // Node 2 has a custom id property.
       // Thus the id field should contain the custom id,
       // and the _id field should contain the neo4j id.
-      assert(node2._1.id == 135)
-      assert(node2._1._id == node2._2)
+      node2.loneElement._1.id shouldBe 135
+      node2.loneElement._1._id shouldBe node2.loneElement._2
 
       // Node 3 has a custom _id property.
       // Thus the id field should contain the neo4j id,
       // and the _id field should contain the custom id.
-      assert(node3._1.id == node3._2)
-      assert(node3._1._id == 135)
+      node3.loneElement._1.id shouldBe node3.loneElement._2
+      node3.loneElement._1._id shouldBe 135
 
       // Node 4 has both a custom id & _id properties.
       // Thus both properties should contain the custom ids,
       // and the system id is unreachable.
-      assert(node4._1.id == 135)
-      assert(node4._1._id == 531)
+      node4.loneElement._1.id shouldBe 135
+      node4.loneElement._1._id shouldBe 531
     }
   }
 
