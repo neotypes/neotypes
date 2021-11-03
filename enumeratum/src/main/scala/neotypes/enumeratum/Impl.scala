@@ -9,9 +9,9 @@ import _root_.enumeratum.values._
 
 private[enumeratum] object Impl {
   private def getEnumEntryByName[EntryType <: EnumEntry](
-    enum: Enum[EntryType], name: String
+    _enum: Enum[EntryType], name: String
   ): Either[IncoercibleException, EntryType] =
-    enum.withNameEither(name).left.map { ex =>
+    _enum.withNameEither(name).left.map { ex =>
       IncoercibleException(
         message = ex.getMessage,
         cause = Some(ex)
@@ -21,20 +21,20 @@ private[enumeratum] object Impl {
   def parameterMapper[EntryType <: EnumEntry]: ParameterMapper[EntryType] =
     ParameterMapper[String].contramap[EntryType](_.entryName)
 
-  def valueMapper[EntryType <: EnumEntry](enum: Enum[EntryType]): ValueMapper[EntryType] =
+  def valueMapper[EntryType <: EnumEntry](_enum: Enum[EntryType]): ValueMapper[EntryType] =
     ValueMapper.instance {
       case (fieldName, value) =>
-        ValueMapper[String].to(fieldName, value).flatMap(getEnumEntryByName(enum, _))
+        ValueMapper[String].to(fieldName, value).flatMap(getEnumEntryByName(_enum, _))
     }
 
-  def keyMapper[EntryType <: EnumEntry](enum: Enum[EntryType]): KeyMapper[EntryType] =
-    KeyMapper[String].imap[EntryType](_.entryName)(getEnumEntryByName(enum, _))
+  def keyMapper[EntryType <: EnumEntry](_enum: Enum[EntryType]): KeyMapper[EntryType] =
+    KeyMapper[String].imap[EntryType](_.entryName)(getEnumEntryByName(_enum, _))
 
   object values {
     private def getEnumEntryByValue[ValueType, EntryType <: ValueEnumEntry[ValueType]](
-      enum: ValueEnum[ValueType, EntryType], value: ValueType
+      _enum: ValueEnum[ValueType, EntryType], value: ValueType
     ): Either[IncoercibleException, EntryType] =
-      enum.withValueEither(value).left.map { ex =>
+      _enum.withValueEither(value).left.map { ex =>
         IncoercibleException(
           message = ex.getMessage,
           cause = Some(ex)
@@ -47,18 +47,18 @@ private[enumeratum] object Impl {
       mapper.contramap[EntryType](_.value)
 
     def valueMapper[ValueType, EntryType <: ValueEnumEntry[ValueType]](
-      enum: ValueEnum[ValueType, EntryType]
+      _enum: ValueEnum[ValueType, EntryType]
     )(
       implicit mapper: ValueMapper[ValueType]
     ): ValueMapper[EntryType] =
       ValueMapper.instance {
         case (fieldName, value) =>
-          mapper.to(fieldName, value).flatMap(getEnumEntryByValue(enum, _))
+          mapper.to(fieldName, value).flatMap(getEnumEntryByValue(_enum, _))
       }
 
     def keyMapper[EntryType <: ValueEnumEntry[String]](
-      enum: ValueEnum[String, EntryType]
+      _enum: ValueEnum[String, EntryType]
     ): KeyMapper[EntryType] =
-      KeyMapper[String].imap[EntryType](_.value)(getEnumEntryByValue(enum, _))
+      KeyMapper[String].imap[EntryType](_.value)(getEnumEntryByValue(_enum, _))
   }
 }
