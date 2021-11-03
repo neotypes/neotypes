@@ -14,11 +14,17 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
   it should "execute the article rank centrality algorithm" in executeAsFuture { d =>
     for {
       _ <- articleRankingData.query[Unit].execute(d)
-      result <- """CALL gds.articleRank.stream({
-                     nodeProjection: "Paper",
-                     relationshipProjection: "CITES",
+      _ <- """CALL gds.graph.create(
+                'papersGraph',
+                'Paper',
+                'CITES'
+              )
+           """.query[Unit].execute(d)
+      result <- """CALL gds.articleRank.stream('papersGraph', {
                      maxIterations: 20,
-                     dampingFactor: 0.85
+                     dampingFactor: 0.85,
+                     tolerance: 0.0000001,
+                     scaler: 'L1Norm'
                    })
                    YIELD nodeId, score AS rawScore
                    RETURN
@@ -27,13 +33,14 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                    ORDER BY rawScore DESC
                    LIMIT 5
                 """.query[ScoredPaper].list(d)
+      _ <- "CALL gds.graph.drop('papersGraph', false)".query[Unit].execute(d)
     } yield {
       result shouldBe List(
-        ScoredPaper(paper = "Paper 0", score = 76),
-        ScoredPaper(paper = "Paper 1", score = 56),
-        ScoredPaper(paper = "Paper 2", score = 31),
-        ScoredPaper(paper = "Paper 4", score = 28),
-        ScoredPaper(paper = "Paper 3", score = 23)
+        ScoredPaper(paper = "Paper 0", score = 22),
+        ScoredPaper(paper = "Paper 1", score = 20),
+        ScoredPaper(paper = "Paper 4", score = 14),
+        ScoredPaper(paper = "Paper 2", score = 13),
+        ScoredPaper(paper = "Paper 3", score = 11)
       )
     }
   }
@@ -42,7 +49,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
     for{
       _ <- triangleCountData.query[Unit].execute(d)
       _ <- """CALL gds.graph.create(
-                'myGraph',
+                'peopleGraph',
                 'Person',
                 {
                   KNOWS: {
@@ -51,25 +58,25 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                 }
               )
            """.query[Unit].execute(d)
-      result <- """CALL gds.triangleCount.mutate('myGraph', {
+      result <- """CALL gds.triangleCount.mutate('peopleGraph', {
                      mutateProperty: 'tc'
                    })
                    YIELD globalTriangleCount
-                   CALL gds.localClusteringCoefficient.stream('myGraph', {
+                   CALL gds.localClusteringCoefficient.stream('peopleGraph', {
                      triangleCountProperty: 'tc'
                    })
                    YIELD nodeId, localClusteringCoefficient
                    RETURN
                      gds.util.asNode(nodeId).name AS person,
                      round(100 * localClusteringCoefficient) AS coefficient,
-                     gds.util.nodeProperty('myGraph', nodeId, 'tc') AS triangleCount
+                     gds.util.nodeProperty('peopleGraph', nodeId, 'tc') AS triangleCount
                    ORDER BY
                      coefficient DESC,
                      triangleCount DESC,
                      person ASC
                    LIMIT 5
                 """.query[PersonTriangleCount].list(d)
-      _ <- "CALL gds.graph.drop('myGraph', false)".query[Unit].execute(d)
+      _ <- "CALL gds.graph.drop('peopleGraph', false)".query[Unit].execute(d)
     } yield {
       result shouldBe List(
         PersonTriangleCount(person = "Karin", triangleCount = 1, coefficient = 100),
@@ -97,7 +104,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
     for{
       _ <- shortestPathData.query[Unit].execute(d)
       _ <- """CALL gds.graph.create(
-                'myGraph',
+                'locationsGraph',
                 'Location',
                 'ROAD',
                 {
@@ -106,7 +113,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
               )
            """.query[Unit].execute(d)
       result <- """MATCH (start: Location { name:'A' }), (target: Location { name:'F' })
-                   CALL gds.shortestPath.dijkstra.stream('myGraph', {
+                   CALL gds.shortestPath.dijkstra.stream('locationsGraph', {
                      sourceNode: id(start),
                      targetNode: id(target),
                      relationshipWeightProperty: 'cost'
@@ -116,7 +123,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                      totalCost,
                      [nodeId IN nodeIds | gds.util.asNode(nodeId).name] AS nodeNames
                 """.query[ShortestPath].single(d)
-      _ <- "CALL gds.graph.drop('myGraph', false)".query[Unit].execute(d)
+      _ <- "CALL gds.graph.drop('locationsGraph', false)".query[Unit].execute(d)
     } yield {
       result shouldBe ShortestPath(
         nodeNames = List("A", "B", "D", "E", "F"),

@@ -57,8 +57,10 @@ abstract class StreamingDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
 
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
+  new ConcurrentStreamingDriverSpec(testkit),
+  new StreamGuaranteeSpec(testkit),
   new StreamSpec(testkit),
+  new StreamingDriverSpec(testkit),
   new StreamingTransactSpec(testkit),
-  new StreamingTransactionSpec(testkit),
-  new ConcurrentStreamingDriverSpec(testkit)
+  new StreamingTransactionSpec(testkit)
 )

@@ -2,21 +2,21 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.3.4"
+val neo4jDriverVersion = "4.3.5"
 val scalaCollectionCompatVersion = "2.5.0"
 val shapelessVersion = "2.3.7"
-val testcontainersNeo4jVersion = "1.16.0"
-val testcontainersScalaVersion = "0.39.7"
+val testcontainersNeo4jVersion = "1.16.2"
+val testcontainersScalaVersion = "0.39.11"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.10"
 val logbackVersion = "1.2.6"
 val catsVersion = "2.6.1"
 val catsEffectsVersion = "3.2.9"
 val monixVersion = "3.4.0"
-val akkaStreamVersion = "2.6.16"
-val fs2Version = "2.5.9"
-val zioVersion = "1.0.11"
-val zioInteropReactiveStreamsVersion = "1.3.7"
+val akkaStreamVersion = "2.6.17"
+val fs2Version = "2.5.10"
+val zioVersion = "1.0.12"
+val zioInteropReactiveStreamsVersion = "1.3.8"
 val refinedVersion = "0.9.27"
 val enumeratumVersion = "1.7.0"
 
@@ -50,7 +50,7 @@ ThisBuild / scmInfo ~= {
 
 // Global settings.
 ThisBuild / scalaVersion := "2.12.15"
-ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.6")
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.7")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 
