@@ -20,16 +20,16 @@ final class DriverSpec[F[_]](
       string <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
       int <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Int].single(d)
       long <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Long].single(d)
-      double <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Double].single(d)
       float <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Float].single(d)
-      node <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Node].list(d)
+      double <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Double].single(d)
+      node <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Node].single(d)
     } yield {
       assert(string == "Charlize Theron")
       assert(int == 1975)
-      assert(long == 1975)
-      assert((double - 1975).abs < 0.0001)
-      assert((float - 1975).abs < 0.0001)
-      assert(node.head.get("name").asString == "Charlize Theron")
+      assert(long == 1975L)
+      assert((float - 1975.0f).abs < 0.0001f)
+      assert((double - 1975.0d).abs < 0.0001d)
+      assert(node.get("name").asString == "Charlize Theron")
     }
   }
 
@@ -37,7 +37,7 @@ final class DriverSpec[F[_]](
     for {
       cc <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Person].single(d)
       cc2 <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".query[Person2].single(d)
-      hlist <- "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[Person :: Movie :: HNil].list(d)
+      hlist <- "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[Person :: Movie :: HNil].single(d)
     } yield {
       assert(cc.id >= 0)
       assert(cc.name.contains("Charlize Theron"))
@@ -45,9 +45,8 @@ final class DriverSpec[F[_]](
       assert(cc.f.isEmpty)
       assert(cc2.name.contains("Charlize Theron"))
       assert(cc2.born == 1975)
-      assert(hlist.size == 1)
-      assert(hlist.head.head.name.contains("Charlize Theron"))
-      assert(hlist.head.last.title == "That Thing You Do")
+      assert(hlist.head.name.contains("Charlize Theron"))
+      assert(hlist.last.title == "That Thing You Do")
     }
   }
 
@@ -88,6 +87,7 @@ final class DriverSpec[F[_]](
     } yield {
       assert(tuple.head._1.name.contains("Charlize Theron"))
       assert(tuple.head._2.title == "That Thing You Do")
+
       assert(tuplePrimitives.head._1 == "Charlize Theron")
       assert(tuplePrimitives.head._2 == "That Thing You Do")
     }
@@ -97,18 +97,18 @@ final class DriverSpec[F[_]](
     for {
       сс3 <-
         """
-          MATCH (movie: Movie { title: 'That Thing You Do' })
-                 OPTIONAL MATCH (movie)<-[r]-(person: Person)
-                 RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
-                 LIMIT 1
+        MATCH (movie: Movie { title: 'That Thing You Do' })
+        OPTIONAL MATCH (movie)<-[r]-(person: Person)
+        RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
+        LIMIT 1
         """.query[Movie2].single(d)
 
-      ссOption <-
+      ccOption <-
         """
-          MATCH (movie: Movie { title: 'That Thing You Do' })
-                 OPTIONAL MATCH (movie)<-[r]-(person: Person)
-                 RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
-                 LIMIT 1
+        MATCH (movie: Movie { title: 'That Thing You Do' })
+        OPTIONAL MATCH (movie)<-[r]-(person: Person)
+        RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
+        LIMIT 1
         """.query[Option[Movie2]].single(d)
     } yield {
       assert(сс3.title == "That Thing You Do")
@@ -117,9 +117,12 @@ final class DriverSpec[F[_]](
       assert(сс3.cast.head.name == "Charlize Theron")
       assert(сс3.cast.head.role == "Tina")
 
-      assert(ссOption.isDefined)
-      assert(ссOption.get.title == "That Thing You Do")
-      assert(ссOption.get.cast.size == 1)
+      assert(ccOption.isDefined)
+      assert(ccOption.get.title == "That Thing You Do")
+      assert(ccOption.get.cast.size == 1)
+      assert(ccOption.get.cast.head.job == "acted")
+      assert(ccOption.get.cast.head.name == "Charlize Theron")
+      assert(ccOption.get.cast.head.role == "Tina")
     }
   }
 
@@ -128,14 +131,15 @@ final class DriverSpec[F[_]](
       hlist <-
         """
         MATCH (p: Person)-[r: ACTED_IN]->(: Movie)
-               RETURN p, r
-               LIMIT 1
+        RETURN p, r
+        LIMIT 1
         """.query[Person :: Roles :: HNil].single(s)
+
       cc <-
         """
         MATCH (p: Person)-[r: ACTED_IN]->(: Movie)
-               RETURN p as person, r as roles
-               LIMIT 1
+        RETURN p as person, r as roles
+        LIMIT 1
         """.query[PersonWithRoles].single(s)
     } yield {
       assert(hlist.head.name.get == "Charlize Theron")
