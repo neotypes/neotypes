@@ -27,4 +27,4 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
 }
 
 /** Execute all the stream specs using akka streams. */
-final class AkkaStreamsSuite(ignore: Boolean = true) extends StreamSuite(AkkaStreamsTestkit)
+final class AkkaStreamsSuite extends StreamSuite(AkkaStreamsTestkit)

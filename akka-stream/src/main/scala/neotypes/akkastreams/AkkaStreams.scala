@@ -39,8 +39,11 @@ trait AkkaStreams {
 
       override final def guarantee[A, B](r: Future[A])
                                         (f: A => AkkaStream[B])
-                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
+                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] ={
+        Source.future(Future{
+          Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
+        }).flatMapConcat(identity)
+      }
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
