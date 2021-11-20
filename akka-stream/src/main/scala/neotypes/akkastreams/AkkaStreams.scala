@@ -1,5 +1,6 @@
 package neotypes.akkastreams
 
+import akka.NotUsed
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
@@ -40,7 +41,10 @@ trait AkkaStreams {
       override final def guarantee[A, B](r: Future[A])
                                         (f: A => AkkaStream[B])
                                         (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
+        Source.lazySource(
+          () => Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
+        ).mapMaterializedValue(_ => NotUsed)
+
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
