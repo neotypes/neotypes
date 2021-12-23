@@ -15,6 +15,7 @@ abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
     def fToFuture[A](fa: F[A]): Future[A]
     def runConcurrently(a: F[Unit], b: F[Unit]): F[Unit]
     def asyncInstance: Async[F]
+    def cancel[A](fa: F[A]): F[Unit]
   }
 
   def createBehaviour(implicit ec: ExecutionContext): Behaviour
@@ -33,6 +34,9 @@ abstract class BaseEffectSpec[F[_]](effectTestkit: EffectTestkit[F]) extends Asy
 
   protected final def runConcurrently(a: F[Unit], b: F[Unit]): F[Unit] =
     behaviour.runConcurrently(a, b)
+
+  protected final def cancel[A](fa: F[A]): F[Unit] =
+    behaviour.cancel(fa)
 
   protected implicit final val F: Async[F] =
     behaviour.asyncInstance
@@ -67,5 +71,6 @@ abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
   new ParameterSpec(testkit),
   new PathSessionSpec(testkit),
   new QueryExecutionSpec(testkit),
-  new StageSyntaxSpec(testkit)
+  new StageSyntaxSpec(testkit),
+  new CancelSpec(testkit)
 )

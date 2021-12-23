@@ -2,7 +2,6 @@ package neotypes.cats.effect
 
 import neotypes.{Async, EffectSuite, EffectTestkit}
 import neotypes.cats.effect.implicits._
-
 import cats.effect.{ContextShift, IO}
 import cats.syntax.parallel._
 
@@ -20,6 +19,9 @@ object IOTestkit extends EffectTestkit[IO] {
 
       override def runConcurrently(a: IO[Unit], b: IO[Unit]): IO[Unit] =
         (a, b).parMapN((_, _) => ())
+
+      override final def cancel[A](a: IO[A]): IO[Unit] =
+        a.start.flatMap(_.cancel)
 
       override final val asyncInstance: Async[IO] =
         implicitly

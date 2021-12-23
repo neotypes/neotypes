@@ -20,6 +20,9 @@ object ZioTaskTestkit extends EffectTestkit[Task] {
       override final def runConcurrently(a: Task[Unit], b: Task[Unit]): Task[Unit] =
         a.zipPar(b).map(_ => ())
 
+      override final def cancel[A](fa: Task[A]): Task[Unit] =
+        fa.fork.map(_.interrupt).flatten.unit
+
       override final val asyncInstance: Async[Task] =
         implicitly
     }
