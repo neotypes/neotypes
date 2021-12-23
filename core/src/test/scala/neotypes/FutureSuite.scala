@@ -12,6 +12,9 @@ object FutureTestkit extends EffectTestkit[Future] {
       override final def runConcurrently(a: Future[Unit], b: Future[Unit]): Future[Unit] =
         for (_ <- a; _ <- b) yield () // Because Futures are eager, they are already running concurrently.
 
+      override final def cancel[A](fa: Future[A]): Future[Unit] =
+        Future.successful(()) //Not Supported
+
       override final val asyncInstance: Async[Future] =
         implicitly
     }

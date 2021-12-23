@@ -21,6 +21,9 @@ object MonixTaskTestkit extends EffectTestkit[Task] {
       override final def runConcurrently(a: Task[Unit], b: Task[Unit]): Task[Unit] =
         Task.parMap2(a, b)((_, _) => ())
 
+      override final def cancel[A](f: Task[A]): Task[Unit] =
+        f.start.flatMap(_.cancel)
+
       override final val asyncInstance: Async[Task] =
         implicitly
     }
