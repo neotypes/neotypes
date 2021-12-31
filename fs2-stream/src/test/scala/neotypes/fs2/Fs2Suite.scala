@@ -4,7 +4,7 @@ import neotypes.{Stream, StreamSuite, StreamTestkit}
 import neotypes.cats.effect.IOTestkit
 import neotypes.fs2.implicits._
 
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 
 import scala.concurrent.ExecutionContext
 
