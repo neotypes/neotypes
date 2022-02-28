@@ -2,7 +2,7 @@ package neotypes.cats.effect
 
 import neotypes.{Async, EffectSuite, EffectTestkit}
 import neotypes.cats.effect.implicits._
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
 import cats.syntax.parallel._
 
 import scala.concurrent.{ExecutionContext, Future}
