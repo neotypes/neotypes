@@ -5,8 +5,6 @@ import neotypes.exceptions.CancellationException
 import cats.effect.{Async, Resource}
 
 trait CatsEffect {
-  private[neotypes] final type FResource[F[_]] = { type R[A] = Resource[F, A] }
-
   implicit final def catsAsync[F[_]](implicit F: Async[F]): neotypes.Async.Aux[F, FResource[F]#R] =
     new neotypes.Async[F] {
       override final type R[A] = Resource[F, A]
@@ -27,8 +25,8 @@ trait CatsEffect {
                                         (f: A => F[B])
                                         (finalizer: (A, Option[Throwable]) => F[Unit]): F[B] =
         Resource.makeCase(fa) {
-          case (a, Resource.ExitCase.Succeeded) => finalizer(a, None)
-          case (a, Resource.ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, Resource.ExitCase.Succeeded)   => finalizer(a, None)
+          case (a, Resource.ExitCase.Canceled)    => finalizer(a, Some(CancellationException))
           case (a, Resource.ExitCase.Errored(ex)) => finalizer(a, Some(ex))
         }.use(f)
 

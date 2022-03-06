@@ -12,9 +12,6 @@ import scala.concurrent.ExecutionContext
 object Fs2Testkit extends StreamTestkit[Fs2IoStream, IO](IOTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      implicit val cs: ContextShift[IO] =
-        IO.contextShift(ec)
-
       override def streamToFList[A](stream: Fs2IoStream[A]): IO[List[A]] =
         stream.compile.toList
 

@@ -11,8 +11,8 @@ val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.11"
 val logbackVersion = "1.2.10"
 val catsVersion = "2.7.0"
-val catsEffectsVersion = "3.3.6"
-val catsEffectMonixVersion = "2.5.4"
+val catsEffect2Version = "2.5.4"
+val catsEffect3Version = "3.3.6"
 val monixVersion = "3.4.0"
 val akkaStreamVersion = "2.6.18"
 val fs2Version = "3.2.5"
@@ -157,7 +157,7 @@ lazy val catsEffect = (project in file("cats-effect"))
     Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion
+      "org.typelevel" %% "cats-effect" % catsEffect3Version
     )
   )
 
@@ -168,7 +168,7 @@ lazy val monix = (project in file("monix"))
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectMonixVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
@@ -201,7 +201,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     name := "neotypes-fs2-stream",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect3Version,
       "co.fs2" %% "fs2-core" % fs2Version,
       "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
@@ -215,7 +215,7 @@ lazy val monixStream = (project in file("monix-stream"))
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectMonixVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )

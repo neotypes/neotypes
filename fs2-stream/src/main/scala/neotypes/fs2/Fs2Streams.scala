@@ -2,23 +2,21 @@ package neotypes.fs2
 
 import neotypes.exceptions.CancellationException
 
-import cats.effect.Concurrent
+import cats.effect.{Async, Resource}
 import fs2.Stream
 import org.reactivestreams.Publisher
 
 import scala.collection.compat.Factory
-import cats.effect.kernel.Resource
-import cats.effect.Async
 
 trait Fs2Streams {
-  implicit final def fs2Stream[_F[_]: Async: Concurrent]: neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
+  implicit final def fs2Stream[_F[_]: Async]: neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
     new neotypes.Stream[Fs2FStream[_F]#T] {
       override final type F[A] = _F[A]
 
-      // TODO: Check if a different buffer size would perform better, 
+      // TODO: Check if a different buffer size would perform better,
       //       or if there's a way to determine buffer size better.
       override final def fromRx[A](publisher: Publisher[A]): Stream[F, A] =
-        fs2.interop.reactivestreams.fromPublisher[_F, A](publisher, 1)
+        fs2.interop.reactivestreams.fromPublisher(publisher, 1)
 
       override def fromF[A](fa: F[A]): Stream[F, A] =
         Stream.eval(fa)
@@ -27,8 +25,8 @@ trait Fs2Streams {
                                         (f: A => Stream[F, B])
                                         (finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, B] =
         Stream.bracketCase(acquire = r) {
-          case (a, Resource.ExitCase.Succeeded) => finalizer(a, None)
-          case (a, Resource.ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+          case (a, Resource.ExitCase.Succeeded)   => finalizer(a, None)
+          case (a, Resource.ExitCase.Canceled)    => finalizer(a, Some(CancellationException))
           case (a, Resource.ExitCase.Errored(ex)) => finalizer(a, Some(ex))
         }.flatMap(f)
 
