@@ -2,7 +2,8 @@ package neotypes.cats.effect
 
 import neotypes.{Async, EffectSuite, EffectTestkit}
 import neotypes.cats.effect.implicits._
-import cats.effect.{ContextShift, IO}
+import cats.effect.IO
+import cats.effect.unsafe.implicits.global
 import cats.syntax.parallel._
 
 import scala.concurrent.{ExecutionContext, Future}
@@ -11,11 +12,8 @@ import scala.concurrent.{ExecutionContext, Future}
 object IOTestkit extends EffectTestkit[IO] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      implicit val cs: ContextShift[IO] =
-        IO.contextShift(ec)
-
       override final def fToFuture[A](io: IO[A]): Future[A] =
-        cs.evalOn(ec)(io).unsafeToFuture()
+        io.evalOn(ec).unsafeToFuture()
 
       override def runConcurrently(a: IO[Unit], b: IO[Unit]): IO[Unit] =
         (a, b).parMapN((_, _) => ())
