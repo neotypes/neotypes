@@ -299,15 +299,14 @@ lazy val microsite = (project in file("site"))
       (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
     ),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream),
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
   ).dependsOn(
     core % "compile->compile;provided->provided",
     catsEffect % "compile->compile;provided->provided",
-    monix % "compile->compile;provided->provided",
     zio % "compile->compile;provided->provided",
     akkaStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
-    monixStream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
     refined % "compile->compile;provided->provided",
