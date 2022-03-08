@@ -6,15 +6,16 @@ val neo4jDriverVersion = "4.4.3"
 val scalaCollectionCompatVersion = "2.6.0"
 val shapelessVersion = "2.3.8"
 val testcontainersNeo4jVersion = "1.16.3"
-val testcontainersScalaVersion = "0.40.0"
+val testcontainersScalaVersion = "0.40.2"
 val mockitoVersion = "1.10.19"
 val scalaTestVersion = "3.2.11"
-val logbackVersion = "1.2.10"
+val logbackVersion = "1.2.11"
 val catsVersion = "2.7.0"
-val catsEffectsVersion = "2.5.4"
+val catsEffect2Version = "2.5.4"
+val catsEffect3Version = "3.3.6"
 val monixVersion = "3.4.0"
 val akkaStreamVersion = "2.6.18"
-val fs2Version = "2.5.10"
+val fs2Version = "3.2.5"
 val zioVersion = "1.0.13"
 val zioInteropReactiveStreamsVersion = "1.3.9"
 val refinedVersion = "0.9.28"
@@ -156,7 +157,7 @@ lazy val catsEffect = (project in file("cats-effect"))
     Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion
+      "org.typelevel" %% "cats-effect" % catsEffect3Version
     )
   )
 
@@ -167,7 +168,7 @@ lazy val monix = (project in file("monix"))
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
@@ -200,7 +201,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     name := "neotypes-fs2-stream",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect3Version,
       "co.fs2" %% "fs2-core" % fs2Version,
       "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
@@ -214,7 +215,7 @@ lazy val monixStream = (project in file("monix-stream"))
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
@@ -298,15 +299,14 @@ lazy val microsite = (project in file("site"))
       (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
     ),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream),
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
   ).dependsOn(
     core % "compile->compile;provided->provided",
     catsEffect % "compile->compile;provided->provided",
-    monix % "compile->compile;provided->provided",
     zio % "compile->compile;provided->provided",
     akkaStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
-    monixStream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
     refined % "compile->compile;provided->provided",

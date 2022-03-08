@@ -7,6 +7,13 @@ position: 100
 
 # Changelog
 
+## v0.19.0 _(2022-03-07)_
+
+### Update to CE3 ([#481](https://github.com/neotypes/neotypes/pull/481){:target="_blank"})
+
+We updated the **cats-effect** and the **fs2** modules to their latest CE3 versions.<br>
+The **monix** and **monix-stream** modules still depend on CE2.
+
 ## v0.18.3 _(2021-06-25)_
 
 ### Reverting the neo4j#797 workaround ([#364](https://github.com/neotypes/neotypes/pull/364){:target="_blank"})
@@ -52,7 +59,7 @@ which helps a lot to share and reuse common _(sub)_ queries.
 
 Which means that the following examples now compile out-of-the-box and behave as expected.
 
-```scala mdoc:compile-only
+```scala
 import neotypes.implicits.syntax.cypher._
 
 // Two sub-queries.
@@ -92,7 +99,7 @@ This is very useful when you need to use a custom config across all the applicat
 We added a new `neotypes-enumeratum` module which allow the use of
 [**Enumeratum**](https://github.com/lloydmeta/enumeratum) enums.
 
-```scala mdoc:compile-only
+```scala
 import enumeratum.{Enum, EnumEntry}
 import enumeratum.values.{StringEnum, StringEnumEntry}
 import neotypes.enumeratum.{NeotypesEnum, NeotypesKeyEnum, NeotypesStringEnum}
@@ -137,7 +144,7 @@ implicitly[neotypes.mappers.ValueMapper[KeyStringEnum]]
 We added a new semiauto derivation of mappers for
 `AnyVal` case classes that act like the underlying type.
 
-```scala mdoc:reset-object
+```scala
 import neotypes.generic.semiauto
 import neotypes.mappers.{ParameterMapper, ValueMapper}
 
@@ -192,18 +199,7 @@ val data = fs2.Stream.resource(sessionR).flatMap { s =>
 }
 ```
 
-```scala mdoc:invisible
-import cats.effect.{IO, Resource}
-import neotypes.{GraphDatabase, StreamingDriver}
-import neotypes.cats.effect.implicits._
-import neotypes.fs2.Fs2IoStream
-import neotypes.fs2.implicits._
-import neotypes.implicits.syntax.string._
-import org.neo4j.driver.AuthTokens
-implicit val cs =IO.contextShift(scala.concurrent.ExecutionContext.global)
-```
-
-```scala mdoc:compile-only
+```scala
 // With this:
 val driverR: Resource[IO, StreamingDriver[Fs2IoStream, IO]] =
   GraphDatabase.streamingDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
@@ -251,7 +247,7 @@ this will add all their properties as parameters of the query.
 
 For example:
 
-```scala mdoc:compile-only
+```scala
 import neotypes.generic.auto._ // Provides automatic derivation of ParameterMapper for any case class.
 import neotypes.implicits.syntax.cypher._ // Adds the ` interpolator into the scope.
 

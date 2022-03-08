@@ -65,12 +65,12 @@ abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
   new AsyncSpec(testkit),
   new AsyncTransactionSpec(testkit),
   new AsyncTransactSpec(testkit),
+  new CancelSpec(testkit),
   new CompositeTypesSpec(testkit),
   new ConcurrentDriverSpec(testkit),
   new DriverSpec(testkit),
   new ParameterSpec(testkit),
   new PathSessionSpec(testkit),
   new QueryExecutionSpec(testkit),
-  new StageSyntaxSpec(testkit),
-  new CancelSpec(testkit)
+  new StageSyntaxSpec(testkit)
 )
