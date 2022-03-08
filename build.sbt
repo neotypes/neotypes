@@ -54,6 +54,7 @@ ThisBuild / scalaVersion := "2.12.15"
 ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 def removeScalacOptionsInTest(scalaVersion: String) =
   CrossVersion.partialVersion(scalaVersion) match {
@@ -68,22 +69,14 @@ val commonSettings = Seq(
   Test / fork := true,
   Test / scalacOptions --= removeScalacOptionsInTest(scalaVersion.value),
 
-  /**
-    * Publishing
-    */
-  publishTo := {
-    val nexus = "https://s01.oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  publishMavenStyle := true,
+  /** Publishing */
+  publishTo := sonatypePublishToBundle.value,
   sonatypeProfileName := "neotypes",
-  sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
-  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
+  sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
+  publishMavenStyle := true,
+  releaseCrossBuild := true,
 
-  releaseCrossBuild := true
+  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
 
 lazy val noPublishSettings = Seq(
@@ -110,14 +103,13 @@ lazy val root = (project in file("."))
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      //runTest,
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       releaseStepCommandAndRemaining("+publishSigned"),
+      releaseStepCommand("sonatypeBundleRelease"),
       setNextVersion,
       commitNextVersion,
-      //releaseStepCommand("sonatypeReleaseAll"),
       pushChanges
     )
   )

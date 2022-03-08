@@ -7,6 +7,11 @@ position: 100
 
 # Changelog
 
+## v0.19.1 _(2022-03-08)_
+
+This was a test release to validate some changes to the release process<br>
+It only includes a couple of dependencies bumps.
+
 ## v0.19.0 _(2022-03-07)_
 
 ### Update to CE3 ([#481](https://github.com/neotypes/neotypes/pull/481){:target="_blank"})
