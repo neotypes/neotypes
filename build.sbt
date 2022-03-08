@@ -4,7 +4,7 @@ import ReleaseTransformations._
 
 val neo4jDriverVersion = "4.4.3"
 val scalaCollectionCompatVersion = "2.6.0"
-val shapelessVersion = "2.3.7"
+val shapelessVersion = "2.3.8"
 val testcontainersNeo4jVersion = "1.16.3"
 val testcontainersScalaVersion = "0.40.2"
 val mockitoVersion = "1.10.19"
