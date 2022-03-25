@@ -1,16 +1,16 @@
-package neotypes.generic
+package neotypes
+package generic
 
-import neotypes.mappers.ResultMapper
-import neotypes.CaseClassArgMapper
+import mappers.ResultMapper
 
 import scala.reflect.macros.blackbox
 
 private[generic] class ExportMacros(val c: blackbox.Context) {
-
   import c.universe._
 
-  final def exportResultMapper[D[x] <: ResultMapper[x], A](implicit D: c.WeakTypeTag[D[_]],
-                                                     A: c.WeakTypeTag[A]): c.Expr[Exported[ResultMapper[A]]] = {
+  final def exportResultMapper[D[x] <: ResultMapper[x], A](
+    implicit D: c.WeakTypeTag[D[_]], A: c.WeakTypeTag[A]
+  ): c.Expr[Exported[ResultMapper[A]]] = {
     val target = appliedType(D.tpe.typeConstructor, A.tpe)
 
     c.typecheck(q"_root_.shapeless.lazily[$target]", silent = false) match {
@@ -22,15 +22,16 @@ private[generic] class ExportMacros(val c: blackbox.Context) {
     }
   }
 
-  final def exportCaseClassArgMapper[C[x] <: CaseClassArgMapper[x], A](implicit C: c.WeakTypeTag[C[_]],
-                                                                 A: c.WeakTypeTag[A]): c.Expr[Exported[CaseClassArgMapper[A]]] = {
+  final def exportCaseClassArgMapper[C[x] <: QueryArgMapper[x], A](
+    implicit C: c.WeakTypeTag[C[_]], A: c.WeakTypeTag[A]
+  ): c.Expr[Exported[QueryArgMapper[A]]] = {
     val target = appliedType(C.tpe.typeConstructor, A.tpe)
 
     c.typecheck(q"_root_.shapeless.lazily[$target]", silent = false) match {
       case EmptyTree => c.abort(c.enclosingPosition, s"Unable to infer value of type $target")
       case t =>
-        c.Expr[Exported[CaseClassArgMapper[A]]](
-          q"new _root_.neotypes.generic.Exported($t: _root_.neotypes.CaseClassArgMapper[$A])"
+        c.Expr[Exported[QueryArgMapper[A]]](
+          q"new _root_.neotypes.generic.Exported($t: _root_.neotypes.QueryArgMapper[$A])"
         )
     }
   }

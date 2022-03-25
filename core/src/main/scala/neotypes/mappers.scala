@@ -153,7 +153,7 @@ object mappers {
     }
   }
 
-  object ResultMapper extends ResultMappers with ResultMappersLowPriority {
+  object ResultMapper extends ResultMappers {
     /**
       * Summons an implicit [[neotypes.mappers.ResultMapper]] already in scope by result type.
       *
@@ -216,7 +216,7 @@ object mappers {
       }
   }
 
-  trait ResultMappers {
+  trait ResultMappers extends ResultMappersLowPriority {
     implicit final val BooleanResultMapper: ResultMapper[Boolean] =
       ResultMapper.fromValueMapper
 
@@ -829,5 +829,4 @@ object mappers {
         optional.map(v => mapper.toQueryParam(v).underlying).orNull
       }
   }
-
 }

@@ -7,6 +7,28 @@ position: 100
 
 # Changelog
 
+## v0.20.0 _(2022-03-31)_
+
+### Add plain string interpolation ([#493](https://github.com/neotypes/neotypes/pull/493){:target="_blank"})
+
+You can now use `#$` to tell the cypher string interpolator
+that the following value should be interpreted as a plain string.
+
+For example:
+
+```scala
+import neotypes.implicits.syntax.cypher._ // Adds the `c` interpolator into the scope.
+
+val name = "John"
+val LABEL = "User"
+
+c"CREATE (a: #${LABEL} { name: ${name} })".query[Unit]
+// res: neotypes.DeferredQuery[Unit] = DeferredQuery(
+//   "CREATE (a: User { name: p1 })",
+//   Map("p1" -> neotypes.types.QueryParam("John"))
+// )
+```
+
 ## v0.19.1 _(2022-03-08)_
 
 This was a test release to validate some changes to the release process<br>

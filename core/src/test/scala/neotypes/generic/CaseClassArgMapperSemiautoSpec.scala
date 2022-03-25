@@ -1,20 +1,18 @@
 package neotypes.generic
 
-import neotypes.{CaseClassArgMapper, QueryArg}
+import neotypes.{QueryArgMapper, QueryArg}
 import neotypes.types.QueryParam
 
 import org.scalatest.freespec.AnyFreeSpec
 
-final class CaseClassArgMapperSemiautoSpec extends AnyFreeSpec {
-
-  import CaseClassArgMapperSemiautoSpec._
+final class QueryArgMapperSemiautoSpec extends AnyFreeSpec {
+  import QueryArgMapperSemiautoSpec._
 
   "neotypes.generic.semiauto._" - {
-
     import neotypes.generic.semiauto._
 
     "should derive an instance of a product (case class)" in {
-      val mapper: CaseClassArgMapper[MyCaseClass] = deriveCaseClassArgMapper
+      val mapper: QueryArgMapper[MyCaseClass] = deriveCaseClassArgMapper
       val input = MyCaseClass("twelve chars", 12)
       val result = mapper.toArg(input)
 
@@ -29,7 +27,7 @@ final class CaseClassArgMapperSemiautoSpec extends AnyFreeSpec {
     }
 
     "should derive an instance of a product (tuple)" in {
-      val mapper: CaseClassArgMapper[(String, Int)] = deriveCaseClassArgMapper
+      val mapper: QueryArgMapper[(String, Int)] = deriveCaseClassArgMapper
       val input = ("twelve chars", 12)
       val result = mapper.toArg(input)
 
@@ -45,28 +43,22 @@ final class CaseClassArgMapperSemiautoSpec extends AnyFreeSpec {
 
     "should not derive an instance of nested classes" in {
       assertCompiles("deriveCaseClassArgMapper[MyCaseClass]")
-      assertDoesNotCompile("deriveCaseClassArgMapper[(MyCaseClass, MyCaseClass)]")
-      assertDoesNotCompile("deriveCaseClassArgMapper[NestedCaseClass]")
+      assertDoesNotCompile("deriveQueryArgMapper[(MyCaseClass, MyCaseClass)]")
+      assertDoesNotCompile("deriveQueryArgMapper[NestedCaseClass]")
     }
 
     "should not derive an instance of a HList" in {
       assertDoesNotCompile(
         """
           |import shapeless._
-          |deriveCaseClassArgMapper[String :: Int :: HNil]
+          |deriveQueryArgMapper[String :: Int :: HNil]
           |""".stripMargin
       )
     }
-
   }
-
 }
 
-object CaseClassArgMapperSemiautoSpec {
-
+object QueryArgMapperSemiautoSpec {
   final case class MyCaseClass(string: String, int: Int)
-
   final case class NestedCaseClass(value: String, nested: MyCaseClass)
-
 }
-

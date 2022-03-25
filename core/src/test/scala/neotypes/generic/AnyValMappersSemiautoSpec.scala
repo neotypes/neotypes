@@ -1,6 +1,6 @@
 package neotypes.generic
 
-import neotypes.{AsyncDriverProvider, CaseClassArgMapper, CleaningIntegrationSpec, FutureTestkit}
+import neotypes.{AsyncDriverProvider, QueryArgMapper, CleaningIntegrationSpec, FutureTestkit}
 import neotypes.implicits.syntax.all._
 import neotypes.mappers.{ParameterMapper, ResultMapper, ValueMapper}
 
@@ -55,6 +55,6 @@ object AnyValMappersSemiautoSpec {
   implicit final val idResultMapper: ResultMapper[Id] = ResultMapper.fromValueMapper
 
   final case class User(id: Id, name: String)
-  implicit final val userArgMapper: CaseClassArgMapper[User] = semiauto.deriveCaseClassArgMapper
+  implicit final val userArgMapper: QueryArgMapper[User] = semiauto.deriveCaseClassArgMapper
   implicit final val userResultMapper: ResultMapper[User] = semiauto.deriveProductResultMapper
 }
