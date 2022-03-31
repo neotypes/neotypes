@@ -22,7 +22,6 @@ val refinedVersion = "0.9.28"
 val enumeratumVersion = "1.7.0"
 
 // Fix scmInfo in Github Actions.
-// See: https://github.com/sbt/sbt-git/issues/171
 ThisBuild / scmInfo ~= {
   case Some(info) => Some(info)
   case None =>
