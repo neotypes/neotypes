@@ -1,18 +1,17 @@
-package neotypes.generic
+package neotypes
+package generic
 
-import neotypes.mappers.ResultMapper
-import neotypes.CaseClassArgMapper
+import mappers.ResultMapper
 
 import shapeless.HList
 
 object auto {
-
-  implicit final def exportHListResultMapper[H <: HList]: Exported[ResultMapper[H]] =
+  implicit def exportHListResultMapper[H <: HList]: Exported[ResultMapper[H]] =
     macro ExportMacros.exportResultMapper[ReprResultMapper, H]
 
-  implicit final def exportProductResultMapper[P <: Product]: Exported[ResultMapper[P]] =
+  implicit def exportProductResultMapper[P <: Product]: Exported[ResultMapper[P]] =
     macro ExportMacros.exportResultMapper[DerivedResultMapper, P]
 
-  implicit final def exportCaseClassArgMapper[P <: Product]: Exported[CaseClassArgMapper[P]] =
+  implicit def exportCaseClassArgMapper[P <: Product]: Exported[QueryArgMapper[P]] =
     macro ExportMacros.exportCaseClassArgMapper[DerivedCaseClassArgMapper, P]
 }

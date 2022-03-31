@@ -12,7 +12,7 @@ object semiauto {
   final def deriveProductResultMapper[P <: Product](implicit mapper: Lazy[DerivedResultMapper[P]]): ResultMapper[P] =
     mapper.value
 
-  final def deriveCaseClassArgMapper[P <: Product](implicit mapper: Lazy[DerivedCaseClassArgMapper[P]]): CaseClassArgMapper[P] =
+  final def deriveCaseClassArgMapper[P <: Product](implicit mapper: Lazy[DerivedCaseClassArgMapper[P]]): QueryArgMapper[P] =
     mapper.value
 
   final def deriveUnwrappedParameterMapper[A, R](

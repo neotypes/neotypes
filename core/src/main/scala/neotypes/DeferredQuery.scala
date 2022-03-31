@@ -14,9 +14,11 @@ import scala.collection.mutable.StringBuilder
   * @param params variable values substituted into the query statement
   * @tparam T the type of the value that will be returned when the query is executed.
   */
-final case class DeferredQuery[T] private[neotypes] (query: String,
-                                                     params: Map[String, QueryParam],
-                                                     paramLocations: Seq[Int]) {
+final case class DeferredQuery[T] private[neotypes] (
+    query: String,
+    params: Map[String, QueryParam],
+    paramLocations: List[Int]
+) {
   import DeferredQuery._
 
   /** Executes the query and returns a List of values.
@@ -459,11 +461,25 @@ final case class DeferredQuery[T] private[neotypes] (query: String,
     this.copy(params = this.params ++ params)
 
   private[neotypes] def withParameterPrefix(prefix: String): DeferredQuery[T] = {
-    val locations = paramLocations.sorted.zipWithIndex.map { case (location, i) => location + i * prefix.length }
-    copy(
-      query = locations.foldLeft(query) { case (query, location) => query.patch(location + 1, prefix, 0) },
-      params = this.params.map { case (k, v) => prefix + k -> v },
-      paramLocations = locations
+    val newParams = this.params.map {
+      case (k, v) =>
+        (prefix + k) -> v
+    }
+
+    val newLocations = this.paramLocations.sorted.zipWithIndex.map {
+      case (location, i) =>
+        location + (i * prefix.length)
+    }
+
+    val newQuery = newLocations.foldLeft(this.query) {
+      case (query, location) =>
+        query.patch(location + 1, prefix, 0)
+    }
+
+    DeferredQuery(
+      query = newQuery,
+      params = newParams,
+      paramLocations = newLocations
     )
   }
 }
@@ -515,12 +531,14 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
     * @return A [DeferredQuery[T]]
     */
   def query[T]: DeferredQuery[T] = {
-    val queryBuilder = new StringBuilder()
+    val queryBuilder = new StringBuilder(capacity = 1024)
     @annotation.tailrec
-    def loop(remaining: List[Part],
-             accParams: Map[String, QueryParam],
-             accParamLocations: Seq[Int],
-             nextParamIdx: Int): DeferredQuery[T] =
+    def loop(
+      remaining: List[Part],
+      accParams: Map[String, QueryParam],
+      accParamLocations: List[Int],
+      nextParamIdx: Int
+    ): DeferredQuery[T] =
       remaining match {
         case Nil =>
           DeferredQuery(
@@ -529,21 +547,22 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
             paramLocations = accParamLocations,
           )
 
-        case Query(query, parameterLocations) :: xs =>
+        case Query(query, paramLocations) :: xs =>
           val offset = queryBuilder.size
           queryBuilder.append(query)
-          val needsSpace = !query.endsWith(" ") && xs.collectFirst {
-            case query: Query => !query.part.startsWith(" ")
-            case _: Param => true
-          }.getOrElse(false)
 
+          val needsSpace = !query.endsWith(" ") && xs.collectFirst {
+            case Query(part, _) => !part.startsWith(" ")
+            case Param(_) => true
+          }.getOrElse(false)
           if(needsSpace) {
             queryBuilder.append(" ")
           }
+
           loop(
             remaining = xs,
             accParams,
-            accParamLocations ++ parameterLocations.map(_ + offset),
+            accParamLocations ::: paramLocations.map(_ + offset),
             nextParamIdx
           )
 
@@ -554,7 +573,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
           loop(
             remaining = xs,
             accParams + (paramName -> param),
-            paramLocation +: accParamLocations,
+            paramLocation :: accParamLocations,
             nextParamIdx + 1
           )
 
@@ -570,7 +589,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
       loop(
         remaining = this.parts,
         accParams = Map.empty,
-        accParamLocations = Seq.empty,
+        accParamLocations = List.empty,
         nextParamIdx = 1
       )
   }
@@ -596,10 +615,7 @@ private[neotypes] object DeferredQueryBuilder {
   final val PARAMETER_NAME_PREFIX: String = "p"
 
   sealed trait Part extends Product with Serializable
-
-  final case class Query(part: String, paramLocations: Seq[Int] = Seq.empty) extends Part
-
+  final case class Query(part: String, paramLocations: List[Int] = List.empty) extends Part
   final case class Param(value: QueryParam) extends Part
-
   final case class SubQueryParam(name: String, value: QueryParam) extends Part
 }

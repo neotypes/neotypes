@@ -1,14 +1,14 @@
-package neotypes.generic
+package neotypes
+package generic
 
-import neotypes.mappers.ParameterMapper
-import neotypes.{CaseClassArgMapper, QueryArg}
-import neotypes.types.QueryParam
+import mappers.ParameterMapper
+import types.QueryParam
 
 import shapeless.labelled.FieldType
 import shapeless.ops.hlist.MapFolder
 import shapeless.{HList, LabelledGeneric, Poly1, Witness}
 
-trait DerivedCaseClassArgMapper[A] extends CaseClassArgMapper[A]
+trait DerivedCaseClassArgMapper[A] extends QueryArgMapper[A]
 
 object DerivedCaseClassArgMapper {
 
