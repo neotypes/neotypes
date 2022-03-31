@@ -14,7 +14,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
   it should "execute the article rank centrality algorithm" in executeAsFuture { d =>
     for {
       _ <- articleRankingData.query[Unit].execute(d)
-      _ <- """CALL gds.graph.create(
+      _ <- """CALL gds.graph.project(
                 'papersGraph',
                 'Paper',
                 'CITES'
@@ -48,7 +48,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
   it should "execute the triangle count community detection algorithm" in executeAsFuture { d =>
     for{
       _ <- triangleCountData.query[Unit].execute(d)
-      _ <- """CALL gds.graph.create(
+      _ <- """CALL gds.graph.project(
                 'peopleGraph',
                 'Person',
                 {
@@ -103,7 +103,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
   it should "execute the shortest path algorithm" in executeAsFuture { d =>
     for{
       _ <- shortestPathData.query[Unit].execute(d)
-      _ <- """CALL gds.graph.create(
+      _ <- """CALL gds.graph.project(
                 'locationsGraph',
                 'Location',
                 'ROAD',
@@ -139,7 +139,7 @@ final class AlgorithmSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverPr
                    WITH p1, collect(id(cuisine1)) AS p1Cuisine
                    MATCH (p2: Person { name: "Arya" })-[: LIKES]->(cuisine2)
                    WITH p1, p1Cuisine, p2, collect(id(cuisine2)) AS p2Cuisine
-                   RETURN round(100 * gds.alpha.similarity.jaccard(p1Cuisine, p2Cuisine))
+                   RETURN round(100 * gds.similarity.jaccard(p1Cuisine, p2Cuisine))
                 """.query[Int].single(d)
     } yield {
       result shouldBe 67
