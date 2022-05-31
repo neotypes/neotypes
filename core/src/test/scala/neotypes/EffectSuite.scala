@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.internal.syntax.StageSyntaxSpec
+//import neotypes.internal.syntax.StageSyntaxSpec
 
 import org.scalatest.{AsyncTestSuite, Suites}
 
@@ -60,17 +60,17 @@ abstract class AsyncDriverProvider[F[_]](testkit: EffectTestkit[F]) extends Base
 
 /** Group all the effect specs into one big suite, which can be called for each effect. */
 abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
-  new AlgorithmSpec(testkit),
-  new AsyncGuaranteeSpec(testkit),
-  new AsyncSpec(testkit),
-  new AsyncTransactionSpec(testkit),
-  new AsyncTransactSpec(testkit),
-  new CancelSpec(testkit),
-  new CompositeTypesSpec(testkit),
-  new ConcurrentDriverSpec(testkit),
-  new DriverSpec(testkit),
-  new ParameterSpec(testkit),
-  new PathSessionSpec(testkit),
-  new QueryExecutionSpec(testkit),
-  new StageSyntaxSpec(testkit)
+//  new AlgorithmSpec(testkit),
+//  new AsyncGuaranteeSpec(testkit),
+//  new AsyncSpec(testkit),
+//  new AsyncTransactionSpec(testkit),
+//  new AsyncTransactSpec(testkit),
+//  new CancelSpec(testkit),
+//  new CompositeTypesSpec(testkit),
+  new ConcurrentDriverSpec(testkit)
+//  new DriverSpec(testkit),
+//  new ParameterSpec(testkit),
+//  new PathSessionSpec(testkit),
+//  new QueryExecutionSpec(testkit),
+//  new StageSyntaxSpec(testkit)
 )

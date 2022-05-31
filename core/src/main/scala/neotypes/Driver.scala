@@ -3,8 +3,7 @@ package neotypes
 import internal.syntax.async._
 import internal.syntax.stage._
 import internal.syntax.stream._
-
-import org.neo4j.driver.{ConnectionPoolMetrics, Driver => NeoDriver}
+import org.neo4j.driver.{AccessMode, ConnectionPoolMetrics, Driver => NeoDriver}
 
 import scala.util.Try
 import scala.jdk.CollectionConverters._
@@ -29,8 +28,13 @@ sealed trait Driver[F[_]] {
 
   def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
 
+  def transactReadOnly[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+
   final def transact[T](txF: Transaction[F] => F[T]): F[T] =
     transact(config = transactionConfig)(txF)
+
+  final def transactReadOnly[T](txF: Transaction[F] => F[T]): F[T] =
+    transactReadOnly(config = transactionConfig)(txF)
 
   /** Close the resources assigned to the neo4j driver.
     *
@@ -84,6 +88,9 @@ object Driver {
 
     override final def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
       transaction(config).guarantee(txF)(txFinalizer)
+
+    def transactReadOnly[T](config: TransactionConfig)(txf: Transaction[F] => F[T]): F[T] =
+      transaction(config.withAccessMode(AccessMode.READ)).guarantee(txf)(txFinalizer)
 
     override final def close: F[Unit] =
       F.async { cb =>

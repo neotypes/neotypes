@@ -6,6 +6,43 @@ import types.QueryParam
 import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
 
+class DeferredCommand private[neotypes](
+     query: String,
+     params: Map[String, QueryParam],
+     paramLocations: List[Int]) {
+
+  //TODO remove this
+  println(s"${paramLocations}")
+  def execute[F[_]](driver: Driver[F])
+                   (implicit em: ExecutionMapper[Unit]): F[Unit] =
+    driver.transact(tx => execute(tx))
+
+  /** Executes the query and ignores its output.
+    *
+    * @example
+    * {{{
+    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *   .query[Unit]
+    *   .execute(driver, myConfig)
+    * }}}
+    *
+    * @param driver neotypes driver.
+    * @param config neotypes transaction config.
+    * @param em execution mapper for type T.
+    * @tparam F effect type.
+    * @return An effectual value that will execute the query.
+    */
+  def execute[F[_]](driver: Driver[F], config: TransactionConfig)
+                   (implicit em: ExecutionMapper[Unit]): F[Unit] =
+    driver.transact(config)(tx => execute(tx))
+
+
+  def execute[F[_]](tx: Transaction[F])
+                   (implicit em: ExecutionMapper[Unit]): F[Unit] =
+    tx.execute(query, params)
+
+}
+
 /** Represents a Neo4j query that can be asynchronously on a effect type.
   *
   * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
@@ -14,7 +51,7 @@ import scala.collection.mutable.StringBuilder
   * @param params variable values substituted into the query statement
   * @tparam T the type of the value that will be returned when the query is executed.
   */
-final case class DeferredQuery[T] private[neotypes] (
+case class DeferredQuery[T] private[neotypes] (
     query: String,
     params: Map[String, QueryParam],
     paramLocations: List[Int]
@@ -38,7 +75,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def list[F[_]](driver: Driver[F])
                 (implicit rm: ResultMapper[T]): F[List[T]] =
-    driver.transact(tx => list(tx))
+    driver.transactReadOnly(tx => list(tx))
 
   /** Executes the query and returns a List of values.
     *
@@ -58,7 +95,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def list[F[_]](driver: Driver[F], config: TransactionConfig)
                 (implicit rm: ResultMapper[T]): F[List[T]] =
-    driver.transact(config)(tx => list(tx))
+    driver.transactReadOnly(config)(tx => list(tx))
 
   /** Executes the query and returns a Map[K,V] of values.
     *
@@ -80,7 +117,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def map[F[_], K, V](driver: Driver[F])
                      (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    driver.transact(tx => map(tx))
+    driver.transactReadOnly(tx => map(tx))
 
   /** Executes the query and returns a Map[K,V] of values.
     *
@@ -103,7 +140,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def map[F[_], K, V](driver: Driver[F], config: TransactionConfig)
                      (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    driver.transact(config)(tx => map(tx))
+    driver.transactReadOnly(config)(tx => map(tx))
 
   /** Executes the query and returns a Set of values.
     *
@@ -122,7 +159,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def set[F[_]](driver: Driver[F])
                (implicit rm: ResultMapper[T]): F[Set[T]] =
-    driver.transact(tx => set(tx))
+    driver.transactReadOnly(tx => set(tx))
 
   /** Executes the query and returns a Set of values.
     *
@@ -142,7 +179,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def set[F[_]](driver: Driver[F], config: TransactionConfig)
                (implicit rm: ResultMapper[T]): F[Set[T]] =
-    driver.transact(config)(tx => set(tx))
+    driver.transactReadOnly(config)(tx => set(tx))
 
   /** Executes the query and returns a Vector of values.
     *
@@ -161,7 +198,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def vector[F[_]](driver: Driver[F])
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    driver.transact(tx => vector(tx))
+    driver.transactReadOnly(tx => vector(tx))
 
   /** Executes the query and returns a Vector of values.
     *
@@ -181,7 +218,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def vector[F[_]](driver: Driver[F], config: TransactionConfig)
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    driver.transact(config)(tx => vector(tx))
+    driver.transactReadOnly(config)(tx => vector(tx))
 
   /** Executes the query and returns the unique record in the result.
     *
@@ -202,7 +239,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def single[F[_]](driver: Driver[F])
                   (implicit rm: ResultMapper[T]): F[T] =
-    driver.transact(tx => single(tx))
+    driver.transactReadOnly(tx => single(tx))
 
   /** Executes the query and returns the unique record in the result.
     *
@@ -224,7 +261,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def single[F[_]](driver: Driver[F],config: TransactionConfig)
                   (implicit rm: ResultMapper[T]): F[T] =
-    driver.transact(config)(tx => single(tx))
+    driver.transactReadOnly(config)(tx => single(tx))
 
   /** Evaluate the query an get the results as a Stream.
     *
@@ -271,7 +308,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def execute[F[_]](driver: Driver[F])
                    (implicit em: ExecutionMapper[T]): F[T] =
-    driver.transact(tx => execute(tx))
+    driver.transactReadOnly(tx => execute(tx))
 
   /** Executes the query and ignores its output.
     *
@@ -290,7 +327,7 @@ final case class DeferredQuery[T] private[neotypes] (
     */
   def execute[F[_]](driver: Driver[F], config: TransactionConfig)
                    (implicit em: ExecutionMapper[T]): F[T] =
-    driver.transact(config)(tx => execute(tx))
+    driver.transactReadOnly(config)(tx => execute(tx))
 
   /** Executes the query and returns a List of values.
     *
@@ -525,12 +562,75 @@ private[neotypes] object DeferredQuery {
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
   import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query, SubQueryParam}
 
+  def command: DeferredCommand = {
+    val queryBuilder = new StringBuilder(capacity = 1024)
+    @annotation.tailrec
+    def loop(
+              remaining: List[Part],
+              accParams: Map[String, QueryParam],
+              accParamLocations: List[Int],
+              nextParamIdx: Int
+            ): DeferredCommand =
+      remaining match {
+        case Nil =>
+          new DeferredCommand(
+            query  = queryBuilder.mkString,
+            params = accParams,
+            paramLocations = accParamLocations,
+          )
+
+        case Query(query, paramLocations) :: xs =>
+          val offset = queryBuilder.size
+          queryBuilder.append(query)
+
+          val needsSpace = !query.endsWith(" ") && xs.collectFirst {
+            case Query(part, _) => !part.startsWith(" ")
+            case Param(_) => true
+          }.getOrElse(false)
+          if(needsSpace) {
+            queryBuilder.append(" ")
+          }
+
+          loop(
+            remaining = xs,
+            accParams,
+            accParamLocations ::: paramLocations.map(_ + offset),
+            nextParamIdx
+          )
+
+        case Param(param) :: xs =>
+          val paramName = s"${PARAMETER_NAME_PREFIX}${nextParamIdx}"
+          val paramLocation = queryBuilder.size
+          queryBuilder.append("$").append(paramName)
+          loop(
+            remaining = xs,
+            accParams + (paramName -> param),
+            paramLocation :: accParamLocations,
+            nextParamIdx + 1
+          )
+
+        case SubQueryParam(name, value) :: xs =>
+          loop(
+            remaining = xs,
+            accParams + (name -> value),
+            accParamLocations,
+            nextParamIdx
+          )
+      }
+
+    loop(
+      remaining = this.parts,
+      accParams = Map.empty,
+      accParamLocations = List.empty,
+      nextParamIdx = 1
+    )
+  }
   /** Creates a [DeferredQuery] from this builder.
     *
     * @tparam T the result type of the constructed query.
     * @return A [DeferredQuery[T]]
     */
-  def query[T]: DeferredQuery[T] = {
+  def query[T <: Any]: DeferredQuery[T] = {
     val queryBuilder = new StringBuilder(capacity = 1024)
     @annotation.tailrec
     def loop(
