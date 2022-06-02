@@ -56,8 +56,13 @@ sealed trait StreamingDriver[S[_], F[_]] extends Driver[F] {
 
   def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
 
+  def streamingTransactReadOnly[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
+
   final def streamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
     streamingTransact(config = transactionConfig)(txF)
+
+  final def streamingTransactReadOnly[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
+    streamingTransactReadOnly(config = transactionConfig)(txF)
 
   override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F]
 }
@@ -128,6 +133,9 @@ object Driver {
       S.guarantee(tx)(txF)(txFinalizer)
     }
 
+    override def streamingTransactReadOnly[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
+       streamingTransact(config.withAccessMode(AccessMode.READ))(txF)
+    }
     override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F] =
       new StreamingDriverImpl(driver, config)
   }
