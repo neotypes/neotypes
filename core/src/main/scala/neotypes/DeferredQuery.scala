@@ -7,146 +7,110 @@ import types.QueryParam
 import scala.collection.compat.Factory
 import scala.collection.mutable.StringBuilder
 
-abstract class Deferred[T] private[neotypes] {
-  import DeferredQuery._
-  val query: String
-  val params: Map[String, QueryParam]
-  val paramLocations: List[Int]
+sealed trait Deferred[T] {
+  def query: String
+  def params: Map[String, QueryParam]
+  def paramLocations: List[Int]
 
-  def driverTransactionFC[F[_], C[_]](driver: Driver[F])(tx: Transaction[F] => F[C[T]]): F[C[T]]
+  def effectDriverTransaction[F[_], O](driver: Driver[F])(tx: Transaction[F] => F[O]): F[O]
 
-  def driverTransactionConfigFC[F[_], C[_]](driver: Driver[F])(config: TransactionConfig, tx: (Transaction[F] => F[C[T]])): F[C[T]]
+  def effectDriverTransactionConfig[F[_], O](driver: Driver[F])(config: TransactionConfig, tx: Transaction[F] => F[O]): F[O]
 
   def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T]
 
   def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T]
 
-  def driverTransactionF[F[_]](driver: Driver[F])(tx: Transaction[F] => F[T]): F[T]
-
-  def driverTransactionConfigF[F[_], C[_]](driver: Driver[F])(config: TransactionConfig, tx: (Transaction[F] => F[T])): F[T]
-
-  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C]
-
   def withParams(params: Map[String, QueryParam]): Deferred[T]
 
-  def list[F[_], C[_]](driver: Driver[F])(implicit rm: ResultMapper[T]): F[List[T]] =
-    driverTransactionFC(driver)(tx => list(tx))
+  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
+    new CollectAsPartiallyApplied(factory -> this)
 
-  def list[F[_], C[_]](driver: Driver[F], config: TransactionConfig)
+  final def list[F[_], O](driver: Driver[F])(implicit rm: ResultMapper[T]): F[List[T]] =
+    effectDriverTransaction(driver)(tx => list(tx))
+
+  final def list[F[_], C[_]](driver: Driver[F], config: TransactionConfig)
                 (implicit rm: ResultMapper[T]): F[List[T]] =
-    driverTransactionConfigFC(driver)(config, tx => list(tx))
+    effectDriverTransactionConfig(driver)(config, tx => list(tx))
 
-  def set[F[_]](driver: Driver[F])
+  final def set[F[_]](driver: Driver[F])
                (implicit rm: ResultMapper[T]): F[Set[T]] =
-    driverTransactionFC(driver)(tx => set(tx))
+    effectDriverTransaction(driver)(tx => set(tx))
 
-  def set[F[_]](driver: Driver[F], config: TransactionConfig)
+  final def set[F[_]](driver: Driver[F], config: TransactionConfig)
                (implicit rm: ResultMapper[T]): F[Set[T]] =
-    driverTransactionConfigFC(driver)(config, tx => set(tx))
+    effectDriverTransactionConfig(driver)(config, tx => set(tx))
 
-  def vector[F[_]](driver: Driver[F])
+  final def vector[F[_]](driver: Driver[F])
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    driverTransactionFC(driver)(tx => vector(tx))
+    effectDriverTransaction(driver)(tx => vector(tx))
 
-  def vector[F[_]](driver: Driver[F], config: TransactionConfig)
+  final def vector[F[_]](driver: Driver[F], config: TransactionConfig)
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    driverTransactionConfigFC(driver)(config, tx => vector(tx))
+    effectDriverTransactionConfig(driver)(config, tx => vector(tx))
 
-  def single[F[_]](driver: Driver[F])
+  final def map[F[_], O, K, V](driver: Driver[F])
+                        (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+    effectDriverTransaction[F, Map[K,V]](driver)(tx => map[F, K, V](tx))
+
+  final def map[F[_], O, K, V](driver: Driver[F], config: TransactionConfig)
+                        (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
+    effectDriverTransactionConfig[F, Map[K, V]](driver)(config, tx => map[F, K, V](tx))
+
+  final def single[F[_]](driver: Driver[F])
                   (implicit rm: ResultMapper[T]): F[T] =
-    driverTransactionF(driver)(tx => single(tx))
+    effectDriverTransaction(driver)(tx => single(tx))
 
-  def single[F[_]](driver: Driver[F],config: TransactionConfig)
+  final def single[F[_]](driver: Driver[F],config: TransactionConfig)
                   (implicit rm: ResultMapper[T]): F[T] =
-    driverTransactionConfigF(driver)(config, tx => single(tx))
+    effectDriverTransactionConfig(driver)(config, tx => single(tx))
 
-  def stream[S[_], F[_]](driver: StreamingDriver[S, F])
+  final def stream[S[_], F[_]](driver: StreamingDriver[S, F])
                         (implicit rm: ResultMapper[T]): S[T] =
     streamDriverTransaction[S, F](driver)(tx => stream(tx))
 
-  def stream[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig)
+  final def stream[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig)
                         (implicit rm: ResultMapper[T]): S[T] =
     streamDriverTransactionConfig[S, F](driver)(config, tx => stream(tx))
 
-  def execute[F[_]](driver: Driver[F])
+  final def execute[F[_]](driver: Driver[F])
                    (implicit em: ExecutionMapper[T]): F[T] =
-    driverTransactionF(driver)(tx => execute(tx))
+    effectDriverTransaction(driver)(tx => execute(tx))
 
-  def execute[F[_]](driver: Driver[F], config: TransactionConfig)
+  final def execute[F[_]](driver: Driver[F], config: TransactionConfig)
                    (implicit em: ExecutionMapper[T]): F[T] =
     driver.transactReadOnly(config)(tx => execute(tx))
 
-
-  def list[F[_]](tx: Transaction[F])
+  final def list[F[_]](tx: Transaction[F])
                 (implicit rm: ResultMapper[T]): F[List[T]] =
     tx.list(query, params)
 
-  def map[F[_], K, V](tx: Transaction[F])
+  final def map[F[_], K, V](tx: Transaction[F])
                      (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
     internal.utils.void(ev)
     tx.map(query, params)
   }
 
-  def set[F[_]](tx: Transaction[F])
+  final def set[F[_]](tx: Transaction[F])
                (implicit rm: ResultMapper[T]): F[Set[T]] =
     tx.set(query, params)
 
-  def vector[F[_]](tx: Transaction[F])
+  final def vector[F[_]](tx: Transaction[F])
                   (implicit rm: ResultMapper[T]): F[Vector[T]] =
     tx.vector(query, params)
 
-
-  def single[F[_]](tx: Transaction[F])
+  final def single[F[_]](tx: Transaction[F])
                   (implicit rm: ResultMapper[T]): F[T] =
     tx.single(query, params)
 
-  def execute[F[_]](tx: Transaction[F])
+  final def execute[F[_]](tx: Transaction[F])
                    (implicit em: ExecutionMapper[T]): F[T] =
     tx.execute(query, params)
 
-
-  def stream[S[_], F[_]](tx: StreamingTransaction[S, F])
+  final def stream[S[_], F[_]](tx: StreamingTransaction[S, F])
                         (implicit rm: ResultMapper[T]): S[T] =
     tx.stream(query, params)
-}
 
-case class DeferredCommand[T](
-     query: String,
-     params: Map[String, QueryParam],
-     paramLocations: List[Int]) extends Deferred[T] {
-  def driverTransactionFC[F[_], C[_]](driver: Driver[F])(tx: Transaction[F] => F[C[T]]): F[C[T]] = {
-    driver.transact(tx)
-  }
-  def driverTransactionConfigFC[F[_], C[_]](driver: Driver[F])(config: TransactionConfig, tx: (Transaction[F] => F[C[T]])): F[C[T]] = {
-    driver.transact(config)(tx)
-  }
-
-  def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T] = {
-    driver.streamingTransact(st)
-  }
-  def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] = {
-    driver.streamingTransact(config)(st)
-  }
-
-  def driverTransactionF[F[_]](driver: Driver[F])(tx: Transaction[F] => F[T]): F[T] = driver.transact(tx)
-
-  def driverTransactionConfigF[F[_], C[_]](driver: Driver[F])(config: TransactionConfig, tx: (Transaction[F] => F[T])): F[T] = driver.transact(config)(tx)
-
-  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
-    new CollectAsPartiallyApplied(factory -> this)
-
-  def withParams(params: Map[String, QueryParam]): Deferred[T] =
-    this.copy(params = this.params ++ params)
-
-  def map[F[_], K, V](driver: Driver[F])
-                     (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    driver.transact(tx => map(tx))
-
-  def map[F[_], K, V](driver: Driver[F], config: TransactionConfig)
-                     (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    driver.transact(config)(tx => map(tx))
-
-  private[neotypes] def withParameterPrefix(prefix: String): DeferredCommand[T] = {
+  final def withParameterPrefixBase(prefix: String): (String, Map[String, QueryParam], List[Int]) = {
     val newParams = this.params.map {
       case (k, v) =>
         (prefix + k) -> v
@@ -162,7 +126,36 @@ case class DeferredCommand[T](
         query.patch(location + 1, prefix, 0)
     }
 
-    DeferredCommand(
+    (
+      newQuery,
+       newParams,
+       newLocations
+    )
+  }
+}
+
+final case class DeferredQuery[T](
+     override val query: String,
+     override val params: Map[String, QueryParam],
+     override val paramLocations: List[Int]) extends Deferred[T] {
+  override def effectDriverTransaction[F[_], O](driver: Driver[F])(tx: Transaction[F] => F[O]): F[O] =
+    driver.transact(tx)
+
+  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F])(config: TransactionConfig, tx: Transaction[F] => F[O]): F[O] =
+    driver.transact(config)(tx)
+
+  override def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T] =
+    driver.streamingTransact(st)
+
+  override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] =
+    driver.streamingTransact(config)(st)
+
+  override def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
+    this.copy(params = this.params ++ params)
+
+  private[neotypes] def withParameterPrefix(prefix: String): DeferredQuery[T] = {
+    val (newQuery, newParams, newLocations) = withParameterPrefixBase(prefix)
+    DeferredQuery(
       query = newQuery,
       params = newParams,
       paramLocations = newLocations
@@ -170,59 +163,29 @@ case class DeferredCommand[T](
   }
 }
 
-case class DeferredQuery[T](
-                               query: String,
-                               params: Map[String, QueryParam],
-                               paramLocations: List[Int]) extends Deferred[T] {
-  def driverTransactionFC[F[_], C[_]](driver: Driver[F])(tx: Transaction[F] => F[C[T]]): F[C[T]] = {
+final case class DeferredQueryReadOnly[T](
+                              override val query: String,
+                              override val params: Map[String, QueryParam],
+                              override val paramLocations: List[Int]) extends Deferred[T] {
+
+  def effectDriverTransaction[F[_], O](driver: Driver[F])(tx: Transaction[F] => F[O]): F[O] =
     driver.transactReadOnly(tx)
-  }
-  def driverTransactionConfigFC[F[_], C[_]](driver: Driver[F])(config: TransactionConfig, tx: (Transaction[F] => F[C[T]])): F[C[T]] = {
+
+  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F])(config: TransactionConfig, tx: Transaction[F] => F[O]): F[O] =
     driver.transactReadOnly(config)(tx)
-  }
 
-  def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T] = {
+  override def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.streamingTransactReadOnly(st)
-  }
-  def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] = {
+
+  override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.streamingTransactReadOnly(config)(st)
-  }
 
-  def driverTransactionF[F[_]](driver: Driver[F])(tx: Transaction[F] => F[T]): F[T] = driver.transactReadOnly(tx)
-  
-  def driverTransactionConfigF[F[_], C[_]](driver: Driver[F])(config: TransactionConfig, tx: (Transaction[F] => F[T])): F[T] = driver.transactReadOnly(config)(tx)
-
-  def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
-    new CollectAsPartiallyApplied(factory -> this)
-
-  def withParams(params: Map[String, QueryParam]): Deferred[T] =
+  override def withParams(params: Map[String, QueryParam]): DeferredQueryReadOnly[T] =
     this.copy(params = this.params ++ params)
 
-  def map[F[_], K, V](driver: Driver[F])
-                     (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    driver.transactReadOnly(tx => map(tx))
-
-  def map[F[_], K, V](driver: Driver[F], config: TransactionConfig)
-                     (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] =
-    driver.transactReadOnly(config)(tx => map(tx))
-
-  private[neotypes] def withParameterPrefix(prefix: String): DeferredQuery[T] = {
-    val newParams = this.params.map {
-      case (k, v) =>
-        (prefix + k) -> v
-    }
-
-    val newLocations = this.paramLocations.sorted.zipWithIndex.map {
-      case (location, i) =>
-        location + (i * prefix.length)
-    }
-
-    val newQuery = newLocations.foldLeft(this.query) {
-      case (query, location) =>
-        query.patch(location + 1, prefix, 0)
-    }
-
-    DeferredQuery(
+  private[neotypes] def withParameterPrefix(prefix: String): DeferredQueryReadOnly[T] = {
+    val (newQuery, newParams, newLocations) = withParameterPrefixBase(prefix)
+    DeferredQueryReadOnly(
       query = newQuery,
       params = newParams,
       paramLocations = newLocations
@@ -271,15 +234,17 @@ private[neotypes] object DeferredQuery {
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
   import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query, SubQueryParam}
 
-  def command[T <: Any]: DeferredCommand[T] = {
-    basebuilder[T, DeferredCommand[T]]((query, params, paramLocations) => DeferredCommand(query, params, paramLocations))
-  }
-
   def query[T <: Any]: DeferredQuery[T] = {
-    basebuilder[T, DeferredQuery[T]]((query, params, paramLocations) => DeferredQuery(query, params, paramLocations))
+    val (query, params, paramLocations) = baseBuilder()
+    DeferredQuery(query, params, paramLocations)
   }
 
-  def basebuilder[T <: Any, D <: Deferred[T]](f: (String, Map[String, QueryParam], List[Int]) => D): D = {
+  def queryReadOnly[T <: Any]: DeferredQueryReadOnly[T] = {
+    val (query, params, paramLocations) = baseBuilder()
+    DeferredQueryReadOnly(query, params, paramLocations)
+  }
+
+  def baseBuilder():(String, Map[String, QueryParam], List[Int])  = {
     val queryBuilder = new StringBuilder(capacity = 1024)
     @annotation.tailrec
     def loop(
@@ -287,10 +252,10 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
               accParams: Map[String, QueryParam],
               accParamLocations: List[Int],
               nextParamIdx: Int
-            ): D =
+            ): (String, Map[String, QueryParam], List[Int]) =
       remaining match {
         case Nil =>
-          f(
+          (
             queryBuilder.mkString,
             accParams,
             accParamLocations,
