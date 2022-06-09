@@ -86,7 +86,7 @@ val query2 = c"CREATE (u: User { $user })-[r: HAS_CAT { $hasCat }]->(c: Cat { $c
 query2.query[HasCat]
 ```
 
-A `DeferredQuery` can also be interpolated inside another one:
+A `DeferredQueryBuilder` can also be interpolated inside another one:
 
 ```scala mdoc:reset
 import neotypes.implicits.syntax.cypher._ // Adds the `c` interpolator into the scope.

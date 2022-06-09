@@ -28,13 +28,13 @@ sealed trait Driver[F[_]] {
 
   def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
 
-  def transactReadOnly[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
-
   final def transact[T](txF: Transaction[F] => F[T]): F[T] =
     transact(config = transactionConfig)(txF)
 
-  final def transactReadOnly[T](txF: Transaction[F] => F[T]): F[T] =
-    transactReadOnly(config = transactionConfig)(txF)
+  def readOnlyTransact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+
+  final def readOnlyTransact[T](txF: Transaction[F] => F[T]): F[T] =
+    readOnlyTransact(config = transactionConfig)(txF)
 
   /** Close the resources assigned to the neo4j driver.
     *
@@ -56,13 +56,13 @@ sealed trait StreamingDriver[S[_], F[_]] extends Driver[F] {
 
   def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
 
-  def streamingTransactReadOnly[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
-
   final def streamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
     streamingTransact(config = transactionConfig)(txF)
 
-  final def streamingTransactReadOnly[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
-    streamingTransactReadOnly(config = transactionConfig)(txF)
+  def readOnlyStreamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
+
+  final def readOnlyStreamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
+    readOnlyStreamingTransact(config = transactionConfig)(txF)
 
   override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F]
 }
@@ -73,9 +73,12 @@ object Driver {
     case (tx, Some(_)) => tx.rollback
   }
 
-  private class DriverImpl[F[_]](driver: NeoDriver,
-                                 override val transactionConfig: TransactionConfig = TransactionConfig.default)
-                                (implicit F: Async[F]) extends Driver[F] {
+  private class DriverImpl[F[_]](
+      driver: NeoDriver,
+      override val transactionConfig: TransactionConfig = TransactionConfig.default
+  ) (implicit
+      F: Async[F]
+  ) extends Driver[F] {
     override final def metrics: F[List[ConnectionPoolMetrics]] =
       F.fromEither(
         Try(driver.metrics).map(_.connectionPoolMetrics.asScala.toList).toEither
@@ -94,7 +97,7 @@ object Driver {
     override final def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
       transaction(config).guarantee(txF)(txFinalizer)
 
-    def transactReadOnly[T](config: TransactionConfig)(txf: Transaction[F] => F[T]): F[T] =
+    override final def readOnlyTransact[T](config: TransactionConfig)(txf: Transaction[F] => F[T]): F[T] =
       transaction(config.withAccessMode(AccessMode.READ)).guarantee(txf)(txFinalizer)
 
     override final def close: F[Unit] =
@@ -102,16 +105,17 @@ object Driver {
         driver.closeAsync().acceptVoid(cb)
       }
 
-    override def withTransactionConfig(config: TransactionConfig): Driver[F] = new DriverImpl(driver, config)
+    override def withTransactionConfig(config: TransactionConfig): Driver[F] =
+      new DriverImpl(driver, config)
   }
 
-  private final class StreamingDriverImpl[S[_], F[_]](driver: NeoDriver,
-                                                      override val transactionConfig: TransactionConfig =
-                                                        TransactionConfig.default)
-                                                     (implicit S: Stream.Aux[S, F], F: Async[F])
-                                                     extends DriverImpl[F](driver, transactionConfig)
-                                                       with StreamingDriver[S, F] {
-    override def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
+  private final class StreamingDriverImpl[S[_], F[_]](
+      driver: NeoDriver,
+      override val transactionConfig: TransactionConfig = TransactionConfig.default
+  ) (implicit
+      S: Stream.Aux[S, F], F: Async[F]
+  ) extends DriverImpl[F](driver, transactionConfig) with StreamingDriver[S, F] {
+    override final def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
       val session = F.delay {
@@ -125,7 +129,7 @@ object Driver {
       }
     }
 
-    override def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
+    override final def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
       val tx = streamingTransaction(config).single[F].flatMap { opt =>
         F.fromEither(opt.toRight(left = exceptions.TransactionWasNotCreatedException))
       }
@@ -133,10 +137,10 @@ object Driver {
       S.guarantee(tx)(txF)(txFinalizer)
     }
 
-    override def streamingTransactReadOnly[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
-       streamingTransact(config.withAccessMode(AccessMode.READ))(txF)
-    }
-    override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F] =
+    override final def readOnlyStreamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] =
+      streamingTransact(config.withAccessMode(AccessMode.READ))(txF)
+
+    override final def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F] =
       new StreamingDriverImpl(driver, config)
   }
 
