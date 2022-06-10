@@ -13,8 +13,7 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query = """CREATE (a: Test { name: "John" })""",
-      params = Map.empty,
-      paramLocations = List.empty
+      params = Map.empty
     )
 
     assert(query.query == expected)
@@ -26,11 +25,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query  = "CREATE (a: Test { name: $p1 })",
-      params = Map("p1" -> QueryParam(name)),
-      paramLocations = List(24)
+      params = Map("p1" -> QueryParam(name))
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -46,11 +43,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
         "p1" -> QueryParam(name),
         "p2" -> QueryParam(age),
         "p3" -> QueryParam(born)
-      ),
-      paramLocations = List(45, 34, 24)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -76,11 +71,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
         "p1" -> QueryParam(name),
         "p2" -> QueryParam(age),
         "p3" -> QueryParam(born)
-      ),
-      paramLocations = List(81, 58, 36)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -97,23 +90,17 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
       params = Map(
         "p1" -> QueryParam(name),
         "p2" -> QueryParam(born)
-      ),
-      paramLocations = List(35, 24)
+      )
     )
     val expected2 = DeferredQuery(
       query  = """CREATE (a: Test { name: "John", born: $p1 })""",
-      params = Map("p1" -> QueryParam(born)),
-      paramLocations = List(38)
+      params = Map("p1" -> QueryParam(born))
     )
     val expected3 = DeferredQuery(
       query  = """CREATE (a: Test { name: $p1, born: 1980 })""",
-      params = Map("p1" -> QueryParam(name)),
-      paramLocations = List(24)
+      params = Map("p1" -> QueryParam(name))
     )
 
-    assert(query1.query.paramLocations.forall(query1.query.query.charAt(_) == '$'))
-    assert(query2.query.paramLocations.forall(query2.query.query.charAt(_) == '$'))
-    assert(query3.query.paramLocations.forall(query3.query.query.charAt(_) == '$'))
     assert(query1.query == expected1)
     assert(query2.query == expected2)
     assert(query3.query == expected3)
@@ -125,11 +112,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query  = """CREATE (a: Test { name: $p1, born: 1980 })""",
-      params = Map("p1" -> QueryParam(name)),
-      paramLocations = List(24)
+      params = Map("p1" -> QueryParam(name))
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -148,11 +133,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query  = """CREATE (a: Test { firstName: $p1, lastName: $p2, city: "Filadelfia", born: $p3 })""",
-      params = Map("p1" -> QueryParam("John"), "p2" -> QueryParam("Smith"), "p3" -> QueryParam(1980)),
-      paramLocations = List(75, 44, 29)
+      params = Map("p1" -> QueryParam("John"), "p2" -> QueryParam("Smith"), "p3" -> QueryParam(1980))
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -162,8 +145,7 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query = """CREATE (a: Test { name: "John" })""",
-      params = Map.empty,
-      paramLocations = List.empty
+      params = Map.empty
     )
 
     assert(query.query == expected)
@@ -176,8 +158,7 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query = """CREATE (a: Test { name : "John" })""",
-      params = Map.empty,
-      paramLocations = List.empty
+      params = Map.empty
     )
 
     assert(query.query == expected)
@@ -191,8 +172,7 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val expected = DeferredQuery(
       query = """CREATE (a: Test { name : $p1 })""",
-      params = Map("p1" -> QueryParam(name)),
-      paramLocations = List(25)
+      params = Map("p1" -> QueryParam(name))
     )
 
     assert(query.query == expected)
@@ -206,8 +186,7 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
       val expected = DeferredQuery(
         query = """MATCH (user:User) WHERE user.id = "1" RETURN user""",
-        params = Map.empty,
-        paramLocations = List.empty
+        params = Map.empty
       )
 
       assert(query.query == expected)
@@ -222,11 +201,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
       val expected = DeferredQuery(
         query = """MATCH (user:User) WHERE user.id = $q1_p1 AND $q1_p2 RETURN user""",
-        params = Map("q1_p1" -> QueryParam(subQueryParam1), "q1_p2" -> QueryParam(subQueryParam2)),
-        paramLocations = List(34, 45)
+        params = Map("q1_p1" -> QueryParam(subQueryParam1), "q1_p2" -> QueryParam(subQueryParam2))
       )
 
-      assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
       assert(query.query == expected)
     }
 
@@ -261,12 +238,10 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
           "q2_p1" -> QueryParam(subQuery2Param),
           "q2_q1_p1" -> QueryParam(subQuery2subQueryParam1),
           "q2_q1_p2" -> QueryParam(subQuery2subQueryParam2),
-        ),
-        paramLocations = List(39, 60, 74, 103, 124, 138)
+        )
       )
 
       assert(query.query == expected)
-      assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     }
   }
 
@@ -280,11 +255,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
       params = Map(
         "p1" -> QueryParam(testClass.name),
         "p2" -> QueryParam(testClass.age)
-      ),
-      paramLocations = List(33, 23)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -300,11 +273,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
         "p1" -> QueryParam(testClass.name),
         "p2" -> QueryParam(testClass.age),
         "p3" -> QueryParam(bName)
-      ),
-      paramLocations = List(55, 33, 23)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -320,11 +291,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
         "p1" -> QueryParam(testClass.name),
         "p2" -> QueryParam(testClass.age),
         "p3" -> QueryParam(bName)
-      ),
-      paramLocations = List(71, 33, 23)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -343,11 +312,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
         "p3" -> QueryParam(relationship.friendsFor),
         "p4" -> QueryParam(cat.tag),
         "p5" -> QueryParam(cat.age)
-      ),
-      paramLocations = List(99, 89, 67, 34, 24)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 
@@ -363,11 +330,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
         "p1" -> QueryParam(user.name),
         "p2" -> QueryParam(user.age),
         "p3" -> QueryParam(extraProp)
-      ),
-      paramLocations = List(54, 34, 24)
+      )
     )
 
-    assert(query.query.paramLocations.forall(query.query.query.charAt(_) == '$'))
     assert(query.query == expected)
   }
 }

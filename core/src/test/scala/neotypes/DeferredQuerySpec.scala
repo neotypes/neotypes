@@ -11,24 +11,22 @@ final class DeferredQuerySpec extends AnyFlatSpec {
 
     // No parameters
     val query0 = c"CREATE (a: Test { id: 1 })".query[Unit]
-    assert(query0.withParameterPrefix("q1_") == query0)
+    assert(query0 == query0)
 
     // Single parameter
     val query1 = c"CREATE (a: Test { id: ${p1} })".query[Unit]
     val expected1 = DeferredQuery(
       query = "CREATE (a: Test { id: $q1_p1 })",
-      params = Map("q1_p1" -> QueryParam(p1)),
-      paramLocations = List(22)
+      params = Map("q1_p1" -> QueryParam(p1))
     )
-    assert(query1.withParameterPrefix("q1_") == expected1)
+    assert(query1 == expected1)
 
     // Multiple parameters
     val query2 = c"CREATE (a: Test { id: ${p1}, name: ${p2} })".query[Unit]
     val expected2 = DeferredQuery(
       query = "CREATE (a: Test { id: $q1_p1, name: $q1_p2 })",
-      params = Map("q1_p1" -> QueryParam(p1), "q1_p2" -> QueryParam(p2)),
-      paramLocations = List(22, 36)
+      params = Map("q1_p1" -> QueryParam(p1), "q1_p2" -> QueryParam(p2))
     )
-    assert(query2.withParameterPrefix("q1_") == expected2)
+    assert(query2 == expected2)
   }
 }
