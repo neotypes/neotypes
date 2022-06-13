@@ -347,7 +347,7 @@ final case class DeferredQuery[T](
   override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.streamingTransact(config)(st)
 
-  override def withParams(params: Map[String, QueryParam]): BaseDeferredQuery[T] =
+  override def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
     this.copy(params = this.params ++ params)
 
   override def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
