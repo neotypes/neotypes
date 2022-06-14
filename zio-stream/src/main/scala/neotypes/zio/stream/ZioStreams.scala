@@ -18,18 +18,18 @@ trait ZioStreams {
         Adapters.publisherToStream(publisher, bufferSize = 16)
 
       override def fromF[A](task: Task[A]): ZioStream[A] =
-        ZStream.fromEffect(task)
+        ZStream.fromZIO(task)
 
       override final def guarantee[A, B](r: Task[A])
                                         (f: A => ZioStream[B])
                                         (finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
-        ZStream.bracketExit(acquire = r) {
-          case (a, Exit.Failure(cause))          => cause.failureOrCause match {
-            case Left(ex: Throwable)             => finalizer(a, Some(ex)).ignore
-            case Right(c) if (c.interruptedOnly) => finalizer(a, Some(CancellationException)).ignore
-            case _                               => finalizer(a, None).ignore
+        ZStream.acquireReleaseExitWith(r) {
+          case (a, Exit.Failure(cause)) => cause.failureOrCause match {
+            case Left(ex: Throwable) => finalizer(a, Some(ex)).orDie
+            case Right(c) if c.isInterruptedOnly => finalizer(a, Some(CancellationException)).orDie
+            case _ => finalizer(a, None).orDie
           }
-          case (a, _)                            => finalizer(a, None).orDie
+          case (a, _) => finalizer(a, None).orDie
         }.flatMap(f)
 
       override final def map[A, B](sa: ZioStream[A])(f: A => B): ZioStream[B] =
@@ -39,7 +39,7 @@ trait ZioStreams {
         sa.flatMap(f)
 
       override final def evalMap[A, B](sa: ZioStream[A])(f: A => Task[B]): ZioStream[B] =
-        sa.mapM(f)
+        sa.mapZIO(f)
 
       override final def collectAs[A, C](sa: ZioStream[A])(factory: Factory[A, C]): Task[C] =
         sa.run(ZSink.foldLeftChunks(factory.newBuilder)(_ ++= _)).map(_.result())
