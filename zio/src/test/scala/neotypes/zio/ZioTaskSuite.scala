@@ -4,7 +4,7 @@ import neotypes.{Async, EffectSuite, EffectTestkit}
 import neotypes.zio.implicits._
 
 import zio.{Runtime, Task}
-import zio.internal.Platform
+// import zio.internal.Platform
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -12,7 +12,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object ZioTaskTestkit extends EffectTestkit[Task] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      val runtime = Runtime.default.mapPlatform(_ => Platform.fromExecutionContext(ec))
+      val runtime = Runtime.default
 
       override final def fToFuture[A](task: Task[A]): Future[A] =
         runtime.unsafeRunToFuture(task)
