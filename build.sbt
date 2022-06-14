@@ -16,7 +16,8 @@ val catsEffect3Version = "3.3.12"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.19"
 val fs2Version = "3.2.7"
-val zioVersion = "1.0.14"
+val zio1Version = "1.0.14"
+val zio2Version = "2.0.0-RC6"
 val zioInteropReactiveStreamsVersion = "1.3.12"
 val refinedVersion = "0.9.29"
 val enumeratumVersion = "1.7.0"
@@ -170,7 +171,7 @@ lazy val zio = (project in file("zio"))
   .settings(
     name := "neotypes-zio",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio" % zioVersion
+      "dev.zio" %% "zio" % zio2Version
     )
   )
 
@@ -219,8 +220,8 @@ lazy val zioStream = (project in file("zio-stream"))
   .settings(
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion,
+      "dev.zio" %% "zio"         % zio1Version,
+      "dev.zio" %% "zio-streams" % zio1Version,
       "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
