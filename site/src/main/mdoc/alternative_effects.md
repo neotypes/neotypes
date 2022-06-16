@@ -96,17 +96,19 @@ val data: String = program.runSyncUnsafe(1.second)
 ### zio.Task _(neotypes-zio)_
 
 ```scala mdoc:compile-only
-import zio.{Runtime, Managed, Task}
+import zio.{Runtime, Scope, Task, ZIO}
 import neotypes.{GraphDatabase, Driver}
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import org.neo4j.driver.AuthTokens
 
-val driver: Managed[Throwable, Driver[Task]] =
+val driver: ZIO[Scope, Throwable, Driver[Task]] =
   GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
-val program: Task[String] = driver.use { d =>
-  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+val program: Task[String] = ZIO.scoped {
+  driver.flatMap {d =>
+    "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+  }
 }
 
 val runtime = Runtime.default

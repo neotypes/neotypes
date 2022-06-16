@@ -24,12 +24,20 @@ trait ZioStreams {
                                         (f: A => ZioStream[B])
                                         (finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
         ZStream.acquireReleaseExitWith(r) {
-          case (a, Exit.Failure(cause)) => cause.failureOrCause match {
-            case Left(ex: Throwable) => finalizer(a, Some(ex)).orDie
-            case Right(c) if c.isInterruptedOnly => finalizer(a, Some(CancellationException)).orDie
-            case _ => finalizer(a, None).orDie
-          }
-          case (a, _) => finalizer(a, None).orDie
+          case (a, Exit.Failure(cause)) =>
+            cause.failureOrCause match {
+              case Left(ex: Throwable) =>
+                finalizer(a, Some(ex)).orDie
+
+              case Right(c) if c.isInterruptedOnly =>
+                finalizer(a, Some(CancellationException)).orDie
+
+              case _ =>
+                finalizer(a, None).orDie
+            }
+
+          case (a, _) =>
+            finalizer(a, None).orDie
         }.flatMap(f)
 
       override final def map[A, B](sa: ZioStream[A])(f: A => B): ZioStream[B] =

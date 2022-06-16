@@ -2,13 +2,13 @@ package neotypes.zio
 
 import neotypes.exceptions.CancellationException
 
-import zio.{ ZIO, Task, Scope, Exit }
+import zio.{Exit, Scope, Task, ZIO}
 
 trait Zio {
   implicit final def zioAsync: neotypes.Async.Aux[Task, Zio.ZioResource] =
     Zio.instance
 }
- 
+
 object Zio {
   private[neotypes] final type ZioResource[A] = ZIO[Scope, Throwable, A]
 
@@ -37,19 +37,27 @@ object Zio {
                                   (finalizer: (A, Option[Throwable]) => zio.Task[Unit]): Task[B] =
           ZIO.scoped {
             ZIO.acquireReleaseExit(fa) {
-              case (a, Exit.Failure(cause)) => cause.failureOrCause match {
-                case Left(ex: Throwable) => finalizer(a, Some(ex)).orDie
-                case Right(c) if (c.isInterruptedOnly) => finalizer(a, Some(CancellationException)).orDie
-                case _ => finalizer(a, None).orDie
-              }
-              case (a, _) => finalizer(a, None).orDie
+              case (a, Exit.Failure(cause)) =>
+                cause.failureOrCause match {
+                  case Left(ex: Throwable) =>
+                    finalizer(a, Some(ex)).orDie
+
+                  case Right(c) if (c.isInterruptedOnly) =>
+                    finalizer(a, Some(CancellationException)).orDie
+
+                  case _ =>
+                    finalizer(a, None).orDie
+                }
+
+              case (a, _) =>
+                finalizer(a, None).orDie
             }.flatMap(f)
           }
 
       override final def map[A, B](m: Task[A])(f: A => B): Task[B] =
         m.map(f)
 
-      override def resource[A](input: => A)(close: A => Task[Unit]): ZIO[Scope, Throwable, A] =
-         ZIO.acquireRelease(ZIO.attempt(input))(a => close(a).orDie)
+      override def resource[A](input: => A)(close: A => Task[Unit]): ZioResource[A] =
+        ZIO.acquireRelease(ZIO.attempt(input))(a => close(a).orDie)
     }
 }
