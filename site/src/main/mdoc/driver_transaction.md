@@ -40,7 +40,7 @@ import neotypes.implicits.syntax.string._ // Provides the query[T] extension met
 
 def result(driver: Driver[F]): F[String] =
   "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
-    .query[String]
+    .readOnlyQuery[String]
     .single(driver)
 ```
 
@@ -53,7 +53,7 @@ You can use `Driver.transact` method.
 import neotypes.Driver
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 
-def result(driver: Driver[F]): F[(String, String)] = driver.transact { tx =>
+def result(driver: Driver[F]): F[(String, String)] = driver.readOnlyTransact { tx =>
   for {
     r1 <-"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(tx)
     r2 <-"MATCH (p: Person { name: 'Tom Hanks' }) RETURN p.name".query[String].single(tx)
@@ -111,7 +111,7 @@ import neotypes.implicits.syntax.string._ // Provides the query[T] extension met
 def customTransaction(driver: Driver[F]): F[Transaction[F]] =
   driver.transaction(config)
 
-def result1(driver: Driver[F]): F[(String, String)] = driver.transact(config) { tx =>
+def result1(driver: Driver[F]): F[(String, String)] = driver.readOnlyTransact(config) { tx =>
   for {
     r1 <-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(tx)
     r2 <-"MATCH (p:Person {name: 'Tom Hanks'}) RETURN p.name".query[String].single(tx)
@@ -120,6 +120,6 @@ def result1(driver: Driver[F]): F[(String, String)] = driver.transact(config) { 
 
 def result2(driver: Driver[F]): F[String] =
   "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name"
-    .query[String]
+    .readOnlyQuery[String]
     .single(driver, config)
 ```

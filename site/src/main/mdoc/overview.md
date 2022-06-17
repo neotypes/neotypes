@@ -37,7 +37,7 @@ val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.ba
 val result: Future[List[Movie]] =
   """MATCH (movie: Movie)
      WHERE lower(movie.title) CONTAINS "thing"
-     RETURN movie""".query[Movie].list(driver)
+     RETURN movie""".readOnlyQuery[Movie].list(driver)
 ```
 
 Please remember that, you have to make sure that the `Driver` is properly closed at the end of the application execution, to make sure all obtained resources _(such as network connections)_ are cleaned up properly.<br>
@@ -105,27 +105,27 @@ final case class Person(name: String, born: Int)
 "CREATE (p: Person { name: 'Charlize Theron', born: 1975 })".query[Unit].execute(driver)
 
 // Single.
-"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(driver)
-"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Person].single(driver)
-"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Map[String, Value]].single(driver)
-"MATCH (p: Person { name: '1243' }) RETURN p.born".query[Option[Int]].single(driver)
+"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".readOnlyQuery[String].single(driver)
+"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".readOnlyQuery[Person].single(driver)
+"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".readOnlyQuery[Map[String, Value]].single(driver)
+"MATCH (p: Person { name: '1243' }) RETURN p.born".readOnlyQuery[Option[Int]].single(driver)
 
 // List.
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[Person :: Movie :: HNil].list(driver)
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[(Person, Movie)].list(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[Person :: Movie :: HNil].list(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[(Person, Movie)].list(driver)
 
 // Set.
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[Person :: Movie :: HNil].set(driver)
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[(Person, Movie)].set(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[Person :: Movie :: HNil].set(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[(Person, Movie)].set(driver)
 
 // Vector.
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[Person :: Movie :: HNil].vector(driver)
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[(Person, Movie)].vector(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[Person :: Movie :: HNil].vector(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[(Person, Movie)].vector(driver)
 
 // Map.
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[(Person, Movie)].map(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[(Person, Movie)].map(driver)
 
 // Any collection.
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[Person :: Movie :: HNil].collectAs(ListSet)(driver)
-"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".query[(Person, Movie)].collectAs(ListMap)(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[Person :: Movie :: HNil].collectAs(ListSet)(driver)
+"MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p,m".readOnlyQuery[(Person, Movie)].collectAs(ListMap)(driver)
 ```
