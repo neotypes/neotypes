@@ -23,7 +23,7 @@ final class ConcurrentDriverSpec[F[_]](
         c"CREATE (p: PERSON { name: ${name} })".query.execute(d)
 
       runConcurrently(query(name = "name1"), query(name = "name2")).flatMap { _ =>
-        c"MATCH (p: PERSON) RETURN p.name".queryReadOnly[String].list(d)
+        c"MATCH (p: PERSON) RETURN p.name".readOnlyQuery[String].list(d)
       }
     } map { result =>
       result should contain theSameElementsAs List("name1", "name2")

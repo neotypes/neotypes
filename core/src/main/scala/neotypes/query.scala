@@ -581,7 +581,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
     DeferredQuery(query, params)
   }
 
-  def queryReadOnly[T <: Any]: ReadOnlyDeferredQuery[T] = {
+  def readOnlyQuery[T <: Any]: ReadOnlyDeferredQuery[T] = {
     val (query, params, _) = build()
     ReadOnlyDeferredQuery(query, params)
   }

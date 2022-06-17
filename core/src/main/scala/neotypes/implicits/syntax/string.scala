@@ -13,7 +13,7 @@ private[neotypes] final class StringIdOps(private val underlying: String) extend
       params = Map.empty
     )
 
-  def queryReadOnly[T]: ReadOnlyDeferredQuery[T] =
+  def readOnlyQuery[T]: ReadOnlyDeferredQuery[T] =
     ReadOnlyDeferredQuery(
       query = underlying,
       params = Map.empty

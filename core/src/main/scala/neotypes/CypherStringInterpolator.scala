@@ -75,8 +75,8 @@ object CypherStringInterpolator {
 
     (
       newQuery,
-       newParams,
-       newLocations
+      newParams,
+      newLocations
     )
   }
 
