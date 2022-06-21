@@ -113,7 +113,7 @@ program.completedL.runSyncUnsafe(5.seconds)
 ### ZIO ZStreams _(neotypes-zio-stream)_
 
 ```scala mdoc:compile-only
-import zio.{Runtime, Managed, Task}
+import zio.{Runtime, Scope, Task, ZIO}
 import zio.stream.ZStream
 import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
@@ -122,17 +122,21 @@ import neotypes.zio.stream.ZioStream
 import neotypes.zio.stream.implicits._ // Brings the implicit Stream[ZioStream] instance into the scope.
 import org.neo4j.driver.AuthTokens
 
-val driver: Managed[Throwable, StreamingDriver[ZioStream, Task]] =
+val driver: ZIO[Scope, Throwable, StreamingDriver[ZioStream, Task]] =
   GraphDatabase.streamingDriver[ZioStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
-val program: ZStream[Any, Throwable, String] =
-  ZStream.managed(driver).flatMap { s =>
-    "MATCH (p:Person) RETURN p.name"
-      .query[String]
-      .stream(s)
+val program: ZStream[Scope, Throwable, String] =
+  ZStream.fromZIO(driver).flatMap { s =>
+    "MATCH (p:Person) RETURN p.name".query[String].stream(s)
   }
 
-Runtime.default.unsafeRun(program.foreach(n => Task(println(n))))
+Runtime.default.unsafeRun {
+  // ZStream#.foreach returns a ZIO and we want to eliminate Scope from R
+  ZIO.scoped {
+    program.foreach(n => ZIO.succeed(println(n)))
+  }
+}
+
 ```
 
 -----
