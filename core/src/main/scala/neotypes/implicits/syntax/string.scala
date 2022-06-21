@@ -10,7 +10,12 @@ private[neotypes] final class StringIdOps(private val underlying: String) extend
   def query[T]: DeferredQuery[T] =
     DeferredQuery(
       query = underlying,
-      params = Map.empty,
-      paramLocations = List.empty
+      params = Map.empty
+    )
+
+  def readOnlyQuery[T]: ReadOnlyDeferredQuery[T] =
+    ReadOnlyDeferredQuery(
+      query = underlying,
+      params = Map.empty
     )
 }

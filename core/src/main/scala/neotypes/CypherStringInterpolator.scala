@@ -52,11 +52,40 @@ object CypherStringInterpolator {
     loop(params.toList, acc = Nil)
   }
 
-  private def subQueryParts(queryBuilder: DeferredQueryBuilder, index: Int): List[DeferredQueryBuilder.Part] = {
-    val deferredQuery = queryBuilder.query.withParameterPrefix(s"q${index}_")
+  private def withParameterPrefix(
+    prefix: String,
+    query: String,
+    params: Map[String, QueryParam],
+    paramLocations: List[Int]
+  ): (String, Map[String, QueryParam], List[Int]) = {
+    val newParams = params.map {
+      case (k, v) =>
+        (prefix + k) -> v
+    }
 
-    val query = DeferredQueryBuilder.Query(deferredQuery.query, deferredQuery.paramLocations)
-    val params = deferredQuery.params.iterator.map {
+    val newLocations = paramLocations.sorted.zipWithIndex.map {
+      case (location, i) =>
+        location + (i * prefix.length)
+    }
+
+    val newQuery = newLocations.foldLeft(query) {
+      case (query, location) =>
+        query.patch(location + 1, prefix, 0)
+    }
+
+    (
+      newQuery,
+      newParams,
+      newLocations
+    )
+  }
+
+  private def subQueryParts(queryBuilder: DeferredQueryBuilder, index: Int): List[DeferredQueryBuilder.Part] = {
+    val (originalQuery, originalParams, originalLocations) = queryBuilder.build()
+    val (prefixedQuery, prefixedParams, prefixedLocations) = withParameterPrefix(s"q${index}_", originalQuery, originalParams, originalLocations)
+
+    val query = DeferredQueryBuilder.Query(prefixedQuery, prefixedLocations)
+    val params = prefixedParams.iterator.map {
       case (name, value) =>
         DeferredQueryBuilder.SubQueryParam(name, value)
     }.toList

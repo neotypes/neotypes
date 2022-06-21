@@ -31,7 +31,7 @@ The project aims to provide seamless integration with most popular scala infrast
 :warning: The library is under heavy development. Production use is at your own risk and is not recommended. :warning:
 
 {:.table}
-| ----------------------------------------- |:--------------|
+| ----------------------------------------- | :------------- |
 |`"io.github.neotypes" %% "neotypes-core" % version`|core functionality. Supports `scala.concurrent.Future`.|
 |`"io.github.neotypes" %% "neotypes-cats-effect" % version`|`cats.effect.Async[F]` implementation.|
 |`"io.github.neotypes" %% "neotypes-monix" % version`|`monix.eval.Task` implementation.|
@@ -57,7 +57,7 @@ import scala.concurrent.duration._
 
 val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
-val people = "MATCH (p: Person) RETURN p.name, p.born LIMIT 10".query[(String, Int)].list(driver)
+val people = "MATCH (p: Person) RETURN p.name, p.born LIMIT 10".readOnlyQuery[(String, Int)].list(driver)
 Await.result(people, 1.second)
 // res: Seq[(String, Int)] = ArrayBuffer(
 //   (Charlize Theron, 1975),
@@ -74,7 +74,7 @@ Await.result(people, 1.second)
 
 final case class Person(id: Long, born: Int, name: Option[String], notExists: Option[Int])
 
-val peopleCC = "MATCH (p: Person) RETURN p LIMIT 10".query[Person].list(driver)
+val peopleCC = "MATCH (p: Person) RETURN p LIMIT 10".readOnlyQuery[Person].list(driver)
 Await.result(peopleCC, 1.second)
 // res: Seq[Person] = ArrayBuffer(
 //   Person(0, 1975, Some(Charlize Theron), None),

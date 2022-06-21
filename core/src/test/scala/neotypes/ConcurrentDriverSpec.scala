@@ -20,10 +20,10 @@ final class ConcurrentDriverSpec[F[_]](
   it should "work and not throw an exception when the driver is used concurrently" in {
     executeAsFuture { d =>
       def query(name: String): F[Unit] =
-        c"CREATE (p: PERSON { name: ${name} })".query[Unit].execute(d)
+        c"CREATE (p: PERSON { name: ${name} })".query.execute(d)
 
       runConcurrently(query(name = "name1"), query(name = "name2")).flatMap { _ =>
-        c"MATCH (p: PERSON) RETURN p.name".query[String].list(d)
+        c"MATCH (p: PERSON) RETURN p.name".readOnlyQuery[String].list(d)
       }
     } map { result =>
       result should contain theSameElementsAs List("name1", "name2")
