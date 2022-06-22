@@ -7,6 +7,26 @@ position: 100
 
 # Changelog
 
+## v0.21.0 _(2022-06-22)_
+
+### Ready only transactions ([#523](https://github.com/neotypes/neotypes/pull/523){:target="_blank"})
+
+**neotypes** now provides some _"read only"_ alternatives
+to operations that create and use `Transactions` under the hood;
+like `transact` or `query`<br>
+The `readOnly` variations automatically override the `withAccessMode`
+property of the provided `TransactionConfig` with the `AccessMode.READ` value.
+
+A `readOnly` operation can be routed to a read server,
+for more information check the [**Neo4j** docs](https://neo4j.com/docs/api/java-driver/current/org/neo4j/driver/AccessMode.html).
+
+### ZIO 2 support ([#524](https://github.com/neotypes/neotypes/pull/524){:target="_blank"})
+
+The **ZIO** module of **neotypes** not longer supports **ZIO** `1.x`,
+but rather requires the a `2.x` release of the library.
+
+> Currently we depend on `2.0.0-RC6`
+
 ## v0.20.0 _(2022-03-31)_
 
 ### Add plain string interpolation ([#493](https://github.com/neotypes/neotypes/pull/493){:target="_blank"})

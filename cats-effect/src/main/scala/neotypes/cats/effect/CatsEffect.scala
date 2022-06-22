@@ -25,9 +25,14 @@ trait CatsEffect {
                                         (f: A => F[B])
                                         (finalizer: (A, Option[Throwable]) => F[Unit]): F[B] =
         Resource.makeCase(fa) {
-          case (a, Resource.ExitCase.Succeeded)   => finalizer(a, None)
-          case (a, Resource.ExitCase.Canceled)    => finalizer(a, Some(CancellationException))
-          case (a, Resource.ExitCase.Errored(ex)) => finalizer(a, Some(ex))
+          case (a, Resource.ExitCase.Succeeded) =>
+            finalizer(a, None)
+
+          case (a, Resource.ExitCase.Canceled) =>
+            finalizer(a, Some(CancellationException))
+
+          case (a, Resource.ExitCase.Errored(ex)) =>
+            finalizer(a, Some(ex))
         }.use(f)
 
       override final def map[A, B](m: F[A])(f: A => B): F[B] =
