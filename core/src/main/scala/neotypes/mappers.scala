@@ -3,7 +3,7 @@ package neotypes
 import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
 
-import exceptions.{ConversionException, IncoercibleException, PropertyNotFoundException}
+import exceptions.{IncoercibleException, PropertyNotFoundException}
 import generic.Exported
 import types.{Path, QueryParam}
 import internal.utils.traverse.{traverseAs, traverseAsList}
@@ -11,7 +11,6 @@ import internal.utils.traverse.{traverseAs, traverseAsList}
 import org.neo4j.driver.internal.types.InternalTypeSystem
 import org.neo4j.driver.internal.value.{MapValue, NodeValue, RelationshipValue}
 import org.neo4j.driver.Value
-import org.neo4j.driver.exceptions.value.Uncoercible
 import org.neo4j.driver.summary.ResultSummary
 import org.neo4j.driver.types.{IsoDuration, MapAccessor => NMap, Node, Path => NPath, Point, Relationship}
 import shapeless.HNil
@@ -23,16 +22,73 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 object mappers {
+  @annotation.implicitNotFound("${A} is not a valid type for keys")
+  trait KeyMapper[A] { self =>
+    /**
+      * Encodes a value as a key.
+      *
+      * @param a The value to encode.
+      * @tparam A The type of the value to encode.
+      * @return The key corresponding to that value.
+      */
+    def encodeKey(a: A): String
+
+    /**
+      * Decodes a key as a value.
+      *
+      * @param key The key to decode.
+      * @tparam A The type of the value to decode.
+      * @return The value corresponding to that key or an error.
+      */
+    def decodeKey(key: String): Either[Throwable, A]
+
+    /**
+      * Creates a new [[KeyMapper]] by providing
+      * transformation functions to and from A.
+      *
+      * @param f The function to apply before the encoding.
+      * @param g The function to apply after the decoding.
+      * @tparam B The type of the new [[KeyMapper]]
+      * @return A new [[KeyMapper]] for values of type B.
+      */
+    final def imap[B](f: B => A)(g: A => Either[Throwable, B]): KeyMapper[B] = new KeyMapper[B] {
+      override def encodeKey(b: B): String =
+        self.encodeKey(f(b))
+
+      override def decodeKey(key: String): Either[Throwable, B] =
+        self.decodeKey(key).flatMap(g)
+    }
+  }
+
+  object KeyMapper {
+    /**
+      * Summons an implicit [[KeyMapper]] already in scope by result type.
+      *
+      * @param mapper A [[KeyMapper]] in scope of the desired type.
+      * @tparam A The result type of the mapper.
+      * @return A [[KeyMapper]] for the given type currently in implicit scope.
+      */
+    def apply[A](implicit mapper: KeyMapper[A]): KeyMapper[A] = mapper
+
+    implicit final val StringKeyMapper: KeyMapper[String] = new KeyMapper[String] {
+      override def encodeKey(key: String): String =
+        key
+
+      override def decodeKey(key: String): Either[Throwable, String] =
+        Right(key)
+    }
+  }
+
   @annotation.implicitNotFound("Could not find the ResultMapper for ${A}")
   trait ResultMapper[A] { self =>
     def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A]
 
     /**
-      * Allows supplying a secondary [[ResultMapper]] to try if the original fails.
+      * Allows supplying a secondary [[neotypes.mappers.ResultMapper]] to try if the original fails.
       *
-      * @param mapper A [[ResultMapper]] to use if the current one fails.
-      * @tparam AA A type that is possibly a supertype of your original [[ResultMapper]] type.
-      * @return A new [[ResultMapper]] that returns the type of the supplied secondary mapper.
+      * @param mapper A [[neotypes.mappers.ResultMapper]] to use if the current one fails.
+      * @tparam AA A type that is possibly a supertype of your original [[neotypes.mappers.ResultMapper]] type.
+      * @return A new [[neotypes.mappers.ResultMapper]] that returns the type of the supplied secondary mapper.
       */
     def or[AA >: A](mapper: => ResultMapper[AA]): ResultMapper[AA] = new ResultMapper[AA] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, AA] = {
@@ -41,7 +97,7 @@ object mappers {
     }
 
     /**
-      * Creates a new [[ResultMapper]] by applying a function to the result value, if successful.
+      * Creates a new [[neotypes.mappers.ResultMapper]] by applying a function to the result value, if successful.
       *
       * @param f A function to apply to the result value of this ResultMapper.
       * @tparam B The return type of your supplied function.
@@ -53,12 +109,12 @@ object mappers {
     }
 
     /**
-      * Bind a function over this [[ResultMapper]], if successful.
+      * Bind a function over this [[neotypes.mappers.ResultMapper]], if successful.
       * Useful for creating decoders that depend on multiple values in sequence.
       *
-      * @param f A function that returns a new [[ResultMapper]].
-      * @tparam B The result type of your new [[ResultMapper]] from your function.
-      * @return A new [[ResultMapper]] derived from the value your original [[ResultMapper]] outputs.
+      * @param f A function that returns a new [[neotypes.mappers.ResultMapper]].
+      * @tparam B The result type of your new [[neotypes.mappers.ResultMapper]] from your function.
+      * @return A new [[neotypes.mappers.ResultMapper]] derived from the value your original [[neotypes.mappers.ResultMapper]] outputs.
       */
     def flatMap[B](f: A => ResultMapper[B]): ResultMapper[B] = new ResultMapper[B] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, B] =
@@ -66,11 +122,11 @@ object mappers {
     }
 
     /**
-      * Combines the results of this [[ResultMapper]] with another as a tuple pair.
+      * Combines the results of this [[neotypes.mappers.ResultMapper]] with another as a tuple pair.
       *
-      * @param fa A second [[ResultMapper]] that reads the same input values.
-      * @tparam B The type of your second [[ResultMapper]] results.
-      * @return A [[ResultMapper]] that produces a pair of values.
+      * @param fa A second [[neotypes.mappers.ResultMapper]] that reads the same input values.
+      * @tparam B The type of your second [[neotypes.mappers.ResultMapper]] results.
+      * @return A [[neotypes.mappers.ResultMapper]] that produces a pair of values.
       */
     def product[B](fa: ResultMapper[B]): ResultMapper[(A, B)] = new ResultMapper[(A, B)] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, (A, B)] =
@@ -78,12 +134,12 @@ object mappers {
     }
 
     /**
-      * Produces a [[ResultMapper]] where either the original or secondary mapper succeeds.
+      * Produces a [[neotypes.mappers.ResultMapper]] where either the original or secondary mapper succeeds.
       * The original mapper result is on the Left side, and the secondary mapper is on the Right.
       *
-      * @param fa A secondary [[ResultMapper]] to try if the first one fails.
-      * @tparam B The result type of your secondary [[ResultMapper]].
-      * @return A [[ResultMapper]] that, if sucessful, will return a value of either the original or secondary type.
+      * @param fa A secondary [[neotypes.mappers.ResultMapper]] to try if the first one fails.
+      * @tparam B The result type of your secondary [[neotypes.mappers.ResultMapper]].
+      * @return A [[neotypes.mappers.ResultMapper]] that, if successful, will return a value of either the original or secondary type.
       */
     def either[B](fa: ResultMapper[B]): ResultMapper[Either[A, B]] = new ResultMapper[Either[A, B]] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, Either[A, B]] =
@@ -97,57 +153,57 @@ object mappers {
     }
   }
 
-  object ResultMapper extends ResultMappers with ResultMappersLowPriority {
+  object ResultMapper extends ResultMappers {
     /**
-      * Summons an implicit [[ResultMapper]] already in scope by result type.
+      * Summons an implicit [[neotypes.mappers.ResultMapper]] already in scope by result type.
       *
-      * @param mapper A [[ResultMapper]] in scope of the desired type.
+      * @param mapper A [[neotypes.mappers.ResultMapper]] in scope of the desired type.
       * @tparam A The result type of the mapper.
-      * @return A [[ResultMapper]] for the given type currently in implicit scope.
+      * @return A [[neotypes.mappers.ResultMapper]] for the given type currently in implicit scope.
       */
     def apply[A](implicit mapper: ResultMapper[A]): ResultMapper[A] = mapper
 
     /**
-      * Constructs a [[ResultMapper]] that always returns a constant result value.
+      * Constructs a [[neotypes.mappers.ResultMapper]] that always returns a constant result value.
       *
       * @param a The value to always return.
       * @tparam A The type of the result value.
-      * @return A [[ResultMapper]] that always returns the supplied value and never errors.
+      * @return A [[neotypes.mappers.ResultMapper]] that always returns the supplied value and never errors.
       */
     def const[A](a: A): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Right(a)
     }
 
     /**
-      * Constructs a [[ResultMapper]] from a function that parses the results of a Neo4j query.
+      * Constructs a [[neotypes.mappers.ResultMapper]] from a function that parses the results of a Neo4j query.
       *
       * The supplied function takes a sequence of String/Value pairs in the order they are returned from the query per-row.
       * It also takes a TypeHint to indicate whether or not the values are a tuple, if relevant.
       *
       * @param f A function that parses a list of returned field names/values and a supplied [[TypeHint]].
-      * @tparam A The result type of this [[ResultMapper]]
-      * @return A new [[ResultMapper]] that parses query results with the supplied function.
+      * @tparam A The result type of this [[neotypes.mappers.ResultMapper]]
+      * @return A new [[neotypes.mappers.ResultMapper]] that parses query results with the supplied function.
       */
     def instance[A](f: (List[(String, Value)], Option[TypeHint]) => Either[Throwable, A]): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = f(value, typeHint)
     }
 
     /**
-      * Constructs a [[ResultMapper]] that always returns the specified Throwable.
+      * Constructs a [[neotypes.mappers.ResultMapper]] that always returns the specified Throwable.
       *
       * @param failure A throwable error.
-      * @tparam A The result type (never returned) of this [[ResultMapper]]
-      * @return A [[ResultMapper]] that always returns a throwable error.
+      * @tparam A The result type (never returned) of this [[neotypes.mappers.ResultMapper]]
+      * @return A [[neotypes.mappers.ResultMapper]] that always returns a throwable error.
       */
     def failed[A](failure: Throwable): ResultMapper[A] = new ResultMapper[A] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, A] = Left(failure)
     }
 
     /**
-      * Constructs a [[ResultMapper]] from a [[ValueMapper]].
+      * Constructs a [[neotypes.mappers.ResultMapper]] from a [[ValueMapper]].
       *
-      * @tparam A the type of both the [[ResultMapper]] and the [[ValueMapper]].
-      * @return A [[ResultMapper]] that delegates its behaviour to a [[ValueMapper]].
+      * @tparam A the type of both the [[neotypes.mappers.ResultMapper]] and the [[ValueMapper]].
+      * @return A [[neotypes.mappers.ResultMapper]] that delegates its behaviour to a [[ValueMapper]].
       */
     def fromValueMapper[A](implicit marshallable: ValueMapper[A]): ResultMapper[A] =
       new ResultMapper[A] {
@@ -160,7 +216,7 @@ object mappers {
       }
   }
 
-  trait ResultMappers {
+  trait ResultMappers extends ResultMappersLowPriority {
     implicit final val BooleanResultMapper: ResultMapper[Boolean] =
       ResultMapper.fromValueMapper
 
@@ -230,10 +286,14 @@ object mappers {
     implicit final val ZonedDateTimeResultMapper: ResultMapper[ZonedDateTime] =
       ResultMapper.fromValueMapper
 
-    implicit final def iterableResultMapper[T, I[_]](implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]): ResultMapper[I[T]] =
+    implicit final def iterableResultMapper[T, I[_]](
+      implicit factory: Factory[T, I[T]], mapper: ValueMapper[T]
+    ): ResultMapper[I[T]] =
       ResultMapper.fromValueMapper
 
-    implicit final def mapResultMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ResultMapper[M[String, V]] =
+    implicit final def mapResultMapper[K, V, M[_, _]](
+      implicit factory: Factory[(K, V), M[K, V]], keyMapper: KeyMapper[K], valueMapper: ValueMapper[V]
+    ): ResultMapper[M[K, V]] =
       ResultMapper.fromValueMapper
 
     implicit final def optionResultMapper[T](implicit mapper: ResultMapper[T]): ResultMapper[Option[T]] =
@@ -314,7 +374,7 @@ object mappers {
       *
       * @param fa A secondary [[ValueMapper]] to try if the first one fails.
       * @tparam B The result type of your secondary [[ValueMapper]].
-      * @return A [[ValueMapper]] that, if sucessful, will return a value of either the original or secondary type.
+      * @return A [[ValueMapper]] that, if successful, will return a value of either the original or secondary type.
       */
     def either[B](fa: ValueMapper[B]): ValueMapper[Either[A, B]] = new ValueMapper[Either[A, B]] {
       override def to(fieldName: String, value: Option[Value]): Either[Throwable, Either[A, B]] =
@@ -385,8 +445,11 @@ object mappers {
         value match {
           case Some(v) =>
             Try(f(v)).toEither.left.map {
-              case ex: Uncoercible => IncoercibleException(s"${ex.getLocalizedMessage} for field [${fieldName}] with value [${v}]", ex)
-              case ex: Throwable => ex
+              case ex =>
+                IncoercibleException(
+                  message = s"${ex.getLocalizedMessage} for field [${fieldName}] with value [${v}]",
+                  cause = Some(ex)
+                )
             }
 
           case None =>
@@ -396,7 +459,6 @@ object mappers {
   }
 
   trait ValueMappers {
-
     implicit final val BooleanValueMapper: ValueMapper[Boolean] =
       ValueMapper.fromCast(v => v.asBoolean)
 
@@ -498,9 +560,11 @@ object mappers {
     private def getKeyValuesFrom(nmap: NMap): Iterator[(String, Value)] =
       nmap.keys.asScala.iterator.map(key => key -> nmap.get(key))
 
-    implicit final def mapValueMapper[V, M[_, _]](implicit factory: Factory[(String, V), M[String, V]], mapper: ValueMapper[V]): ValueMapper[M[String, V]] =
-      new ValueMapper[M[String, V]] {
-        override def to(fieldName: String, value: Option[Value]): Either[Throwable, M[String, V]] =
+    implicit final def mapValueMapper[K, V, M[_, _]](
+      implicit factory: Factory[(K, V), M[K, V]], keyMapper: KeyMapper[K], valueMapper: ValueMapper[V]
+    ): ValueMapper[M[K, V]] =
+      new ValueMapper[M[K, V]] {
+        override def to(fieldName: String, value: Option[Value]): Either[Throwable, M[K, V]] =
           value match {
             case None =>
               Right(factory.newBuilder.result())
@@ -508,7 +572,10 @@ object mappers {
             case Some(value) =>
               traverseAs(factory)(getKeyValuesFrom(value)) {
                 case (key, value) =>
-                  mapper.to("", Option(value)).map(v => key -> v)
+                  for {
+                    k <- keyMapper.decodeKey(key)
+                    v <- valueMapper.to(fieldName = "", value = Option(value))
+                  } yield k -> v
               }
           }
       }
@@ -530,7 +597,7 @@ object mappers {
         override def to(fieldName: String, value: Option[Value]): Either[Throwable, Path[N, R]] =
           value match {
             case None =>
-              Left(PropertyNotFoundException(s"Property $fieldName not found"))
+              Left(PropertyNotFoundException(s"Property ${fieldName} not found"))
 
             case Some(value) =>
               if (value.`type` == InternalTypeSystem.TYPE_SYSTEM.PATH) {
@@ -549,7 +616,9 @@ object mappers {
                   relationships <- relationships
                 } yield Path(nodes, relationships, path)
               } else {
-                Left(ConversionException(s"$fieldName of type ${value.`type`} cannot be converted into a Path"))
+                Left(IncoercibleException(
+                  message = s"${fieldName} of type ${value.`type`} cannot be converted into a Path"
+                ))
               }
           }
       }
@@ -565,7 +634,9 @@ object mappers {
               resultMapper.to((fieldName -> value) :: Nil, Some(TypeHint(ct)))
 
             case None =>
-              Left(ConversionException(s"Cannot convert $fieldName [$value]"))
+              Left(IncoercibleException(
+                message = s"${fieldName} cannot be converted ${value} into a ${ct.runtimeClass.getCanonicalName}"
+              ))
           }
       }
   }
@@ -671,7 +742,6 @@ object mappers {
   }
 
   trait ParameterMappers {
-
     implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
       ParameterMapper.fromCast(Boolean.box)
 
@@ -734,23 +804,29 @@ object mappers {
         col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
       }
 
-    implicit final def collectionParameterMapper[T, C[_]](implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]): ParameterMapper[C[T]] =
+    implicit final def collectionParameterMapper[T, C[_]](
+      implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]
+    ): ParameterMapper[C[T]] =
       iterableParameterMapper(mapper).contramap(ev)
 
-    private final def iterableMapParameterMapper[V](mapper: ParameterMapper[V]): ParameterMapper[Iterable[(String, V)]] =
+    private final def iterableMapParameterMapper[K, V](
+      keyMapper: KeyMapper[K], valueMapper: ParameterMapper[V]
+    ): ParameterMapper[Iterable[(K, V)]] =
       ParameterMapper.fromCast { col =>
         col.iterator.map {
-          case (key, v) => key -> mapper.toQueryParam(v).underlying
+          case (key, v) =>
+            keyMapper.encodeKey(key) -> valueMapper.toQueryParam(v).underlying
         }.toMap.asJava
       }
 
-    implicit final def mapParameterMapper[V, M[_, _]](implicit mapper: ParameterMapper[V], ev: M[String, V] <:< Iterable[(String, V)]): ParameterMapper[M[String, V]] =
-      iterableMapParameterMapper(mapper).contramap(ev)
+    implicit final def mapParameterMapper[K, V, M[_, _]](
+      implicit keyMapper: KeyMapper[K], valueMapper: ParameterMapper[V], ev: M[K, V] <:< Iterable[(K, V)]
+    ): ParameterMapper[M[K, V]] =
+      iterableMapParameterMapper(keyMapper, valueMapper).contramap(ev)
 
     implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
       ParameterMapper.fromCast { optional =>
         optional.map(v => mapper.toQueryParam(v).underlying).orNull
       }
   }
-
 }

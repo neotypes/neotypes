@@ -2,50 +2,80 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.1.1"
-val scalaCollectionCompatVersion = "2.2.0"
-val shapelessVersion = "2.3.3"
-val testcontainersNeo4jVersion = "1.15.0"
-val testcontainersScalaVersion = "0.38.6"
+val neo4jDriverVersion = "4.4.5"
+val scalaCollectionCompatVersion = "2.7.0"
+val shapelessVersion = "2.3.9"
+val testcontainersNeo4jVersion = "1.17.2"
+val testcontainersScalaVersion = "0.40.7"
 val mockitoVersion = "1.10.19"
-val scalaTestVersion = "3.2.3"
-val slf4jVersion = "1.7.30"
-val catsVersion = "2.2.0"
-val catsEffectsVersion = "2.2.0"
-val monixVersion = "3.3.0"
-val akkaStreamVersion = "2.6.10"
-val fs2Version = "2.4.5"
-val zioVersion = "1.0.3"
-val refinedVersion = "0.9.18"
+val scalaTestVersion = "3.2.12"
+val logbackVersion = "1.2.11"
+val catsVersion = "2.7.0"
+val catsEffect2Version = "2.5.5"
+val catsEffect3Version = "3.3.12"
+val monixVersion = "3.4.1"
+val akkaStreamVersion = "2.6.19"
+val fs2Version = "3.2.7"
+val zio2Version = "2.0.0-RC6"
+val zioInteropReactiveStreamsVersion = "2.0.0-RC7"
+val refinedVersion = "0.9.29"
+val enumeratumVersion = "1.7.0"
 
-//lazy val compileScalastyle = taskKey[Unit]("compileScalastyle")
+// Fix scmInfo in Github Actions.
+ThisBuild / scmInfo ~= {
+  case Some(info) => Some(info)
+  case None =>
+    import scala.sys.process._
+    import scala.util.control.NonFatal
+    val identifier = """([^\/]+)"""
+    val GitHubHttps = s"https://github.com/$identifier/$identifier".r
+    try {
+      val remote = List("git", "ls-remote", "--get-url", "origin").!!.trim()
+      remote match {
+        case GitHubHttps(user, repo) =>
+          Some(
+            ScmInfo(
+              url(s"https://github.com/$user/$repo"),
+              s"scm:git:https://github.com/$user/$repo.git",
+              Some(s"scm:git:git@github.com:$user/$repo.git")
+            )
+          )
+        case _ =>
+          None
+      }
+    } catch {
+      case NonFatal(_) => None
+    }
+  }
 
+// Global settings.
+ThisBuild / scalaVersion := "2.12.15"
+ThisBuild / crossScalaVersions := Seq("2.12.15", "2.13.8")
+ThisBuild / organization := "io.github.neotypes"
+ThisBuild / versionScheme := Some("semver-spec")
+ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
+
+def removeScalacOptionsInTest(scalaVersion: String) =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, 12)) => Seq("-Ywarn-value-discard", "-Ywarn-unused:params")
+    case _ => Seq("-Wvalue-discard", "-Wunused:explicits", "-Wunused:params", "-Wunused:imports")
+  }
+
+// Common settings.
 val commonSettings = Seq(
-  ThisBuild / scalaVersion := "2.12.12",
-  crossScalaVersions := Seq("2.13.3", "2.12.12"),
   scalacOptions += "-Ywarn-macros:after",
-  Test / scalacOptions := Seq("-feature", "-deprecation"),
-  autoAPIMappings := true,
+  Test / parallelExecution := false,
+  Test / fork := true,
+  Test / scalacOptions --= removeScalacOptionsInTest(scalaVersion.value),
 
-  /**
-    * Publishing
-    */
-  publishTo := {
-    val nexus = "https://oss.sonatype.org/"
-    if (isSnapshot.value)
-      Some("snapshots" at nexus + "content/repositories/snapshots")
-    else
-      Some("releases" at nexus + "service/local/staging/deploy/maven2")
-  },
-  publishMavenStyle := true,
+  /** Publishing */
+  publishTo := sonatypePublishToBundle.value,
   sonatypeProfileName := "neotypes",
-  sonatypeProjectHosting := Some(GitLabHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
-  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT")),
-  ThisBuild / organization := "com.dimafeng",
+  sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
+  publishMavenStyle := true,
+  releaseCrossBuild := true,
 
-  Global / parallelExecution := false,
-
-  releaseCrossBuild := true
+  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
 
 lazy val noPublishSettings = Seq(
@@ -64,7 +94,8 @@ lazy val root = (project in file("."))
     zioStream,
     refined,
     catsData,
-    extras
+    extras,
+    enumeratum
   )
   .settings(noPublishSettings)
   .settings(
@@ -72,14 +103,13 @@ lazy val root = (project in file("."))
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
-      //runTest,
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       releaseStepCommandAndRemaining("+publishSigned"),
+      releaseStepCommand("sonatypeBundleRelease"),
       setNextVersion,
       commitNextVersion,
-      //releaseStepCommand("sonatypeReleaseAll"),
       pushChanges
     )
   )
@@ -87,7 +117,7 @@ lazy val root = (project in file("."))
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
-    name := "neotypes",
+    name := "neotypes-core",
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
@@ -101,7 +131,7 @@ lazy val core = (project in file("core"))
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
         "org.mockito" % "mockito-all" % mockitoVersion,
-        "org.slf4j" % "slf4j-simple" % slf4jVersion
+        "ch.qos.logback" % "logback-classic" % logbackVersion
       )
   )
 
@@ -119,7 +149,7 @@ lazy val catsEffect = (project in file("cats-effect"))
     Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion
+      "org.typelevel" %% "cats-effect" % catsEffect3Version
     )
   )
 
@@ -130,7 +160,7 @@ lazy val monix = (project in file("monix"))
     name := "neotypes-monix",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
@@ -141,7 +171,7 @@ lazy val zio = (project in file("zio"))
   .settings(
     name := "neotypes-zio",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio" % zioVersion
+      "dev.zio" %% "zio" % zio2Version
     )
   )
 
@@ -163,8 +193,9 @@ lazy val fs2Stream = (project in file("fs2-stream"))
     name := "neotypes-fs2-stream",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
-      "co.fs2" %% "fs2-core" % fs2Version
+      "org.typelevel" %% "cats-effect" % catsEffect3Version,
+      "co.fs2" %% "fs2-core" % fs2Version,
+      "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
   )
 
@@ -176,7 +207,7 @@ lazy val monixStream = (project in file("monix-stream"))
     name := "neotypes-monix-stream",
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
-      "org.typelevel" %% "cats-effect" % catsEffectsVersion,
+      "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion,
       "io.monix" %% "monix-reactive" % monixVersion
     )
@@ -189,8 +220,9 @@ lazy val zioStream = (project in file("zio-stream"))
   .settings(
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio"         % zioVersion,
-      "dev.zio" %% "zio-streams" % zioVersion
+      "dev.zio" %% "zio"         % zio2Version,
+      "dev.zio" %% "zio-streams" % zio2Version,
+      "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
 
@@ -221,6 +253,16 @@ lazy val extras = (project in file("extras"))
     name := "neotypes-extras"
   )
 
+lazy val enumeratum = (project in file("enumeratum"))
+  .dependsOn(core % "compile->compile;test->test;provided->provided")
+  .settings(commonSettings)
+  .settings(
+    name := "neotypes-enumeratum",
+    libraryDependencies ++= PROVIDED(
+      "com.beachape" %% "enumeratum" % enumeratumVersion
+    )
+  )
+
 lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
 
 lazy val microsite = (project in file("site"))
@@ -234,37 +276,39 @@ lazy val microsite = (project in file("site"))
     micrositeHighlightTheme := "atom-one-light",
     micrositeHomepage := "https://neotypes.github.io/neotypes/",
     micrositeDocumentationUrl := "docs.html",
+    micrositeHomeButtonTarget := "repo",
+    micrositeSearchEnabled := true,
     micrositeGithubOwner := "neotypes",
     micrositeGithubRepo := "neotypes",
     micrositeBaseUrl := "/neotypes",
     ghpagesNoJekyll := false,
     mdocIn := (Compile / sourceDirectory).value / "mdoc",
-    mdoc / fork := true,
+    autoAPIMappings := true,
     docsMappingsAPIDir := "api",
-    addMappingsToSiteDir(mappings in (ScalaUnidoc, packageDoc), docsMappingsAPIDir),
+    addMappingsToSiteDir(ScalaUnidoc / packageDoc / mappings, docsMappingsAPIDir),
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    Compile / scalacOptions in Compile -= "-Xfatal-warnings",
+    Compile / scalacOptions -= "-Xfatal-warnings",
     ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",
-      scmInfo.value.get.browseUrl + "/tree/master€{FILE_PATH}.scala",
+      scmInfo.value.get.browseUrl + "/tree/main€{FILE_PATH}.scala",
       "-sourcepath",
-      baseDirectory.in(LocalRootProject).value.getAbsolutePath,
+      (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
     ),
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream),
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
   ).dependsOn(
     core % "compile->compile;provided->provided",
     catsEffect % "compile->compile;provided->provided",
-    monix % "compile->compile;provided->provided",
     zio % "compile->compile;provided->provided",
     akkaStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
-    monixStream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
     refined % "compile->compile;provided->provided",
-    extras % "compile->compile;provided->provided"
+    extras % "compile->compile;provided->provided",
+    enumeratum % "compile->compile;provided->provided"
   )

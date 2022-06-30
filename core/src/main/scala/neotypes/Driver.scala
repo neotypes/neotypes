@@ -2,89 +2,153 @@ package neotypes
 
 import internal.syntax.async._
 import internal.syntax.stage._
+import internal.syntax.stream._
+import org.neo4j.driver.{AccessMode, ConnectionPoolMetrics, Driver => NeoDriver}
 
-import org.neo4j.driver.{AccessMode, Driver => NeoDriver, SessionConfig}
+import scala.util.Try
+import scala.jdk.CollectionConverters._
 
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
   * {{{
-  *    val driver = GraphDatabase[F]("bolt://localhost:7687").driver
+  *    val driver = GraphDatabase.driver[F]("bolt://localhost:7687")
   * }}}
   *
   * @tparam F effect type for driver
-  *
-  * @define futinfo When your effect type is scala.Future there is no concept of Resource. For more information see <a href = https://neotypes.github.io/neotypes/docs/alternative_effects.html>alternative effects</a>
   */
-final class Driver[F[_]] private[neotypes] (private val driver: NeoDriver) {
+sealed trait Driver[F[_]] {
+  def transactionConfig: TransactionConfig
 
-  /** Acquire a session to the database with the default config.
-    * @note $futinfo
+  def metrics: F[List[ConnectionPoolMetrics]]
+
+  def transaction(config: TransactionConfig): F[Transaction[F]]
+
+  final def transaction: F[Transaction[F]] =
+    transaction(config = transactionConfig)
+
+  def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+
+  final def transact[T](txF: Transaction[F] => F[T]): F[T] =
+    transact(config = transactionConfig)(txF)
+
+  def readOnlyTransact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+
+  final def readOnlyTransact[T](txF: Transaction[F] => F[T]): F[T] =
+    readOnlyTransact(config = transactionConfig)(txF)
+
+  /** Close the resources assigned to the neo4j driver.
     *
-    * @param F asynchronous effect type with resource type defined.
-    * @tparam R resource type dependant on effect type F.
-    * @return Session[F] in effect type R.
+    *  @return an effect F of Unit.
     */
-  def session[R[_]](implicit F: Async.Aux[F, R]): R[Session[F]] =
-    session(SessionConfig.defaultConfig)
+  def close: F[Unit]
 
-  /** Acquire a session to the database.
-    * @note $futinfo
-    *
-    * @param accessMode read or write mode.
-    * @param bookmarks bookmarks passed between transactions for neo4j casual chaining.
-    * @param F asynchronous effect type with resource type defined.
-    * @tparam R resource type dependant on effect type F.
-    * @return Session[F] in effect type R.
-    */
-  def session[R[_]](config: SessionConfig)
-                   (implicit F: Async.Aux[F, R]): R[Session[F]] =
-    F.resource(createSession(config))(session => session.close)
+  /** Creates a new driver instance using the provided transaction configuration as default. NB. This does NOT create
+   * a new instance of the underlying Java driver.
+   */
+  def withTransactionConfig(config: TransactionConfig): Driver[F]
+}
 
-  private[this] def createSession(config: SessionConfig)
-                                 (implicit F: Async[F]): F[Session[F]] =
-    F.makeLock.map { lock =>
-      val session = driver.asyncSession(config)
-      Session(F, session)(lock)
-    }
+sealed trait StreamingDriver[S[_], F[_]] extends Driver[F] {
+  def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]]
 
-  /** Apply a unit of work to a read session
-    *
-    * @param sessionWork function that takes a Session[F] and returns an F[T]
-    * @param F the effect type
-    * @tparam T the type of the value that will be returned when the query is executed.
-    * @return an effect F of type T
-    */
-  def readSession[T](sessionWork: Session[F] => F[T])
-                    (implicit F: Async[F]): F[T] =
-    withSession(AccessMode.READ)(sessionWork)
+  final def streamingTransaction: S[StreamingTransaction[S, F]] =
+    streamingTransaction(config = transactionConfig)
 
-  /** Apply a unit to a write session
-    *
-    * @param sessionWork function that takes a Session[F] and returns an F[T]
-    * @param F the effect type
-    * @tparam T the type of the value that will be returned when the query is executed.
-    * @return an effect F of type T
-    */
-  def writeSession[T](sessionWork: Session[F] => F[T])
-                     (implicit F: Async[F]): F[T] =
-    withSession(AccessMode.WRITE)(sessionWork)
+  def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
 
-  private[this] def withSession[T](accessMode: AccessMode)
-                                  (sessionWork: Session[F] => F[T])
-                                  (implicit F: Async[F]): F[T] = {
-    val config =  SessionConfig.builder.withDefaultAccessMode(accessMode).build()
-    createSession(config).guarantee(sessionWork) {
-      case (session, _) => session.close
-    }
+  final def streamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
+    streamingTransact(config = transactionConfig)(txF)
+
+  def readOnlyStreamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
+
+  final def readOnlyStreamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
+    readOnlyStreamingTransact(config = transactionConfig)(txF)
+
+  override def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F]
+}
+
+object Driver {
+  private def txFinalizer[F[_]]: (Transaction[F], Option[Throwable]) => F[Unit] = {
+    case (tx, None)    => tx.commit
+    case (tx, Some(_)) => tx.rollback
   }
 
-  /** Close the resources assigned to the neo4j driver
-    *
-    * @param F the effect type
-    * @return an effect F of Unit
-    */
-  def close(implicit F: Async[F]): F[Unit] =
-    F.async { cb =>
-      driver.closeAsync().acceptVoid(cb)
+  private class DriverImpl[F[_]](
+      driver: NeoDriver,
+      override val transactionConfig: TransactionConfig = TransactionConfig.default
+  ) (implicit
+      F: Async[F]
+  ) extends Driver[F] {
+    override final def metrics: F[List[ConnectionPoolMetrics]] =
+      F.fromEither(
+        Try(driver.metrics).map(_.connectionPoolMetrics.asScala.toList).toEither
+      )
+
+    override final def transaction(config: TransactionConfig): F[Transaction[F]] =
+      F.async { cb =>
+        val (sessionConfig, transactionConfig) = config.getConfigs
+        val s = driver.asyncSession(sessionConfig)
+
+        s.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
+          Right(Transaction[F](tx, s))
+        }
+      }
+
+    override final def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
+      transaction(config).guarantee(txF)(txFinalizer)
+
+    override final def readOnlyTransact[T](config: TransactionConfig)(txf: Transaction[F] => F[T]): F[T] =
+      transaction(config.withAccessMode(AccessMode.READ)).guarantee(txf)(txFinalizer)
+
+    override final def close: F[Unit] =
+      F.async { cb =>
+        driver.closeAsync().acceptVoid(cb)
+      }
+
+    override def withTransactionConfig(config: TransactionConfig): Driver[F] =
+      new DriverImpl(driver, config)
+  }
+
+  private final class StreamingDriverImpl[S[_], F[_]](
+      driver: NeoDriver,
+      override val transactionConfig: TransactionConfig = TransactionConfig.default
+  ) (implicit
+      S: Stream.Aux[S, F], F: Async[F]
+  ) extends DriverImpl[F](driver, transactionConfig) with StreamingDriver[S, F] {
+    override final def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
+      val (sessionConfig, transactionConfig) = config.getConfigs
+
+      val session = F.delay {
+        driver.rxSession(sessionConfig)
+      }
+
+      S.fromF(session).flatMapS { s =>
+        s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
+          Transaction[S, F](tx, s)
+        }
+      }
     }
+
+    override final def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
+      val tx = streamingTransaction(config).single[F].flatMap { opt =>
+        F.fromEither(opt.toRight(left = exceptions.TransactionWasNotCreatedException))
+      }
+
+      S.guarantee(tx)(txF)(txFinalizer)
+    }
+
+    override final def readOnlyStreamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] =
+      streamingTransact(config.withAccessMode(AccessMode.READ))(txF)
+
+    override final def withTransactionConfig(config: TransactionConfig): StreamingDriver[S, F] =
+      new StreamingDriverImpl(driver, config)
+  }
+
+  private[neotypes] def apply[F[_]](driver: NeoDriver)
+                                   (implicit F: Async[F]): Driver[F] =
+    new DriverImpl(driver)
+
+  private[neotypes] def apply[S[_], F[_]](driver: NeoDriver)
+                                         (implicit S: Stream.Aux[S, F], F: Async[F]): StreamingDriver[S, F] =
+    new StreamingDriverImpl(driver)
 }

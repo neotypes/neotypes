@@ -1,7 +1,7 @@
 package neotypes.zio
 
 package object stream {
-  type ZioStream[T] = _root_.zio.stream.ZStream[Any, Throwable, T]
+  type ZioStream[A] = _root_.zio.stream.ZStream[Any, Throwable, A]
 
   final object implicits extends ZioStreams
 }

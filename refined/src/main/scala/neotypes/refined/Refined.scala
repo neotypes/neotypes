@@ -18,7 +18,7 @@ trait RefinedMappers {
           case Some(value) =>
             mapper
               .to(fieldName, Some(value))
-              .flatMap(t => rt.refine(t).left.map(msg => IncoercibleException(msg, None.orNull)))
+              .flatMap(t => rt.refine(t).left.map(msg => IncoercibleException(msg)))
         }
     }
 

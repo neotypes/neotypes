@@ -1,20 +1,18 @@
 package neotypes.generic
 
-import neotypes.{CaseClassArgMapper, QueryArg}
+import neotypes.{QueryArgMapper, QueryArg}
 import neotypes.types.QueryParam
 
 import org.scalatest.freespec.AnyFreeSpec
 
-final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
-
-  import CaseClassArgMapperAutoSpec._
+final class QueryArgMapperAutoSpec extends AnyFreeSpec {
+  import QueryArgMapperAutoSpec._
 
   "neotypes.generic.auto._" - {
-
     import neotypes.generic.auto._
 
     "should derive an instance of a product (case class)" in {
-      val mapper = CaseClassArgMapper[MyCaseClass]
+      val mapper = QueryArgMapper[MyCaseClass]
       val input = MyCaseClass("twelve chars", 12)
       val result = mapper.toArg(input)
 
@@ -29,7 +27,7 @@ final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
     }
 
     "should derive an instance of a product (tuple)" in {
-      val mapper = CaseClassArgMapper[(String, Int)]
+      val mapper = QueryArgMapper[(String, Int)]
       val input = ("twelve chars", 12)
       val result = mapper.toArg(input)
 
@@ -44,8 +42,8 @@ final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
     }
 
     "should prioritize an instance from companion object over derived" in {
-      val mapper = CaseClassArgMapper[ObjectScopeCaseClassArgMapper]
-      val input = ObjectScopeCaseClassArgMapper("const?")
+      val mapper = QueryArgMapper[ObjectScopeQueryArgMapper]
+      val input = ObjectScopeQueryArgMapper("const?")
 
       val expected = QueryArg.CaseClass(Map("const" -> QueryParam("const")))
 
@@ -53,38 +51,33 @@ final class CaseClassArgMapperAutoSpec extends AnyFreeSpec {
     }
 
     "should not derive an instance of nested classes" in {
-      assertCompiles("CaseClassArgMapper[MyCaseClass]")
-      assertDoesNotCompile("CaseClassArgMapper[(MyCaseClass, MyCaseClass)]")
-      assertDoesNotCompile("CaseClassArgMapper[NestedCaseClass]")
+      assertCompiles("QueryArgMapper[MyCaseClass]")
+      assertDoesNotCompile("QueryArgMapper[(MyCaseClass, MyCaseClass)]")
+      assertDoesNotCompile("QueryArgMapper[NestedCaseClass]")
     }
 
     "should not derive an instance of a HList" in {
       assertDoesNotCompile(
         """
           |import shapeless._
-          |CaseClassArgMapper[String :: Int :: HNil]
+          |QueryArgMapper[String :: Int :: HNil]
           |""".stripMargin
       )
     }
-
   }
-
 }
 
-object CaseClassArgMapperAutoSpec {
-
+object QueryArgMapperAutoSpec {
   final case class MyCaseClass(string: String, int: Int)
 
   final case class NestedCaseClass(value: String, nested: MyCaseClass)
 
-  final case class ObjectScopeCaseClassArgMapper(value: String)
-
-  object ObjectScopeCaseClassArgMapper {
-    implicit val caseClassArgMapper: CaseClassArgMapper[ObjectScopeCaseClassArgMapper] =
-      new CaseClassArgMapper[ObjectScopeCaseClassArgMapper] {
-        override def toArg(value: ObjectScopeCaseClassArgMapper): QueryArg.CaseClass =
+  final case class ObjectScopeQueryArgMapper(value: String)
+  object ObjectScopeQueryArgMapper {
+    implicit final val caseClassArgMapper: QueryArgMapper[ObjectScopeQueryArgMapper] =
+      new QueryArgMapper[ObjectScopeQueryArgMapper] {
+        override def toArg(value: ObjectScopeQueryArgMapper): QueryArg.CaseClass =
           QueryArg.CaseClass(Map("const" -> QueryParam("const")))
       }
   }
-
 }
