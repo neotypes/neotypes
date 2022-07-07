@@ -17,7 +17,7 @@ val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.19"
 val fs2Version = "3.2.7"
 val zio2Version = "2.0.0-RC6"
-val zioInteropReactiveStreamsVersion = "2.0.0-RC7"
+val zioInteropReactiveStreamsVersion = "2.0.0"
 val refinedVersion = "0.9.29"
 val enumeratumVersion = "1.7.0"
 
