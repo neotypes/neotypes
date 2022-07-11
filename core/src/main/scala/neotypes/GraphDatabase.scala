@@ -4,8 +4,6 @@ import java.net.URI
 
 import org.neo4j.driver.{AuthToken, AuthTokens, Config, Driver => NDriver, GraphDatabase => NFactory}
 
-import scala.jdk.CollectionConverters._
-
 /** Factory of Drivers. */
 object GraphDatabase {
   def driver[F[_]]: DriverPartiallyApplied[F] =
@@ -76,13 +74,6 @@ object GraphDatabase {
                    (implicit F: Async.Aux[F, R]): R[Driver[F]] =
       create(
         NFactory.driver(uri, authToken, config)
-      )
-
-    /** Creates a new routing Driver using the provided uris, authentication token & configuration. */
-    def apply[R[_]](routingUris: Seq[URI], authToken: AuthToken, config: Config)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
-      create(
-        NFactory.routingDriver(routingUris.asJava, authToken, config)
       )
 
     private def create[R[_]](neoDriver: => NDriver)
@@ -158,13 +149,6 @@ object GraphDatabase {
                          (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
       create(
         NFactory.driver(uri, authToken, config)
-      )
-
-    /** Creates a new routing Driver using the provided uris, authentication token & configuration. */
-    def apply[F[_], R[_]](routingUris: Seq[URI], authToken: AuthToken, config: Config)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
-      create(
-        NFactory.routingDriver(routingUris.asJava, authToken, config)
       )
 
     private def create[F[_], R[_]](neoDriver: => NDriver)
