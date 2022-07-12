@@ -7,6 +7,21 @@ position: 100
 
 # Changelog
 
+## v0.21.1 _(2022-07-12)_
+
+This release only updates dependencies.<br>
+The most notable changes are:
+
+### Update ZIO to 2.0.0 ([#525](https://github.com/neotypes/neotypes/pull/525){:target="_blank"})
+
+The **ZIO** module of **neotypes** now uses the official `2.0.0` stable release.
+
+### Update neo4j-java-driver to 4.4.9 ([#539](https://github.com/neotypes/neotypes/pull/539){:target="_blank"})
+
+The latest version of the **Neo4j** **Java** driver
+deprecated the `routingDriver` factories; since the connection model changed.
+And, as such, we removed the proxies of such factories.
+
 ## v0.21.0 _(2022-06-22)_
 
 ### Ready only transactions ([#523](https://github.com/neotypes/neotypes/pull/523){:target="_blank"})
