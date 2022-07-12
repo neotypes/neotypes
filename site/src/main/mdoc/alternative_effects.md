@@ -96,7 +96,7 @@ val data: String = program.runSyncUnsafe(1.second)
 ### zio.Task _(neotypes-zio)_
 
 ```scala mdoc:compile-only
-import zio.{Runtime, Scope, Task, ZIO}
+import zio.{Runtime, Scope, Task, Unsafe, ZIO}
 import neotypes.{GraphDatabase, Driver}
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
 import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
@@ -111,8 +111,9 @@ val program: Task[String] = ZIO.scoped {
   }
 }
 
-val runtime = Runtime.default
-val data: String = runtime.unsafeRun(program)
+val data: String = Unsafe.unsafe { implicit unsafe =>
+  Runtime.default.unsafe.run(program).getOrThrow()
+}
 ```
 
 ## Custom effect type

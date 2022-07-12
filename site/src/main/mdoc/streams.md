@@ -113,7 +113,7 @@ program.completedL.runSyncUnsafe(5.seconds)
 ### ZIO ZStreams _(neotypes-zio-stream)_
 
 ```scala mdoc:compile-only
-import zio.{Runtime, Scope, Task, ZIO}
+import zio.{Runtime, Scope, Task, Unsafe, ZIO}
 import zio.stream.ZStream
 import neotypes.{GraphDatabase, StreamingDriver}
 import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
@@ -130,13 +130,15 @@ val program: ZStream[Scope, Throwable, String] =
     "MATCH (p:Person) RETURN p.name".query[String].stream(s)
   }
 
-Runtime.default.unsafeRun {
-  // ZStream#.foreach returns a ZIO and we want to eliminate Scope from R
-  ZIO.scoped {
-    program.foreach(n => ZIO.succeed(println(n)))
+
+Unsafe.unsafe { implicit unsafe =>
+  Runtime.default.unsafe.run {
+    // ZStream#.foreach returns a ZIO and we want to eliminate Scope from R
+    ZIO.scoped {
+      program.foreach(n => ZIO.succeed(println(n)))
+    }
   }
 }
-
 ```
 
 -----
