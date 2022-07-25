@@ -1,6 +1,5 @@
 package neotypes
 
-import generic.Exported
 import mappers.ParameterMapper
 import types.QueryParam
 
