@@ -18,17 +18,15 @@ object ReprResultMapper {
   private def getKeyValuesFrom(nmap: NMap): Iterator[(String, Value)] =
     nmap.keys.asScala.iterator.map(key => key -> nmap.get(key))
 
-  implicit final val HNilResultMapper: ReprResultMapper[HNil] = {
-    val rm = ResultMapper.fromValueMapper[HNil](ValueMapper.HNilMapper)
-
+  implicit final val HNilResultMapper: ReprResultMapper[HNil] =
     new ReprResultMapper[HNil] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, HNil] =
-        rm.to(value, typeHint)
+        Right(HNil)
     }
-  }
 
-  implicit final def hlistMarshallable[H, T <: HList](implicit fieldDecoder: ValueMapper[H],
-                                                tailDecoder: ReprResultMapper[T]): ReprResultMapper[H :: T] =
+  implicit final def hlistMarshallable[H, T <: HList](
+    implicit fieldDecoder: ValueMapper[H], tailDecoder: ReprResultMapper[T]
+  ): ReprResultMapper[H :: T] =
     new ReprResultMapper[H :: T] {
       override def to(value: List[(String, Value)], typeHint: Option[TypeHint]): Either[Throwable, H :: T] = {
         val (headName, headValue) = value.head
@@ -39,9 +37,9 @@ object ReprResultMapper {
       }
     }
 
-  implicit final def keyedHconsMarshallable[K <: Symbol, H, T <: HList](implicit key: Witness.Aux[K],
-                                                                  head: ValueMapper[H],
-                                                                  tail: ReprResultMapper[T]): ReprResultMapper[FieldType[K, H] :: T] =
+  implicit final def keyedHconsMarshallable[K <: Symbol, H, T <: HList](
+    implicit key: Witness.Aux[K], head: ValueMapper[H], tail: ReprResultMapper[T]
+  ): ReprResultMapper[FieldType[K, H] :: T] =
     new ReprResultMapper[FieldType[K, H] :: T] {
       private def collectEntityFields(entity: Entity): List[(String, Value)] = {
         val entityId = new IntegerValue(entity.id())
@@ -77,5 +75,4 @@ object ReprResultMapper {
         }
       }
     }
-
 }

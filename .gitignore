@@ -6,8 +6,8 @@ target/
 *.class
 *.log
 dist/*
-target/
 snapshots/*
 .idea/*
 .bloop/*
+.bsp/*
 .metals/*
