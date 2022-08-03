@@ -45,17 +45,17 @@ position: 30
 | `org.neo4j.driver.types.Node           ` | ✓            | ✓                     | |
 | `org.neo4j.driver.types.Relationship   ` | ✓            | ✓                     | |
 | `neotypes.types.Path                   ` | ✓            | ✓                     | |
-| `shapeless.HList                       ` | ✓            | ✓                     | ✓ |
+| `shapeless.HList °                     ` | ✓            | ✓                     | ✓ |
 | `Tuple (1-22) °                        ` | ✓            | ✓                     | ✓ |
 | `User defined case class °             ` | ✓            | ✓                     | ✓ |
 
 > `*` Generic types are supported as long as the the `T` is also supported.<br>
 > `**` `None` is converted into `null`.<br>
 > `***` Map-like collections are supported only if their keys and values are also supported.<br>
-> `+` Support is provided in the **neotypes-refined** _module_.<br>
-> `++` Support is provided in the **neotypes-cats-data** _module_.<br>
-> `+++` Support is provided in the **neotypes-enumeratum** _module_.<br>
-> `°` Support for automatic and semiautomatic derivation is provided in the **generic** _module_.<br>
+> `+` Support is provided in the `neotypes-refined` _module_.<br>
+> `++` Support is provided in the `neotypes-cats-data` _module_.<br>
+> `+++` Support is provided in the `neotypes-enumeratum` _module_.<br>
+> `°` Support for automatic and semiautomatic derivation is provided in the `generic` _module_.<br>
 > `°°` Nested queries are expanded at compile time.<br>
 
 ## Additional types

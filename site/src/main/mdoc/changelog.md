@@ -7,6 +7,29 @@ position: 100
 
 # Changelog
 
+## v0.22.0 _(2022-08-03)_
+
+### Separate subproject for generic ([#548](https://github.com/neotypes/neotypes/pull/548){:target="_blank"})
+
+In preparation for supporting **Scala 3**,
+we decided to move the `generic` package to its own module.<br>
+If you were using the generic derivation
+remember to add `neotypes-generic` as a new dependency.
+
+PS: This also means that now the `core` module does not longer depend on **Shapeless**.
+
+> Thanks to @tjarvstrand for tackling this!
+
+### Fix bug using readOnlyTransact in DeferredQuery#execute ([01383667433d29e2119170052b2a9b19eea32999](https://github.com/neotypes/neotypes/commit/01383667433d29e2119170052b2a9b19eea32999){:target="_blank"})
+
+We were using `Driver#readOnlyTransact` in the implementation of
+`DeferredQuery#execute(Driver[F], TransactionConfig)` by accident;
+which, obviously was wrong and was causing issues.
+
+This new release fixes it and correctly uses `Driver#transact` instead.
+
+> Apologies for the inconveniences this may have caused.
+
 ## v0.21.1 _(2022-07-12)_
 
 This release only updates dependencies.<br>
@@ -15,6 +38,8 @@ The most notable changes are:
 ### Update ZIO to 2.0.0 ([#525](https://github.com/neotypes/neotypes/pull/525){:target="_blank"})
 
 The **ZIO** module of **neotypes** now uses the official `2.0.0` stable release.
+
+> Thanks to @masonedmison for initiating this PR _(again)_!
 
 ### Update neo4j-java-driver to 4.4.9 ([#539](https://github.com/neotypes/neotypes/pull/539){:target="_blank"})
 
@@ -40,7 +65,10 @@ for more information check the [**Neo4j** docs](https://neo4j.com/docs/api/java-
 The **ZIO** module of **neotypes** not longer supports **ZIO** `1.x`,
 but rather requires the a `2.x` release of the library.
 
-> Currently we depend on `2.0.0-RC6`
+> This version uses `2.0.0-RC6`,
+> check `0.21.1` _(or upwards)_ for a release that depends on a stable release.
+
+> Thanks to @masonedmison for initiating this PR!
 
 ## v0.20.0 _(2022-03-31)_
 
