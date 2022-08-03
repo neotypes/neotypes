@@ -27,12 +27,12 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
 
   protected def effectDriverTransaction[F[_], O](driver: Driver[F])
                                                 (tx: Transaction[F] => F[O]): F[O]
-  protected def effectDriverTransactionConfig[F[_], O](driver: Driver[F])
-                                                      (config: TransactionConfig, tx: Transaction[F] => F[O]): F[O]
+  protected def effectDriverTransactionConfig[F[_], O](driver: Driver[F], config: TransactionConfig)
+                                                      (tx: Transaction[F] => F[O]): F[O]
   protected def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])
                                                    (st: StreamingTransaction[S, F] => S[T]): S[T]
-  protected def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])
-                                                         (config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T]
+  protected def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig)
+                                                         (st: StreamingTransaction[S, F] => S[T]): S[T]
 
   def collectAs[C](factory: Factory[T, C]): BaseCollectAsPartiallyApplied[T, C]
 
@@ -73,7 +73,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
     */
   final def list[F[_], C[_]](driver: Driver[F], config: TransactionConfig)
                             (implicit rm: ResultMapper[T]): F[List[T]] =
-    effectDriverTransactionConfig(driver)(config, tx => tx.list(query, params))
+    effectDriverTransactionConfig(driver, config)(tx => tx.list(query, params))
 
   /** Executes the query and returns a Map[K,V] of values.
     *
@@ -121,7 +121,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
   final def map[F[_], O, K, V](driver: Driver[F], config: TransactionConfig)
                               (implicit ev: T <:< (K, V), rm: ResultMapper[(K, V)]): F[Map[K, V]] = {
     internal.utils.void(ev)
-    effectDriverTransactionConfig(driver)(config, tx => tx.map(query, params))
+    effectDriverTransactionConfig(driver, config)(tx => tx.map(query, params))
   }
 
   /** Executes the query and returns a Set of values.
@@ -161,7 +161,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
     */
   final def set[F[_]](driver: Driver[F], config: TransactionConfig)
                      (implicit rm: ResultMapper[T]): F[Set[T]] =
-    effectDriverTransactionConfig(driver)(config, tx => tx.set(query, params))
+    effectDriverTransactionConfig(driver, config)(tx => tx.set(query, params))
 
   /** Executes the query and returns a Vector of values.
     *
@@ -200,7 +200,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
     */
   final def vector[F[_]](driver: Driver[F], config: TransactionConfig)
                         (implicit rm: ResultMapper[T]): F[Vector[T]] =
-    effectDriverTransactionConfig(driver)(config, tx => tx.vector(query, params))
+    effectDriverTransactionConfig(driver, config)(tx => tx.vector(query, params))
 
   /** Executes the query and returns the unique record in the result.
     *
@@ -243,7 +243,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
     */
   final def single[F[_]](driver: Driver[F],config: TransactionConfig)
                         (implicit rm: ResultMapper[T]): F[T] =
-    effectDriverTransactionConfig(driver)(config, tx => tx.single(query, params))
+    effectDriverTransactionConfig(driver, config)(tx => tx.single(query, params))
 
   /** Evaluate the query an get the results as a Stream.
     *
@@ -257,7 +257,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
     */
   final def stream[S[_], F[_]](driver: StreamingDriver[S, F])
                               (implicit rm: ResultMapper[T]): S[T] =
-    streamDriverTransaction[S, F](driver)(tx => tx.stream(query, params))
+    streamDriverTransaction(driver)(tx => tx.stream(query, params))
 
   /** Evaluate the query an get the results as a Stream.
     *
@@ -272,7 +272,7 @@ private[neotypes] sealed trait BaseDeferredQuery[T] {
     */
   final def stream[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig)
                               (implicit rm: ResultMapper[T]): S[T] =
-    streamDriverTransactionConfig[S, F](driver)(config, tx => tx.stream(query, params))
+    streamDriverTransactionConfig(driver, config)(tx => tx.stream(query, params))
 }
 
 private[neotypes] object BaseDeferredQuery {
@@ -335,16 +335,20 @@ final case class DeferredQuery[T](
 ) extends BaseDeferredQuery[T] {
   import BaseDeferredQuery.CollectAsPartiallyApplied
 
-  override def effectDriverTransaction[F[_], O](driver: Driver[F])(tx: Transaction[F] => F[O]): F[O] =
+  override def effectDriverTransaction[F[_], O](driver: Driver[F])
+                                               (tx: Transaction[F] => F[O]): F[O] =
     driver.transact(tx)
 
-  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F])(config: TransactionConfig, tx: Transaction[F] => F[O]): F[O] =
+  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F], config: TransactionConfig)
+                                                     (tx: Transaction[F] => F[O]): F[O] =
     driver.transact(config)(tx)
 
-  override def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T] =
+  override def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])
+                                                  (st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.streamingTransact(st)
 
-  override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] =
+  override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig)
+                                                        (st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.streamingTransact(config)(st)
 
   override def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
@@ -387,8 +391,8 @@ final case class DeferredQuery[T](
     * @return An effectual value that will execute the query.
     */
   final def execute[F[_]](driver: Driver[F], config: TransactionConfig)
-                        (implicit em: ExecutionMapper[T]): F[T] =
-    driver.readOnlyTransact(config)(tx => execute(tx))
+                         (implicit em: ExecutionMapper[T]): F[T] =
+    effectDriverTransactionConfig(driver, config)(tx => execute(tx))
 
   /** Executes the query and returns a List of values.
     *
@@ -538,16 +542,20 @@ final case class ReadOnlyDeferredQuery[T](
 ) extends BaseDeferredQuery[T] {
   import BaseDeferredQuery.ReadOnlyCollectAsPartiallyApplied
 
-  override def effectDriverTransaction[F[_], O](driver: Driver[F])(tx: Transaction[F] => F[O]): F[O] =
+  override def effectDriverTransaction[F[_], O](driver: Driver[F])
+                                               (tx: Transaction[F] => F[O]): F[O] =
     driver.readOnlyTransact(tx)
 
-  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F])(config: TransactionConfig, tx: Transaction[F] => F[O]): F[O] =
+  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F], config: TransactionConfig)
+                                                     (tx: Transaction[F] => F[O]): F[O] =
     driver.readOnlyTransact(config)(tx)
 
-  override def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])(st: StreamingTransaction[S, F] => S[T]): S[T] =
+  override def streamDriverTransaction[S[_], F[_]](driver: StreamingDriver[S, F])
+                                                  (st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.readOnlyStreamingTransact(st)
 
-  override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F])(config: TransactionConfig, st: StreamingTransaction[S, F] => S[T]): S[T] =
+  override def streamDriverTransactionConfig[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig)
+                                                        (st: StreamingTransaction[S, F] => S[T]): S[T] =
     driver.readOnlyStreamingTransact(config)(st)
 
   override def withParams(params: Map[String, QueryParam]): ReadOnlyDeferredQuery[T] =
