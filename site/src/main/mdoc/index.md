@@ -16,23 +16,23 @@ position: 0
 
 # neotypes
 
-**Scala lightweight, type-safe, asynchronous driver (not opinionated on side-effect implementation) for neo4j**.
+## Scala lightweight, type-safe, asynchronous driver _(not opinionated on effect systems)_ for Neo4j
 
-* **Scala** - the driver provides you with support for all standard Scala types without the need to convert Scala <-> Java types back and forth and you can easily add your types.
-* **Lightweight** - the driver depends on `Shapeless` and `Neo4j Java driver`.
+* **Scala** - the driver provides you with support for all standard **Scala** types without the need to convert **Scala** <-> **Java** types back and forth and you can easily add support for your own types.
+* **Lightweight** - the `core` module of the driver only depends the **Neo4j Java driver**, and the `generic` module only depends on **Shapeless**.
 * **Type-safe** - the driver leverages [typeclasses](https://blog.scalac.io/2017/04/19/typeclasses-in-scala.html) to derive all needed conversions at the compile time.
-* **Asynchronous** - the driver sits on top of [asynchronous Java driver](https://neo4j.com/blog/beta-release-java-driver-async-api-neo4j/).
-* **Not opinionated on side-effect implementation** - you can use it with any implementation of side-effects of your chose (scala.Future, cats-effect IO, Monix Task, etc) by implementing a simple typeclass. `scala.Future` is implemented and comes out of the box.
+* **Asynchronous** - the driver sits on top of [asynchronous **Java** driver](https://neo4j.com/blog/beta-release-java-driver-async-api-neo4j/).
+* **Not opinionated on side-effect implementation** - you can use it with any effect system of your preference _(`Future`, **typelevel**, **ZIO**, **Monix**)_ by implementing a simple typeclass.
 
-The project aims to provide seamless integration with most popular scala infrastructures such as Lightbend (Akka, Akka-http, Lagom, etc), Typelevel (cats, http4s, etc), Twitter (finch, etc)...
-
-## Setup
+### Setup
 
 :warning: The library is under heavy development. Production use is at your own risk and is not recommended. :warning:
 
 {:.table}
+|Supports Scala 2.12 and 2.13||
 | ----------------------------------------- | :------------- |
 |`"io.github.neotypes" %% "neotypes-core" % version`|core functionality. Supports `scala.concurrent.Future`.|
+|`"io.github.neotypes" %% "neotypes-generic" % version`|auto & semiauto derivation of mappers for case classes.|
 |`"io.github.neotypes" %% "neotypes-cats-effect" % version`|`cats.effect.Async[F]` implementation.|
 |`"io.github.neotypes" %% "neotypes-monix" % version`|`monix.eval.Task` implementation.|
 |`"io.github.neotypes" %% "neotypes-zio" % version`|`zio.Task` implementation.|
@@ -44,7 +44,7 @@ The project aims to provide seamless integration with most popular scala infrast
 |`"io.github.neotypes" %% "neotypes-cats-data" % version`|support to insert and retrieve `cats.data` values.|
 |`"io.github.neotypes" %% "neotypes-enumeratum" % version`|support to insert and retrieve Enumeratum enums.|
 
-## Showcase
+### Showcase
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase

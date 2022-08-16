@@ -3,7 +3,7 @@ package neotypes.zio
 import neotypes.{Async, EffectSuite, EffectTestkit}
 import neotypes.zio.implicits._
 
-import zio.{Executor, Runtime, Task}
+import zio.{Executor, Runtime, Task, Unsafe}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -12,14 +12,18 @@ object ZioTaskTestkit extends EffectTestkit[Task] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       val runtime =
-        Runtime.unsafeFromLayer(
-          Runtime.setExecutor(
-            Executor.fromExecutionContext(Runtime.defaultYieldOpCount)(ec)
+        Unsafe.unsafe { implicit unsafe =>
+          Runtime.unsafe.fromLayer(
+            Runtime.setExecutor(
+              Executor.fromExecutionContext(ec)
+            )
           )
-        )
+        }
 
       override final def fToFuture[A](task: Task[A]): Future[A] =
-        runtime.unsafeRunToFuture(task)
+        Unsafe.unsafe { implicit unsafe =>
+          runtime.unsafe.runToFuture(task)
+        }
 
       override final def runConcurrently(a: Task[Unit], b: Task[Unit]): Task[Unit] =
         a.zipPar(b).map(_ => ())

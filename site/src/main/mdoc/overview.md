@@ -15,12 +15,16 @@ position: 10
 
 ## Session creation
 
-**neotypes** provides the `GraphDatabase` **factory** for creating a **Neo4j** `Driver`, which represents a connection with the Database.
+**neotypes** provides the `GraphDatabase` factory for creating a **Neo4j** `Driver`,
+which represents a connection with the Database.
 You can use this `Driver` to perform operations _(`Transactions`)_ over the Database.<br>
-Those **Scala** classes are nothing more than simple wrappers over their **Java** counterparts, but providing a more _"Scala-friendly"_ and functional API.
+Those **Scala** classes are nothing more than simple wrappers over their **Java** counterparts,
+but providing a more _"Scala-friendly"_ and functional API.
 
-You can create wrappers for any effectual type _(`F[_]`)_ for which you have an implementation of the `neotypes.Async` **typeclass** in scope.
-The implementation for `scala.concurrent.Future` is built-in in the core module _(for other types, please read [alternative effects](alternative_effects))_.
+You can create wrappers for any effect type _(`F[_]`)_
+for which you have an implementation of the `neotypes.Async` typeclass in scope.
+The implementation for `scala.concurrent.Future` is built-in
+in the `core` module _(for other types, please read [alternative effects](alternative_effects))_.
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
@@ -37,16 +41,23 @@ val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.ba
 val result: Future[List[Movie]] =
   """MATCH (movie: Movie)
      WHERE lower(movie.title) CONTAINS "thing"
-     RETURN movie""".readOnlyQuery[Movie].list(driver)
+     RETURN movie
+  """.readOnlyQuery[Movie].list(driver)
 ```
 
-Please remember that, you have to make sure that the `Driver` is properly closed at the end of the application execution, to make sure all obtained resources _(such as network connections)_ are cleaned up properly.<br>
-**Note**: for other effect types instead of `Future` _(e.g. `IO`)_, the creation of the `Driver` will be managed by the effect specific implementation of **Resource**; which usually ensures it is properly closed after its use.
+Please remember that, you have to make sure that the `Driver` is properly closed
+at the end of the application execution,
+to make sure all obtained resources _(such as network connections)_ are cleaned up properly.<br>
+**Note**: for other effect types instead of `Future` _(e.g. `IO`)_,
+the creation of the `Driver` will be managed by the effect specific implementation of `Resource`;
+which usually ensures it is properly closed after its use.
 
 ## Query execution
 
 Once you have a `Driver` instance, you can start querying the database.
-The import `neotypes.implicits.syntax.all._` adds an extension method `query[T]` to each string literal in its scope, or you can use the cypher _(`c`)_ string interpolator.
+The import `neotypes.implicits.syntax.all._` adds an extension method `query[T]`
+to each string literal in its scope,
+or you can use the cypher _(`c`)_ string interpolator.
 
 ```scala mdoc:invisible
 import neotypes.implicits.syntax.all._
@@ -79,16 +90,16 @@ A query can be run in six different ways:
 
 * `execute(driver)` - executes a query and discards its output, it can be parametrized by `org.neo4j.driver.v1.summary.ResultSummary` or `Unit`
 _(if you need to support a different type for this type of queries, you can provide an implementation of `ExecutionMapper`)_.
-* `single(driver)` - runs a query and return a **single** result.
-* `list(driver)` - runs a query and returns a **List** of results.
-* `set(driver)` - runs a query and returns a **Set** of results.
-* `vector(driver)` - runs a query and returns a **Vector** of results.
-* `map(driver)` - runs a query and returns a **Map** of results
+* `single(driver)` - runs a query and return a single result.
+* `list(driver)` - runs a query and returns a `List` of results.
+* `set(driver)` - runs a query and returns a `Set` of results.
+* `vector(driver)` - runs a query and returns a `Vector` of results.
+* `map(driver)` - runs a query and returns a `Map` of results
 _(only if the elements are tuples)_.
-* `collectAs(Col)(driver)` - runs a query and returns a **Col** of results
+* `collectAs(Col)(driver)` - runs a query and returns a `Col` of results
 _(where **Col** is any kind of collection)_.
 If you are in `2.12` or you are cross-compiling with `2.12` you need to import `neotypes.implicits.mappers.collections._` or you can import `scala.collection.compat._`.
-* `stream(driver)` - runs a query and returns a **Stream** of results
+* `stream(driver)` - runs a query and returns a `Stream `of results
 _(for more information, please read [streaming](streams))_.
 
 ```scala mdoc:compile-only
