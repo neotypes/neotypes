@@ -1,7 +1,6 @@
-package neotypes.query
+package neotypes.extras.query
 
 import neotypes.DeferredQuery
-import neotypes.generic.auto._
 import neotypes.types.QueryParam
 import org.scalatest.freespec.AnyFreeSpec
 

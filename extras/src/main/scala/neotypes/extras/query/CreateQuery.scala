@@ -1,7 +1,9 @@
-package neotypes.query
+package neotypes
+package extras.query
 
-import neotypes.implicits.syntax.cypher._
-import neotypes.{CaseClassArgMapper, DeferredQuery, DeferredQueryBuilder}
+import generic.DerivedCaseClassArgMapper
+import implicits.syntax.cypher._
+
 import shapeless.{<:!<, Annotation, Typeable, |∨|}
 
 import scala.annotation.StaticAnnotation
@@ -9,7 +11,7 @@ import scala.annotation.StaticAnnotation
 sealed abstract class CreateQuery[A](nodeName: String, paramName: String) {
 
   // the query type can either be A or Unit
-  def query[R: CreateQuery.Mat: |∨|[Unit, A]#λ](value: A)(implicit mapper: CaseClassArgMapper[A]): DeferredQuery[R] =
+  def query[R: CreateQuery.Mat: |∨|[Unit, A]#λ](value: A)(implicit mapper: DerivedCaseClassArgMapper[A]): DeferredQuery[R] =
     CreateQuery.deferred[A](value, nodeName, paramName, CreateQuery.Mat[R].withReturn).query[R]
 
   def withNodeName(nodeName: String): CreateQuery[A] = new CreateQuery[A](nodeName, paramName) {}
@@ -35,7 +37,7 @@ object CreateQuery {
     }
   }
 
-  private def deferred[A: CaseClassArgMapper](caseClass: A, nodeName: String, paramName: String, withReturn: Boolean): DeferredQueryBuilder = {
+  private def deferred[A: DerivedCaseClassArgMapper](caseClass: A, nodeName: String, paramName: String, withReturn: Boolean): DeferredQueryBuilder = {
     val returnFragment = if (withReturn) s"RETURN $paramName" else ""
 
     c"CREATE" + s"($paramName: $nodeName {" + c"$caseClass })" + returnFragment
