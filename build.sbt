@@ -49,12 +49,11 @@ ThisBuild / scmInfo ~= {
   }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.13.9"
-ThisBuild / crossScalaVersions := Seq("2.12.17", "2.13.9")
+ThisBuild / scalaVersion := "2.13.10"
+ThisBuild / crossScalaVersions := Seq("2.12.17", "2.13.10")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
-
 
 // Common settings.
 val commonSettings = Seq(

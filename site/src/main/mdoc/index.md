@@ -98,12 +98,9 @@ Await.ready(driver.close, 1.second)
 | :-----------------: | :--------------: |
 | 1.7.x               | <= 0.13          |
 | 4.y.x               | >= 0.14          |
+| 5.y.x               | >= 0.23          |
 
 For info on the compatibility with **Java** runtimes or **Neo4j** servers,
 please check the the [**Java** driver docs](https://github.com/neo4j/neo4j-java-driver).
 
-> **Note:** Since `0.18.3` **neotypes** not longer supports the
-> `4.0` series of the **Java** driver,
-> it also now requires the latest patch version of the
-> `4.1`, `4.2` or `4.3` series.<br>
-> See the changelog and the associated PR for details.
+> Note: the artifacts are published for **Java 9+** and we run our CI pipelines on **Java 11** & **Java 17**.

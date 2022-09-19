@@ -10,7 +10,7 @@ position: 10
 ## Requirements
 
 + Scala 2.13 / 2.12
-+ Java 8+
++ Java 9+
 + Neo4j 4+
 
 ## Session creation
