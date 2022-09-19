@@ -2,7 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "4.4.9"
+val neo4jDriverVersion = "5.0.0"
 val scalaCollectionCompatVersion = "2.8.1"
 val shapelessVersion = "2.3.10"
 val testcontainersNeo4jVersion = "1.17.3"
@@ -49,26 +49,25 @@ ThisBuild / scmInfo ~= {
   }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.12.16"
-ThisBuild / crossScalaVersions := Seq("2.12.16", "2.13.8")
+ThisBuild / scalaVersion := "2.13.9"
+ThisBuild / crossScalaVersions := Seq("2.12.17", "2.13.9")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
-def removeScalacOptionsInTest(scalaVersion: String) =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, 12)) => Seq("-Ywarn-value-discard", "-Ywarn-unused:params")
-    case _ => Seq("-Wvalue-discard", "-Wunused:explicits", "-Wunused:params", "-Wunused:imports")
-  }
 
 // Common settings.
 val commonSettings = Seq(
   scalacOptions += "-Ywarn-macros:after",
+
+  // Ensure we publish an artifact linked to the appropriate Java std library.
+  scalacOptions += "-release:9",
+
+  Test / tpolecatExcludeOptions ++= ScalacOptions.defaultConsoleExclude,
   Test / parallelExecution := false,
   Test / fork := true,
-  Test / scalacOptions --= removeScalacOptionsInTest(scalaVersion.value),
 
-  /** Publishing */
+  // Publishing.
   publishTo := sonatypePublishToBundle.value,
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
