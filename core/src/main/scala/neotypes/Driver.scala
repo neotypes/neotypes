@@ -119,7 +119,7 @@ object Driver {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
       val session = F.delay {
-        driver.rxSession(sessionConfig)
+        driver.reactiveSession(sessionConfig)
       }
 
       S.fromF(session).flatMapS { s =>

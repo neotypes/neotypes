@@ -11,7 +11,7 @@ import types.QueryParam
 import org.neo4j.driver.{Record, Value}
 import org.neo4j.driver.async.{AsyncSession => NeoAsyncSession, AsyncTransaction => NeoAsyncTransaction}
 import org.neo4j.driver.exceptions.NoSuchRecordException
-import org.neo4j.driver.reactive.{RxSession => NeoRxSession, RxTransaction => NeoRxTransaction}
+import org.neo4j.driver.reactive.{ReactiveSession => NeoReactiveSession, ReactiveTransaction => NeoReactiveTransaction}
 
 import scala.collection.compat._
 import scala.jdk.CollectionConverters._
@@ -133,20 +133,26 @@ object Transaction {
         }
     }
 
-  private[neotypes] def apply[S[_], F[_]](transaction: NeoRxTransaction, session: NeoRxSession)
+  private[neotypes] def apply[S[_], F[_]](transaction: NeoReactiveTransaction, session: NeoReactiveSession)
                                          (implicit S: Stream.Aux[S, F], F: Async[F]): StreamingTransaction[S, F] =
     new StreamingTransaction[S, F] {
       override final def execute[T](query: String, params: Map[String, QueryParam])
                                    (implicit executionMapper: ExecutionMapper[T]): F[T] = {
-        val rxResult = transaction.run(query, QueryParam.toJavaMap(params))
+        val resultPublisher = transaction.run(query, QueryParam.toJavaMap(params))
 
-        for {
+        resultPublisher.toStream[S].flatMapS { result =>
           // Ensure to process all records before asking for the result summary.
-          _ <- rxResult.records.toStream[S].void[F]
-          rs <- rxResult.consume.toStream[S].single[F]
-          t = rs.toRight(left = IncoercibleException(message = "Missing ResultSummary")).flatMap(executionMapper.to)
-          result <- F.fromEither(t)
-        } yield result
+          S.discardAppend(
+            left = result.records().toStream[S],
+            right = result.consume().toStream[S]
+          )
+        }.single[F].flatMap { rs =>
+          F.fromEither(
+            rs.toRight(
+              left = IncoercibleException(message = "Missing ResultSummary")
+            ).flatMap(executionMapper.to)
+          )
+        }
       }
 
       override final def collectAs[C, T](factory: Factory[T, C])
@@ -181,8 +187,8 @@ object Transaction {
                                   (implicit resultMapper: ResultMapper[T]): S[T] =
         transaction
           .run(query, QueryParam.toJavaMap(params))
-          .records
           .toStream[S]
+          .flatMapS(result => result.records.toStream[S])
           .evalMap(r => F.fromEither(resultMapper.to(recordToList(r), None)))
 
       private def closeSession: F[Unit] =

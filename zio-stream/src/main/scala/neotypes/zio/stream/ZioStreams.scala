@@ -5,8 +5,9 @@ import neotypes.exceptions.CancellationException
 import zio.{Exit, Task}
 import zio.stream.{ZSink, ZStream}
 import zio.interop.reactivestreams.Adapters
-import org.reactivestreams.Publisher
+import org.reactivestreams.FlowAdapters.toPublisher
 
+import java.util.concurrent.Flow.Publisher
 import scala.collection.compat._
 
 trait ZioStreams {
@@ -14,10 +15,10 @@ trait ZioStreams {
     new neotypes.Stream[ZioStream] {
       override final type F[T] = Task[T]
 
-      override final def fromRx[A](publisher: Publisher[A]): ZioStream[A] =
-        Adapters.publisherToStream(publisher, bufferSize = 16)
+      override final def fromPublisher[A](publisher: Publisher[A]): ZioStream[A] =
+        Adapters.publisherToStream(toPublisher(publisher), bufferSize = 16)
 
-      override def fromF[A](task: Task[A]): ZioStream[A] =
+      override final def fromF[A](task: Task[A]): ZioStream[A] =
         ZStream.fromZIO(task)
 
       override final def guarantee[A, B](r: Task[A])
@@ -39,6 +40,9 @@ trait ZioStreams {
           case (a, _) =>
             finalizer(a, None).orDie
         }.flatMap(f)
+
+      override final def discardAppend[A](left: ZioStream[_], right: ZioStream[A]): ZioStream[A] =
+        left.drain ++ right
 
       override final def map[A, B](sa: ZioStream[A])(f: A => B): ZioStream[B] =
         sa.map(f)

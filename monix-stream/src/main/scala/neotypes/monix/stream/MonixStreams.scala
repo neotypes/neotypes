@@ -5,8 +5,9 @@ import neotypes.exceptions.CancellationException
 import cats.effect.ExitCase
 import monix.eval.Task
 import monix.reactive.Observable
-import org.reactivestreams.Publisher
+import org.reactivestreams.FlowAdapters.toPublisher
 
+import java.util.concurrent.Flow.Publisher
 import scala.collection.compat._
 
 trait MonixStreams {
@@ -14,10 +15,10 @@ trait MonixStreams {
     new neotypes.Stream[Observable] {
       override final type F[T] = Task[T]
 
-      override final def fromRx[A](publisher: Publisher[A]): Observable[A] =
-        Observable.fromReactivePublisher(publisher)
+      override final def fromPublisher[A](publisher: Publisher[A]): Observable[A] =
+        Observable.fromReactivePublisher(toPublisher(publisher))
 
-      override def fromF[A](task: Task[A]): Observable[A] =
+      override final def fromF[A](task: Task[A]): Observable[A] =
         Observable.fromTask(task)
 
       override final def guarantee[A, B](r: Task[A])
@@ -28,6 +29,9 @@ trait MonixStreams {
           case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
           case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
         }.flatMap(f)
+
+      override final def discardAppend[A](left: Observable[_], right: Observable[A]): Observable[A] =
+        left.completed ++ right
 
       override final def map[A, B](sa: Observable[A])(f: A => B): Observable[B] =
         sa.map(f)

@@ -4,7 +4,7 @@ import neotypes.mappers.{ResultMapper, TypeHint, ValueMapper}
 
 import org.neo4j.driver.Value
 import org.neo4j.driver.internal.types.InternalTypeSystem
-import org.neo4j.driver.internal.value.IntegerValue
+import org.neo4j.driver.internal.value.StringValue
 import org.neo4j.driver.types.{Entity, MapAccessor => NMap}
 import shapeless.labelled.FieldType
 import shapeless.{::, HList, HNil, Witness, labelled}
@@ -42,7 +42,7 @@ object ReprResultMapper {
   ): ReprResultMapper[FieldType[K, H] :: T] =
     new ReprResultMapper[FieldType[K, H] :: T] {
       private def collectEntityFields(entity: Entity): List[(String, Value)] = {
-        val entityId = new IntegerValue(entity.id())
+        val entityId = new StringValue(entity.elementId())
         val ids = ("id" -> entityId) :: ("_id" -> entityId) :: Nil
         (getKeyValuesFrom(entity) ++ ids).toList
       }

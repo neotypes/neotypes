@@ -1,8 +1,7 @@
 package neotypes
 package internal.syntax
 
-import org.reactivestreams.Publisher
-
+import java.util.concurrent.Flow.Publisher
 import scala.collection.compat.Factory
 
 private[neotypes] object stream {
@@ -28,6 +27,6 @@ private[neotypes] object stream {
 
   implicit class PublisherOps[A](private val publisher: Publisher[A]) extends AnyVal {
     def toStream[S[_]](implicit S: Stream[S]): S[A] =
-      S.fromRx(publisher)
+      S.fromPublisher(publisher)
   }
 }
