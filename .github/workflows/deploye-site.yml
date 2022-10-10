@@ -37,14 +37,15 @@ jobs:
 
       - name: Restore cache
         uses: coursier/cache-action@v6
+        with:
+          extraKey: v1
 
       - name: Setup Ruby
         uses: actions/setup-ruby@v1
         with:
           ruby-version: 2.7
-
-      - name: Setup Jekyll
-        run: gem install jekyll -v 4.2.2
+          bundler-cache: true
+          cache-version: v1
 
       - name: Setup graphviz
         run: sudo apt install -y graphviz
