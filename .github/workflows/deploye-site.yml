@@ -32,7 +32,7 @@ jobs:
       - name: Setup Java & Scala
         uses: coursier/setup-action@v1
         with:
-          jvm: temurin:1.11.0.16.1
+          jvm: temurin:1.17
           apps: sbtn
 
       - name: Restore cache

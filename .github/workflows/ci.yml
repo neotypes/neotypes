@@ -13,7 +13,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         jdk:
-          - temurin:1.11.0.16.1
+          - temurin:1.17
           - graalvm-java17:22.2.0
     runs-on: ${{ matrix.os }}
     steps:

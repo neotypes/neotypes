@@ -9,9 +9,10 @@ position: 10
 
 ## Requirements
 
-+ Scala 2.13 / 2.12
-+ Java 9+
-+ Neo4j 4+
++ **Scala** `2.12` / `2.13`
++ **Java** `17+`
++ **Neo4j** server `4+`
++ **Neo4j** driver `5+`
 
 ## Session creation
 

@@ -62,7 +62,7 @@ val commonSettings = Seq(
   scalacOptions += "-Ywarn-macros:after",
 
   // Ensure we publish an artifact linked to the appropriate Java std library.
-  scalacOptions += "-release:9",
+  scalacOptions += "-release:17",
 
   Test / parallelExecution := false,
   Test / fork := true,

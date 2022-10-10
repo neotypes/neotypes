@@ -96,11 +96,12 @@ Await.ready(driver.close, 1.second)
 
 | Java driver version | Neotypes version |
 | :-----------------: | :--------------: |
-| 1.7.x               | <= 0.13          |
-| 4.y.x               | >= 0.14          |
 | 5.y.x               | >= 0.23          |
+| 4.y.x               | >= 0.14          |
+| 1.7.x               | <= 0.13          |
 
 For info on the compatibility with **Java** runtimes or **Neo4j** servers,
 please check the the [**Java** driver docs](https://github.com/neo4j/neo4j-java-driver).
 
-> Note: the artifacts are published for **Java 9+** and we run our CI pipelines on **Java 11** & **Java 17**.
+> Note: Since `0.23` the artifacts are published for **Java 17** only,
+> since that is what the `5.x` series of the **Java** driver requires.

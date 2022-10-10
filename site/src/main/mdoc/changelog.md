@@ -16,7 +16,9 @@ We upgraded the **Neo4j** **Java** driver to version `5.0.0`
 This version deprecated the internal `RxSession` and
 replaced it with a new `ReactiveSession`,
 which is based on the `Flow` api provided by the **Java** stdlib since **Java 9**.<br>
-Thus, this release drops support for **Java 8**.
+Also, such artifact was published only for **Java 17**.
+
+> Thus, this release drops support for **Java 8** & **Java 11** and only supports **Java 17** onwards.
 
 ## v0.22.0 _(2022-08-03)_
 
