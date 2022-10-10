@@ -41,7 +41,6 @@ final class DriverSpec[F[_]](
       cc2 <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".readOnlyQuery[Person2].single(d)
       hlist <- "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".readOnlyQuery[Person :: Movie :: HNil].single(d)
     } yield {
-      assert(cc.id >= 0)
       assert(cc.name.contains("Charlize Theron"))
       assert(cc.born == 1975)
       assert(cc.f.isEmpty)
@@ -189,13 +188,13 @@ final class DriverSpec[F[_]](
   it should "correctly handle id fields" in executeAsFuture { d =>
     for {
       _ <- "CREATE (n: WithId { name: 'node1' })".query[Unit].execute(d)
-      _ <- "CREATE (n: WithId { name: 'node2', id: 135 })".query[Unit].execute(d)
-      _ <- "CREATE (n: WithId { name: 'node3', _id: 135 })".query[Unit].execute(d)
-      _ <- "CREATE (n: WithId { name: 'node4', id: 135, _id: 531 })".query[Unit].execute(d)
-      node1 <- "MATCH (n: WithId { name: 'node1' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].single(d)
-      node2 <- "MATCH (n: WithId { name: 'node2' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].single(d)
-      node3 <- "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].single(d)
-      node4 <- "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].single(d)
+      _ <- "CREATE (n: WithId { name: 'node2', id: '135' })".query[Unit].execute(d)
+      _ <- "CREATE (n: WithId { name: 'node3', _id: '135' })".query[Unit].execute(d)
+      _ <- "CREATE (n: WithId { name: 'node4', id: '135', _id: '531' })".query[Unit].execute(d)
+      node1 <- "MATCH (n: WithId { name: 'node1' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
+      node2 <- "MATCH (n: WithId { name: 'node2' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
+      node3 <- "MATCH (n: WithId { name: 'node3' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
+      node4 <- "MATCH (n: WithId { name: 'node4' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
     } yield {
       // Node 1 doesn't have any custom id property.
       // Thus the id field should contain the neo4j id.
@@ -206,20 +205,20 @@ final class DriverSpec[F[_]](
       // Node 2 has a custom id property.
       // Thus the id field should contain the custom id,
       // and the _id field should contain the neo4j id.
-      assert(node2._1.id == 135)
+      assert(node2._1.id == "135")
       assert(node2._1._id == node2._2)
 
       // Node 3 has a custom _id property.
       // Thus the id field should contain the neo4j id,
       // and the _id field should contain the custom id.
       assert(node3._1.id == node3._2)
-      assert(node3._1._id == 135)
+      assert(node3._1._id == "135")
 
       // Node 4 has both a custom id & _id properties.
       // Thus both properties should contain the custom ids,
       // and the system id is unreachable.
-      assert(node4._1.id == 135)
-      assert(node4._1._id == 531)
+      assert(node4._1.id == "135")
+      assert(node4._1._id == "531")
     }
   }
 
@@ -227,11 +226,11 @@ final class DriverSpec[F[_]](
 }
 
 object DriverSpec {
-  final case class Person(id: Long, born: Int, name: Option[String], f: Option[Int])
+  final case class Person(born: Int, name: Option[String], f: Option[Int])
 
   final case class Person2(born: Int, name: Option[String])
 
-  final case class Movie(id: Long, released: Int, title: String)
+  final case class Movie(released: Int, title: String)
 
   final case class Cast(name: String, job: String, role: String)
 
@@ -245,5 +244,5 @@ object DriverSpec {
 
   final case class WrappedName(name: Option[String])
 
-  final case class WithId(id: Int, name: String, _id: Int)
+  final case class WithId(id: String, name: String, _id: String)
 }

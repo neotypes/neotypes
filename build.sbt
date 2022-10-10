@@ -23,7 +23,9 @@ val enumeratumVersion = "1.7.0"
 
 // Fix scmInfo in Github Actions.
 ThisBuild / scmInfo ~= {
-  case Some(info) => Some(info)
+  case Some(info) =>
+    Some(info)
+
   case None =>
     import scala.sys.process._
     import scala.util.control.NonFatal
@@ -46,7 +48,7 @@ ThisBuild / scmInfo ~= {
     } catch {
       case NonFatal(_) => None
     }
-  }
+}
 
 // Global settings.
 ThisBuild / scalaVersion := "2.13.10"
@@ -62,7 +64,6 @@ val commonSettings = Seq(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:9",
 
-  Test / tpolecatExcludeOptions ++= ScalacOptions.defaultConsoleExclude,
   Test / parallelExecution := false,
   Test / fork := true,
 

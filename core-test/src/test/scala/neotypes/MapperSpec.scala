@@ -15,8 +15,7 @@ final class MapperSpec extends AnyFreeSpec {
         assert(strMapper == ResultMapper.StringResultMapper)
       }
       "should create an instance based on a function" in {
-        def myParsingFunction(vals: List[(String, Value)], typeHint: Option[TypeHint]) = Right("function works")
-        val myInstanceMapper = ResultMapper.instance(myParsingFunction)
+        val myInstanceMapper = ResultMapper.instance((_, _) => Right("function works"))
         val result = myInstanceMapper.to(List(("value", new StringValue("function doesn't work"))), None)
         assert(result == Right("function works"))
       }
@@ -81,8 +80,7 @@ final class MapperSpec extends AnyFreeSpec {
         assert(strMapper == ValueMapper.StringValueMapper)
       }
       "should create an instance based on a function" in {
-        def myParsingFunction(name: String, value: Option[Value]) = Right("function works")
-        val myInstanceMapper = ValueMapper.instance(myParsingFunction)
+        val myInstanceMapper = ValueMapper.instance((_, _) => Right("function works"))
         val result = myInstanceMapper.to("value", Some(new StringValue("function doesn't work")))
         assert(result == Right("function works"))
       }

@@ -95,7 +95,7 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
   it should "execute finalizer and return finalizer exception when finalizer fails" in { fixture =>
     recoverToSucceededIf[FinalizerException]{
       fixture.runStreaming(result = Right("result"), finalizerEx = Some(FinalizerException))
-    }.map { r =>
+    } map { _ =>
       fixture.assertFinalizerWasCalledOnlyOnce
     }
   }
