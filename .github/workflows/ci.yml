@@ -20,32 +20,18 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
 
-      - name: Setup Java & Scala
-        uses: coursier/setup-action@v1
+      - name: Setup
+        uses: ./.github/actions/setup/
         with:
-          jvm: ${{ matrix.jdk }}
-          apps: sbtn
-
-      - name: Restore cache
-        uses: coursier/cache-action@v6
-        with:
-          extraKey: v1
+          jdk: ${{ matrix.jdk }}
+          ruby: 2.7
+          cache-version: v1
 
       - name: Compile
         run: sbtn +Test/compile
 
-      - name: Tests
-        run: sbtn +test
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: 2.7
-          bundler-cache: true
-          cache-version: v1
-
-      - name: Setup graphviz
-        run: sudo apt install -y graphviz
-
       - name: Build the microsite
         run: sbtn microsite/makeMicrosite
+
+      - name: Tests
+        run: sbtn +test

@@ -105,7 +105,6 @@ _(for more information, please read [streaming](streams))_.
 
 ```scala mdoc:compile-only
 import neotypes.generic.auto._
-import neotypes.implicits.mappers.collections._
 import org.neo4j.driver.Value
 import scala.collection.immutable.{ListMap, ListSet}
 import shapeless.{::, HNil}
