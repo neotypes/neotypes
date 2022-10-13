@@ -1,12 +1,13 @@
 package neotypes
 
 import neotypes.generic.auto._
-import neotypes.implicits.syntax.string._
+import neotypes.implicits.syntax.all._
 import org.neo4j.driver.types.Node
 import org.scalatest.{LoneElement, OptionValues}
 import org.scalatest.matchers.should.Matchers
 import shapeless._
 
+import java.time.ZonedDateTime
 
 /** Base class for testing the basic behaviour of StreamingDriver[S, F] instances. */
 final class StreamingDriverSpec[S[_], F[_]](
@@ -18,12 +19,12 @@ final class StreamingDriverSpec[S[_], F[_]](
 
   it should "map result to simple values" in {
     for {
-      string <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].stream(d))
-      int <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Int].stream(d))
-      long <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Long].stream(d))
-      float <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Float].stream(d))
-      double <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".query[Double].stream(d))
-      node <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Node].stream(d))
+      string <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".readOnlyQuery[String].stream(d))
+      int <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".readOnlyQuery[Int].stream(d))
+      long <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".readOnlyQuery[Long].stream(d))
+      float <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".readOnlyQuery[Float].stream(d))
+      double <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born".readOnlyQuery[Double].stream(d))
+      node <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".readOnlyQuery[Node].stream(d))
     } yield {
       string.loneElement shouldBe "Charlize Theron"
       int.loneElement shouldBe 1975
@@ -36,9 +37,9 @@ final class StreamingDriverSpec[S[_], F[_]](
 
   it should "map result to hlist and case classes" in {
     for {
-      cc <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".query[Person].stream(d))
-      cc2 <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".query[Person2].stream(d))
-      hlist <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[Person :: Movie :: HNil].stream(d))
+      cc <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p".readOnlyQuery[Person].stream(d))
+      cc2 <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".readOnlyQuery[Person2].stream(d))
+      hlist <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".readOnlyQuery[Person :: Movie :: HNil].stream(d))
     } yield {
       cc.loneElement.id should be >= 0L
       cc.loneElement.name should contain ("Charlize Theron")
@@ -55,7 +56,7 @@ final class StreamingDriverSpec[S[_], F[_]](
 
   it should "map empty result to a single option" in {
     executeAsFutureList { d =>
-      "MATCH (p: Person { name: '1243' }) RETURN p.born".query[Option[Int]].stream(d)
+      "MATCH (p: Person { name: '1243' }) RETURN p.born".readOnlyQuery[Option[Int]].stream(d)
     } map { emptyResult =>
       emptyResult shouldBe empty
     }
@@ -63,7 +64,7 @@ final class StreamingDriverSpec[S[_], F[_]](
 
   it should "map empty result to an empty list" in {
     executeAsFutureList { d =>
-      "MATCH (p: Person { name: '1243' }) RETURN p.born".query[Int].stream(d)
+      "MATCH (p: Person { name: '1243' }) RETURN p.born".readOnlyQuery[Int].stream(d)
     } map { emptyResultList =>
       emptyResultList shouldBe empty
     }
@@ -72,7 +73,7 @@ final class StreamingDriverSpec[S[_], F[_]](
   it should "lift exceptions into failed effects" in {
     recoverToExceptionIf[exceptions.IncoercibleException] {
       executeAsFutureList { d =>
-        "MATCH (p: Person { name: 'Charlize Theron'}) RETURN p.born".query[String].stream(d)
+        "MATCH (p: Person { name: 'Charlize Theron'}) RETURN p.born".readOnlyQuery[String].stream(d)
       }
     } map { ex =>
       ex.getMessage shouldBe "Cannot coerce INTEGER to Java String for field [p.born] with value [1975]"
@@ -81,8 +82,8 @@ final class StreamingDriverSpec[S[_], F[_]](
 
   it should "map result to tuples" in {
     for {
-      tuple <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".query[(Person, Movie)].stream(d))
-      tuplePrimitives <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p.name, m.title".query[(String, String)].stream(d))
+      tuple <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".readOnlyQuery[(Person, Movie)].stream(d))
+      tuplePrimitives <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p.name, m.title".readOnlyQuery[(String, String)].stream(d))
     } yield {
       tuple.loneElement._1.name should contain ("Charlize Theron")
       tuple.loneElement._2.title shouldBe "That Thing You Do"
@@ -100,7 +101,7 @@ final class StreamingDriverSpec[S[_], F[_]](
         OPTIONAL MATCH (movie)<-[r]-(person: Person)
         RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
         LIMIT 1
-        """.query[Movie2].stream(d)
+        """.readOnlyQuery[Movie2].stream(d)
       }
 
       ccOption <- executeAsFutureList { d =>
@@ -109,7 +110,7 @@ final class StreamingDriverSpec[S[_], F[_]](
         OPTIONAL MATCH (movie)<-[r]-(person: Person)
         RETURN movie.title as title, collect({ name: person.name, job: head(split(toLower(type(r)),'_')), role: head(r.roles)}) as cast
         LIMIT 1
-        """.query[Option[Movie2]].stream(d)
+        """.readOnlyQuery[Option[Movie2]].stream(d)
       }
     } yield {
       сс3.loneElement.title shouldBe "That Thing You Do"
@@ -131,7 +132,7 @@ final class StreamingDriverSpec[S[_], F[_]](
         MATCH (p: Person)-[r: ACTED_IN]->(: Movie)
         RETURN p, r
         LIMIT 1
-        """.query[Person :: Roles :: HNil].stream(d)
+        """.readOnlyQuery[Person :: Roles :: HNil].stream(d)
       }
 
       cc <- executeAsFutureList { d =>
@@ -139,7 +140,7 @@ final class StreamingDriverSpec[S[_], F[_]](
         MATCH (p: Person)-[r: ACTED_IN]->(: Movie)
         RETURN p as person, r as roles
         LIMIT 1
-        """.query[PersonWithRoles].stream(d)
+        """.readOnlyQuery[PersonWithRoles].stream(d)
       }
     } yield {
       hlist.loneElement.head.name.value shouldBe "Charlize Theron"
@@ -150,12 +151,26 @@ final class StreamingDriverSpec[S[_], F[_]](
     }
   }
 
+  it should "correctly handle date fields" in {
+    val now = ZonedDateTime.now()
+    val start = now.minusDays(10)
+    val end = now.minusDays(30)
+
+    for {
+      _ <- executeAsFutureList(d => c"CREATE (: DateFields { name: 'test', start: ${start}, end: ${end} })".query[Unit].stream(d))
+      result <- executeAsFutureList(d => c"MATCH (n: DateFields { name: 'test' }) RETURN n".readOnlyQuery[DateFields].stream(d))
+    } yield {
+      assert(result.loneElement.start == start)
+      assert(result.loneElement.end == end)
+    }
+  }
+
   it should "catch nulls and missing fields" in {
     for{
-      r1 <- executeAsFutureList(d => "RETURN NULL".query[Option[String]].stream(d))
-      r2 <- executeAsFutureList(d => "RETURN NULL AS name".query[WrappedName].stream(d))
-      r3 <- executeAsFutureList(d => "RETURN 0".query[WrappedName].stream(d))
-      r4 <- executeAsFutureList(d => "RETURN NULL".query[WrappedName].stream(d))
+      r1 <- executeAsFutureList(d => "RETURN NULL".readOnlyQuery[Option[String]].stream(d))
+      r2 <- executeAsFutureList(d => "RETURN NULL AS name".readOnlyQuery[WrappedName].stream(d))
+      r3 <- executeAsFutureList(d => "RETURN 0".readOnlyQuery[WrappedName].stream(d))
+      r4 <- executeAsFutureList(d => "RETURN NULL".readOnlyQuery[WrappedName].stream(d))
     } yield {
       r1.loneElement shouldBe None
       r2.loneElement.name shouldBe None
@@ -170,10 +185,10 @@ final class StreamingDriverSpec[S[_], F[_]](
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node2', id: 135 })".query[Unit].stream(d))
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node3', _id: 135 })".query[Unit].stream(d))
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node4', id: 135, _id: 531 })".query[Unit].stream(d))
-      node1List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node1' }) RETURN n, id(n)".query[(WithId, Int)].stream(d))
-      node2List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node2' }) RETURN n, id(n)".query[(WithId, Int)].stream(d))
-      node3List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".query[(WithId, Int)].stream(d))
-      node4List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".query[(WithId, Int)].stream(d))
+      node1List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node1' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
+      node2List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node2' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
+      node3List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
+      node4List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
     } yield {
       // Node 1 doesn't have any custom id property.
       // Thus the id field should contain the neo4j id.
