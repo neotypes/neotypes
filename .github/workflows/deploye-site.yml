@@ -2,8 +2,6 @@ name: Deploy site
 
 # Only run on new releases.
 on:
-  workflow_run:
-    workflows: ["CI"]
   release:
     types: [released]
 
