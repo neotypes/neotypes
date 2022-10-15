@@ -1,0 +1,52 @@
+name: Deploy site
+
+# Only run on new releases.
+on:
+  workflow_run:
+    workflows: ["CI"]
+  release:
+    types: [released]
+
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow only one concurrent deployment.
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
+jobs:
+  deploy-site:
+    name: Deploy site
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+
+      - name: Setup
+        uses: ./.github/actions/setup/
+        with:
+          jdk: temurin:1.17
+          ruby: 2.7
+          cache-version: v1
+
+      - name: Build the microsite
+        run: sbtn microsite/makeMicrosite
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v2
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v1
+        with:
+          path: ./site/target/site/
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v1

@@ -4,8 +4,9 @@ import akka.NotUsed
 import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
 import akka.stream.scaladsl.{Sink, Source}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-import org.reactivestreams.Publisher
+import org.reactivestreams.FlowAdapters.toPublisher
 
+import java.util.concurrent.Flow.Publisher
 import scala.collection.compat._
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
@@ -32,10 +33,10 @@ trait AkkaStreams {
         */
       override final type F[A] = Future[A]
 
-      override final def fromRx[A](publisher: Publisher[A]): AkkaStream[A] =
-        Source.fromPublisher(publisher)
+      override final def fromPublisher[A](publisher: Publisher[A]): AkkaStream[A] =
+        Source.fromPublisher(toPublisher(publisher))
 
-      override def fromF[A](future: Future[A]): AkkaStream[A] =
+      override final def fromF[A](future: Future[A]): AkkaStream[A] =
         Source.future(future)
 
       override final def guarantee[A, B](r: Future[A])
@@ -45,6 +46,10 @@ trait AkkaStreams {
           () => Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
         ).mapMaterializedValue(_ => NotUsed)
 
+      override final def discardAppend[A](left: AkkaStream[_], right: AkkaStream[A]): AkkaStream[A] =
+        Source
+          .lazyFuture(create = () => left.run())
+          .flatMapConcat(_ => right)
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)

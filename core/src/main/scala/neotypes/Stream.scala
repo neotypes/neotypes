@@ -1,19 +1,21 @@
 package neotypes
 
-import org.reactivestreams.Publisher
+import java.util.concurrent.Flow.Publisher
 import scala.collection.compat.Factory
 
 @annotation.implicitNotFound("The stream type ${S} is not supported by neotypes")
 trait Stream[S[_]] {
   type F[T]
 
-  private[neotypes] def fromRx[A](publisher: Publisher[A]): S[A]
+  private[neotypes] def fromPublisher[A](publisher: Publisher[A]): S[A]
 
   private[neotypes] def fromF[A](fa: F[A]): S[A]
 
   private[neotypes] def guarantee[A, B](r: F[A])
                                        (f: A => S[B])
                                        (finalizer: (A, Option[Throwable]) => F[Unit]): S[B]
+
+  private[neotypes] def discardAppend[A](left: S[_], right: S[A]): S[A]
 
   private[neotypes] def map[A, B](sa: S[A])(f: A => B): S[B]
 

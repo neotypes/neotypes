@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.internal.utils.toJavaDuration
+import neotypes.internal.utils.{toJavaDuration, void}
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import org.neo4j.{driver => neo4j}
@@ -16,9 +16,9 @@ trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContain
 
   override final val container =
     Neo4jContainer(neo4jImageVersion = DockerImageName.parse("neo4j:latest"))
-      .configure(_.withoutAuthentication)
-      .configure(_.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]"))
-      .configure(_.withImagePullPolicy(imagePullPolicy))
+      .configure(c => void(c.withoutAuthentication))
+      .configure(c => void(c.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]")))
+      .configure(c => void(c.withImagePullPolicy(imagePullPolicy)))
 
   private def imagePullPolicy: ImagePullPolicy =
     util.Properties.envOrNone(name = "CI") match {
@@ -37,10 +37,11 @@ trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContain
 
   private final def runQuery(query: String): Unit = {
     val s = neoDriver.session
-    s.writeTransaction(
-      new neo4j.TransactionWork[Unit] {
-        override def execute(tx: neo4j.Transaction): Unit =
-          tx.run(query)
+    s.executeWrite(
+      new neo4j.TransactionCallback[Unit] {
+        override def execute(tx: neo4j.TransactionContext): Unit = {
+          void(tx.run(query))
+        }
       }
     )
     s.close()
@@ -48,7 +49,7 @@ trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContain
 
   override final def afterStart(): Unit = {
     // Force evaluation of the driver.
-    internal.utils.void(self.driver)
+    void(self.driver)
 
     if (initQuery != null) {
       runQuery(initQuery)

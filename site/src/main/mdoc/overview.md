@@ -9,9 +9,10 @@ position: 10
 
 ## Requirements
 
-+ Scala 2.13 / 2.12
-+ Java 8+
-+ Neo4j 4+
++ **Scala** `2.12` / `2.13`
++ **Java** `17+`
++ **Neo4j** server `4+`
++ **Neo4j** driver `5+`
 
 ## Session creation
 
@@ -104,7 +105,6 @@ _(for more information, please read [streaming](streams))_.
 
 ```scala mdoc:compile-only
 import neotypes.generic.auto._
-import neotypes.implicits.mappers.collections._
 import org.neo4j.driver.Value
 import scala.collection.immutable.{ListMap, ListSet}
 import shapeless.{::, HNil}

@@ -7,6 +7,19 @@ position: 100
 
 # Changelog
 
+## v0.23.0 _(2022-10-15)_
+
+### Upgrade to neo4j 5 ([#563](https://github.com/neotypes/neotypes/pull/563){:target="_blank"})
+
+We upgraded the **Neo4j** **Java** driver to version `5.0.0`
+
+This version deprecated the internal `RxSession` and
+replaced it with a new `ReactiveSession`,
+which is based on the `Flow` api provided by the **Java** stdlib since **Java 9**.<br>
+Also, such artifact was published only for **Java 17**.
+
+> Thus, this release drops support for **Java 8** & **Java 11** and only supports **Java 17** onwards.
+
 ## v0.22.0 _(2022-08-03)_
 
 ### Separate subproject for generic ([#548](https://github.com/neotypes/neotypes/pull/548){:target="_blank"})

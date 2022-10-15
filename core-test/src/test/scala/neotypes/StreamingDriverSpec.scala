@@ -41,7 +41,6 @@ final class StreamingDriverSpec[S[_], F[_]](
       cc2 <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.born as born, p.name as name".readOnlyQuery[Person2].stream(d))
       hlist <- executeAsFutureList(d => "MATCH (p: Person { name: 'Charlize Theron' })-[]->(m: Movie) RETURN p, m".readOnlyQuery[Person :: Movie :: HNil].stream(d))
     } yield {
-      cc.loneElement.id should be >= 0L
       cc.loneElement.name should contain ("Charlize Theron")
       cc.loneElement.born shouldBe 1975
       cc.loneElement.f.isEmpty shouldBe  true
@@ -182,13 +181,13 @@ final class StreamingDriverSpec[S[_], F[_]](
   it should "correctly handle id fields" in {
     for {
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node1' })".query[Unit].stream(d))
-      _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node2', id: 135 })".query[Unit].stream(d))
-      _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node3', _id: 135 })".query[Unit].stream(d))
-      _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node4', id: 135, _id: 531 })".query[Unit].stream(d))
-      node1List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node1' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
-      node2List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node2' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
-      node3List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node3' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
-      node4List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node4' }) RETURN n, id(n)".readOnlyQuery[(WithId, Int)].stream(d))
+      _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node2', id: '135' })".query[Unit].stream(d))
+      _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node3', _id: '135' })".query[Unit].stream(d))
+      _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node4', id: '135', _id: '531' })".query[Unit].stream(d))
+      node1List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node1' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
+      node2List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node2' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
+      node3List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node3' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
+      node4List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node4' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
     } yield {
       // Node 1 doesn't have any custom id property.
       // Thus the id field should contain the neo4j id.
@@ -201,7 +200,7 @@ final class StreamingDriverSpec[S[_], F[_]](
       // Thus the id field should contain the custom id,
       // and the _id field should contain the neo4j id.
       val node2 = node2List.loneElement
-      node2._1.id shouldBe 135
+      node2._1.id shouldBe "135"
       node2._1._id shouldBe node2._2
 
       // Node 3 has a custom _id property.
@@ -209,14 +208,14 @@ final class StreamingDriverSpec[S[_], F[_]](
       // and the _id field should contain the custom id.
       val node3 = node3List.loneElement
       node3._1.id shouldBe node3._2
-      node3._1._id shouldBe 135
+      node3._1._id shouldBe "135"
 
       // Node 4 has both a custom id & _id properties.
       // Thus both properties should contain the custom ids,
       // and the system id is unreachable.
       val node4 = node4List.loneElement
-      node4._1.id shouldBe 135
-      node4._1._id shouldBe 531
+      node4._1.id shouldBe "135"
+      node4._1._id shouldBe "531"
     }
   }
 

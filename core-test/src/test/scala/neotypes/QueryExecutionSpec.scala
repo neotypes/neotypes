@@ -1,13 +1,13 @@
 package neotypes
 
 import neotypes.generic.auto._
-import neotypes.implicits.mappers.collections._
+import neotypes.implicits.mappers.CompatibilityMappers
 import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import scala.collection.immutable.{ListMap, ListSet, SortedMap}
 
 /** Base class for testing the different ways of executing queries. */
-final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] {
+final class QueryExecutionSpec[F[_]](testkit: EffectTestkit[F]) extends AsyncDriverProvider[F](testkit) with BaseIntegrationSpec[F] with CompatibilityMappers {
   behavior of s"Executing queries using: ${effectName}"
 
   it should "retrieve multiple results as a List" in executeAsFuture { d =>

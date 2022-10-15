@@ -105,7 +105,7 @@ implicit final val idValueMapper: ValueMapper[Id] = semiauto.deriveUnwrappedValu
 # Neo4j Id
 
 Even if [**neo4j** does not recommend the use of the of the system id](https://neo4j.com/blog/dark-side-neo4j-worst-practices/), **neotypes** allows you to easily retrieve it.
-You only need to ask for a property named `id` on your case classes.
+You only need to ask for a property named `id` of type `String` on your case classes.
 
 Note: If your model also defines a custom `id` property, then your property will take precedence and we will return you that one instead of the system one.
 If you also need the system one then you can ask for the `_id` property.
