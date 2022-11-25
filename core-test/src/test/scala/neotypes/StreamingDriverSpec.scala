@@ -184,10 +184,10 @@ final class StreamingDriverSpec[S[_], F[_]](
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node2', id: '135' })".query[Unit].stream(d))
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node3', _id: '135' })".query[Unit].stream(d))
       _ <- executeAsFutureList(d => "CREATE (n: WithId { name: 'node4', id: '135', _id: '531' })".query[Unit].stream(d))
-      node1List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node1' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
-      node2List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node2' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
-      node3List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node3' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
-      node4List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node4' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].stream(d))
+      node1List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node1' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].stream(d))
+      node2List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node2' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].stream(d))
+      node3List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node3' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].stream(d))
+      node4List <- executeAsFutureList(d => "MATCH (n: WithId { name: 'node4' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].stream(d))
     } yield {
       // Node 1 doesn't have any custom id property.
       // Thus the id field should contain the neo4j id.

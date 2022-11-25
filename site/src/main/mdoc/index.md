@@ -103,5 +103,6 @@ Await.ready(driver.close, 1.second)
 For info on the compatibility with **Java** runtimes or **Neo4j** servers,
 please check the the [**Java** driver docs](https://github.com/neo4j/neo4j-java-driver).
 
-> Note: Since `0.23` the artifacts are published for **Java 17** only,
-> since that is what the `5.x` series of the **Java** driver requires.
+> Note: Since `0.23.0` the artifacts are published for **Java 17** only,
+> since that is what the `5.x` series of the **Java** driver requires.<br>
+> Note: Since `0.23.1` the minimum supported version of the **Java** driver is `5.3.0`
