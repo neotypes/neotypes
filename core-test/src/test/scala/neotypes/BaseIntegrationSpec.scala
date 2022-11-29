@@ -17,7 +17,7 @@ trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContain
   override final val container =
     Neo4jContainer(neo4jImageVersion = DockerImageName.parse("neo4j:latest"))
       .configure(c => void(c.withoutAuthentication))
-      .configure(c => void(c.addEnv("NEO4JLABS_PLUGINS", "[\"graph-data-science\"]")))
+      .configure(c => void(c.addEnv("NEO4J_PLUGINS", "[\"graph-data-science\"]")))
       .configure(c => void(c.withImagePullPolicy(imagePullPolicy)))
 
   private def imagePullPolicy: ImagePullPolicy =

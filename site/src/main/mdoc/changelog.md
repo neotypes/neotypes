@@ -7,6 +7,16 @@ position: 100
 
 # Changelog
 
+## v0.23.1 _(2022-11-29)_
+
+### Update neo4j-java-driver to 5.3.0 & bump dependencies ([#576](https://github.com/neotypes/neotypes/pull/576){:target="_blank"})
+
+This release only updates a couple of dependencies.
+
+The most relevant one is the the **neo4j-java-driver**,
+since this version introduced a new factory function
+to construct the underlying `Session`
+
 ## v0.23.0 _(2022-10-15)_
 
 ### Upgrade to neo4j 5 ([#563](https://github.com/neotypes/neotypes/pull/563){:target="_blank"})

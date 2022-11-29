@@ -191,10 +191,10 @@ final class DriverSpec[F[_]](
       _ <- "CREATE (n: WithId { name: 'node2', id: '135' })".query[Unit].execute(d)
       _ <- "CREATE (n: WithId { name: 'node3', _id: '135' })".query[Unit].execute(d)
       _ <- "CREATE (n: WithId { name: 'node4', id: '135', _id: '531' })".query[Unit].execute(d)
-      node1 <- "MATCH (n: WithId { name: 'node1' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
-      node2 <- "MATCH (n: WithId { name: 'node2' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
-      node3 <- "MATCH (n: WithId { name: 'node3' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
-      node4 <- "MATCH (n: WithId { name: 'node4' }) RETURN n, toString(id(n))".readOnlyQuery[(WithId, String)].single(d)
+      node1 <- "MATCH (n: WithId { name: 'node1' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].single(d)
+      node2 <- "MATCH (n: WithId { name: 'node2' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].single(d)
+      node3 <- "MATCH (n: WithId { name: 'node3' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].single(d)
+      node4 <- "MATCH (n: WithId { name: 'node4' }) RETURN n, elementId(n)".readOnlyQuery[(WithId, String)].single(d)
     } yield {
       // Node 1 doesn't have any custom id property.
       // Thus the id field should contain the neo4j id.

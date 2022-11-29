@@ -2,21 +2,20 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "5.0.0"
-val scalaCollectionCompatVersion = "2.8.1"
+val neo4jDriverVersion = "5.3.0"
+val scalaCollectionCompatVersion = "2.9.0"
 val shapelessVersion = "2.3.10"
-val testcontainersNeo4jVersion = "1.17.3"
-val testcontainersScalaVersion = "0.40.10"
-val mockitoVersion = "1.10.19"
-val scalaTestVersion = "3.2.13"
-val logbackVersion = "1.2.11"
-val catsVersion = "2.8.0"
+val testcontainersNeo4jVersion = "1.17.6"
+val testcontainersScalaVersion = "0.40.11"
+val scalaTestVersion = "3.2.14"
+val logbackVersion = "1.4.4"
+val catsVersion = "2.9.0"
 val catsEffect2Version = "2.5.5"
-val catsEffect3Version = "3.3.14"
+val catsEffect3Version = "3.4.2"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
-val fs2Version = "3.3.0"
-val zio2Version = "2.0.2"
+val fs2Version = "3.4.0"
+val zio2Version = "2.0.4"
 val zioInteropReactiveStreamsVersion = "2.0.0"
 val refinedVersion = "0.10.1"
 val enumeratumVersion = "1.7.0"
@@ -137,7 +136,6 @@ lazy val coreTest = (project in file("core-test"))
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
-        "org.mockito" % "mockito-all" % mockitoVersion,
         "ch.qos.logback" % "logback-classic" % logbackVersion
       )
   )

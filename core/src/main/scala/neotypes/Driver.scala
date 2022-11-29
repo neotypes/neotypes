@@ -4,6 +4,8 @@ import internal.syntax.async._
 import internal.syntax.stage._
 import internal.syntax.stream._
 import org.neo4j.driver.{AccessMode, ConnectionPoolMetrics, Driver => NeoDriver}
+import org.neo4j.driver.async.AsyncSession
+import org.neo4j.driver.reactive.ReactiveSession
 
 import scala.util.Try
 import scala.jdk.CollectionConverters._
@@ -87,7 +89,7 @@ object Driver {
     override final def transaction(config: TransactionConfig): F[Transaction[F]] =
       F.async { cb =>
         val (sessionConfig, transactionConfig) = config.getConfigs
-        val s = driver.asyncSession(sessionConfig)
+        val s = driver.session(classOf[AsyncSession], sessionConfig)
 
         s.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
           Right(Transaction[F](tx, s))
@@ -119,7 +121,7 @@ object Driver {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
       val session = F.delay {
-        driver.reactiveSession(sessionConfig)
+        driver.session(classOf[ReactiveSession], sessionConfig)
       }
 
       S.fromF(session).flatMapS { s =>
