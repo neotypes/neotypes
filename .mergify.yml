@@ -1,8 +1,8 @@
 queue_rules:
   - name: default
     conditions:
-      - status-success=Build and Test (ubuntu-latest, adopt@1.8)
-      - status-success=Build and Test (ubuntu-latest, graalvm-ce-java11@20.3.0)
+      - status-success=Build and Test (ubuntu-latest, temurin:1.17)
+      - status-success=Build and Test (ubuntu-latest, graalvm-java17:22.3.0)
 
 pull_request_rules:
   - name: merge scala-steward's PRs
