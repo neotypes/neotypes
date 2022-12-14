@@ -2,7 +2,7 @@ package neotypes
 package implicits.syntax
 
 import mappers.ParameterMapper
-import types.QueryParam
+import model.QueryParam
 
 trait QueryParamSyntax {
   implicit final def neotypesSyntaxQueryParamId[A](a: A): QueryParamIdOps[A] =

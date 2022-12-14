@@ -1,8 +1,7 @@
 package neotypes
 package internal.syntax
 
-import java.util.concurrent.Flow.Publisher
-import scala.collection.compat.Factory
+import scala.collection.Factory
 
 private[neotypes] object stream {
   implicit class StreamOps[S[_], A](private val sa: S[A]) extends AnyVal {
@@ -23,10 +22,5 @@ private[neotypes] object stream {
 
     def void[F[_]](implicit S: Stream.Aux[S, F]): F[Unit] =
       S.void(sa)
-  }
-
-  implicit class PublisherOps[A](private val publisher: Publisher[A]) extends AnyVal {
-    def toStream[S[_]](implicit S: Stream[S]): S[A] =
-      S.fromPublisher(publisher)
   }
 }

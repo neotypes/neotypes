@@ -4,9 +4,9 @@ import internal.utils.traverse._
 import internal.syntax.async._
 import internal.syntax.stage._
 import internal.syntax.stream._
-import exceptions.IncoercibleException
 import mappers.{ExecutionMapper, ResultMapper}
-import types.QueryParam
+import model.QueryParam
+import model.exceptions.IncoercibleException
 
 import org.neo4j.driver.{Record, Value}
 import org.neo4j.driver.async.{AsyncSession => NeoAsyncSession, AsyncTransaction => NeoAsyncTransaction}

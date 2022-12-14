@@ -1,11 +1,11 @@
 package neotypes
 
-import internal.utils.toJavaDuration
-import types.QueryParam
+import model.QueryParam
 
 import org.neo4j.driver.{AccessMode, SessionConfig => NeoSessionConfig, TransactionConfig => NeoTransactionConfig}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
 
 /** Scala friendly builder for instances of
   * [[org.neo4j.driver.TransactionConfig]] and [[org.neo4j.driver.SessionConfig]].
@@ -25,7 +25,7 @@ final class TransactionConfig private (
     accessMode.foreach(am => sessionConfigBuilder.withDefaultAccessMode(am))
     database.foreach(db => sessionConfigBuilder.withDatabase(db))
     metadata.foreach(md => transactionConfigBuilder.withMetadata(QueryParam.toJavaMap(md)))
-    timeout.foreach(d => transactionConfigBuilder.withTimeout(toJavaDuration(d)))
+    timeout.foreach(d => transactionConfigBuilder.withTimeout(d.toJava))
 
     (sessionConfigBuilder.build(), transactionConfigBuilder.build())
   }

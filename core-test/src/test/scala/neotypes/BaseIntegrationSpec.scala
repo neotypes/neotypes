@@ -1,6 +1,6 @@
 package neotypes
 
-import neotypes.internal.utils.{toJavaDuration, void}
+import neotypes.internal.utils.void
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import org.neo4j.{driver => neo4j}
@@ -9,6 +9,7 @@ import org.testcontainers.images.{ImagePullPolicy, PullPolicy}
 import org.testcontainers.utility.DockerImageName
 
 import scala.concurrent.duration._
+import scala.jdk.DurationConverters._
 
 /** Base class for writing integration specs. */
 trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
@@ -22,7 +23,7 @@ trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContain
 
   private def imagePullPolicy: ImagePullPolicy =
     util.Properties.envOrNone(name = "CI") match {
-      case Some("true") => PullPolicy.ageBased(toJavaDuration(1.day))
+      case Some("true") => PullPolicy.ageBased(1.day.toJava)
       case _ => PullPolicy.defaultPolicy
     }
 

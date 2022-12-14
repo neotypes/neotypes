@@ -3,6 +3,8 @@ package neotypes
 import internal.syntax.async._
 import internal.syntax.stage._
 import internal.syntax.stream._
+import model.exceptions.TransactionWasNotCreatedException
+
 import org.neo4j.driver.{AccessMode, ConnectionPoolMetrics, Driver => NeoDriver}
 import org.neo4j.driver.async.AsyncSession
 import org.neo4j.driver.reactive.ReactiveSession
@@ -120,12 +122,10 @@ object Driver {
     override final def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
-      val session = F.delay {
-        driver.session(classOf[ReactiveSession], sessionConfig)
-      }
+      val session = F.delay(driver.session(classOf[ReactiveSession], sessionConfig))
 
       S.fromF(session).flatMapS { s =>
-        s.beginTransaction(transactionConfig).toStream[S].mapS { tx =>
+        S.fromPublisher(s.beginTransaction(transactionConfig)).mapS { tx =>
           Transaction[S, F](tx, s)
         }
       }
@@ -133,7 +133,7 @@ object Driver {
 
     override final def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
       val tx = streamingTransaction(config).single[F].flatMap { opt =>
-        F.fromEither(opt.toRight(left = exceptions.TransactionWasNotCreatedException))
+        F.fromEither(opt.toRight(left = TransactionWasNotCreatedException))
       }
 
       S.guarantee(tx)(txF)(txFinalizer)
