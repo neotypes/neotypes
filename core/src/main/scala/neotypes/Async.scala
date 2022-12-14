@@ -1,13 +1,15 @@
 package neotypes
 
-import scala.concurrent.{ExecutionContext, Future, Promise}
+import java.util.concurrent.CompletionStage
+import scala.concurrent.{ExecutionContext, Future}
+import scala.jdk.FutureConverters._
 import scala.util.{Failure, Success}
 
 @annotation.implicitNotFound("The effect type ${F} is not supported by neotypes")
 trait Async[F[_]] {
   private[neotypes] type R[A]
 
-  private[neotypes] def async[A](cb: (Either[Throwable, A] => Unit) => Unit): F[A]
+  private[neotypes] def fromCompletionStage[A](completionStage: => CompletionStage[A]): F[A]
 
   private[neotypes] def delay[A](a: => A): F[A]
 
@@ -32,15 +34,8 @@ object Async {
     new Async[Future] {
       override final type R[A] = A
 
-      override final def async[A](cb: (Either[Throwable, A] => Unit) => Unit): Future[A] =
-        Future {
-          val p = Promise[A]()
-          cb {
-            case Right(res) => p.complete(Success(res))
-            case Left(ex) => p.complete(Failure(ex))
-          }
-          p.future
-        }.flatten
+      override final def fromCompletionStage[A](completionStage: => CompletionStage[A]): Future[A] =
+        Future(completionStage).flatMap(_.asScala)
 
       override final def delay[A](a: => A): Future[A] =
         Future(a)

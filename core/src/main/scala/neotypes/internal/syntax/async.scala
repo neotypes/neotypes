@@ -16,5 +16,8 @@ private[neotypes] object async {
       F.guarantee(F.delay(()))(_ => fa) {
         case (_, ex) => finalizer(ex)
       }
+
+    def void(implicit F: Async[F]): F[Unit] =
+      F.map(fa)(_ => ())
   }
 }

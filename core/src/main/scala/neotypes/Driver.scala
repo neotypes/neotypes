@@ -1,7 +1,6 @@
 package neotypes
 
 import internal.syntax.async._
-import internal.syntax.stage._
 import internal.syntax.stream._
 import model.exceptions.TransactionWasNotCreatedException
 
@@ -89,13 +88,13 @@ object Driver {
       )
 
     override final def transaction(config: TransactionConfig): F[Transaction[F]] =
-      F.async { cb =>
-        val (sessionConfig, transactionConfig) = config.getConfigs
-        val s = driver.session(classOf[AsyncSession], sessionConfig)
-
-        s.beginTransactionAsync(transactionConfig).accept(cb) { tx =>
-          Right(Transaction[F](tx, s))
-        }
+      F.delay(config.getConfigs).flatMap {
+        case (sessionConfig, transactionConfig) =>
+          F.delay(driver.session(classOf[AsyncSession], sessionConfig)).flatMap { s =>
+            F.fromCompletionStage(s.beginTransactionAsync(transactionConfig)).map { tx =>
+              Transaction[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
+            }
+          }
       }
 
     override final def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
@@ -105,9 +104,7 @@ object Driver {
       transaction(config.withAccessMode(AccessMode.READ)).guarantee(txf)(txFinalizer)
 
     override final def close: F[Unit] =
-      F.async { cb =>
-        driver.closeAsync().acceptVoid(cb)
-      }
+      F.fromCompletionStage(driver.closeAsync()).void
 
     override def withTransactionConfig(config: TransactionConfig): Driver[F] =
       new DriverImpl(driver, config)
@@ -126,7 +123,7 @@ object Driver {
 
       S.fromF(session).flatMapS { s =>
         S.fromPublisher(s.beginTransaction(transactionConfig)).mapS { tx =>
-          Transaction[S, F](tx, s)
+          Transaction[S, F](tx, () => S.fromPublisher(s.close()).voidS)
         }
       }
     }
