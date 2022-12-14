@@ -5,6 +5,9 @@ import scala.collection.Factory
 
 private[neotypes] object stream {
   implicit class StreamOps[S[_], A](private val sa: S[A]) extends AnyVal {
+    def andThen[B](sb: S[B])(implicit S: Stream[S]): S[Either[A, B]] =
+      S.append(S.map(sa)(Left.apply), S.map(sb)(Right.apply))
+
     def mapS[B](f: A => B)(implicit S: Stream[S]): S[B] =
       S.map(sa)(f)
 
@@ -20,7 +23,7 @@ private[neotypes] object stream {
     def single[F[_]](implicit S: Stream.Aux[S, F]): F[Option[A]] =
       S.single(sa)
 
-    def void[F[_]](implicit S: Stream.Aux[S, F]): F[Unit] =
+    def voidS[F[_]](implicit S: Stream.Aux[S, F]): F[Unit] =
       S.void(sa)
   }
 }

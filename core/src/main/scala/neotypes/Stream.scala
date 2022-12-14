@@ -11,6 +11,8 @@ trait Stream[S[_]] {
 
   private[neotypes] def fromF[A](fa: F[A]): S[A]
 
+  private[neotypes] def append[A, B >: A](sa: S[A], sb: S[B]): S[B]
+
   private[neotypes] def guarantee[A, B](r: F[A])
                                        (f: A => S[B])
                                        (finalizer: (A, Option[Throwable]) => F[Unit]): S[B]

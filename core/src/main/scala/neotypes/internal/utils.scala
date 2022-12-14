@@ -1,4 +1,9 @@
-package neotypes.internal
+package neotypes
+package internal
+
+import model.types.NeoType
+
+import org.neo4j.driver.Record
 
 import scala.collection.Factory
 import scala.collection.mutable.Builder
@@ -8,9 +13,9 @@ private[neotypes] object utils {
   @inline
   final def void(as: Any*): Unit = (as, ())._2
 
-  final def traverseAs[A, B, C, E](factory: Factory[B, C])
-                                  (iter: Iterator[A])
-                                  (f: A => Either[E, B]): Either[E, C] = {
+  def traverseAs[A, B, C, E](factory: Factory[B, C])
+                            (iter: Iterator[A])
+                            (f: A => Either[E, B]): Either[E, C] = {
     @annotation.tailrec
     def loop(acc: Builder[B, C]): Either[E, C] =
       if (iter.hasNext) f(iter.next()) match {
@@ -21,4 +26,7 @@ private[neotypes] object utils {
       }
     loop(acc = factory.newBuilder)
   }
+
+  def parseRecord(record: Record): NeoType =
+    ???
 }

@@ -167,6 +167,8 @@ object exceptions {
 
   final case object CancellationException extends NeotypesException(message = "An operation was cancelled")
 
+  final case object MissingRecordException extends NeotypesException(message = "A record was expected but none was received")
+
   sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause) with NoStackTrace
 
   final case class PropertyNotFoundException(message: String) extends ResultMapperException(message)
