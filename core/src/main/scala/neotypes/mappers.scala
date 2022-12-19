@@ -3,7 +3,7 @@ package mappers
 
 import model.QueryParam
 import model.types._
-import model.exceptions.{ResultMapperException, IncoercibleException}
+import model.exceptions.{IncoercibleException, PropertyNotFoundException, ResultMapperException}
 import internal.utils.traverseAs
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
@@ -245,6 +245,7 @@ trait ResultMapper[+T] {
   def and[U](other: ResultMapper[U]): ResultMapper[(T, U)]
   def or[U >: T](other: ResultMapper[U]): ResultMapper[U]
 }
+
 object ResultMapper {
   def apply[T](implicit mapper: ResultMapper[T]): ResultMapper[T] =
     mapper
@@ -254,9 +255,6 @@ object ResultMapper {
 
   def failed[T](ex: ResultMapperException): ResultMapper[T] =
     ???
-
-  def field[T](key: String)(implicit mapper: ResultMapper[T]): ResultMapper[T] =
-    neoObject.emap(_.getAs[T](key))
 
   def fromMatch[T](pf: PartialFunction[NeoType, Either[ResultMapperException, T]])(implicit ev: DummyImplicit): ResultMapper[T] =
     ???
@@ -356,6 +354,20 @@ object ResultMapper {
     collectAs(List, mapper)
   // ...
 
+  def field[T](key: String)(implicit mapper: ResultMapper[T]): ResultMapper[T] =
+    neoObject.emap(_.getAs[T](key)(mapper))
+
+  def at[T](idx: Int)(implicit mapper: ResultMapper[T]): ResultMapper[T] =
+    values.emap { iter =>
+      val element = iter match {
+        case seq: collection.Seq[NeoType] => seq.lift(idx)
+        case _ => iter.slice(from = idx, until = idx + 1).headOption
+      }
+
+      val value = element.toRight(left = PropertyNotFoundException(key = s"index-${idx}"))
+      value.flatMap(mapper.decode)
+    }
+
   def and[A, B](a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[(A, B)] =
     a.and(b)
 
@@ -391,47 +403,32 @@ object ResultMapper {
   }
 
   object product {
+    def named[A, B, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]))(f: (A, B) => T): ResultMapper[T] =
+      fromFunction(a._1, b._1)(f)(a._2, b._2)
+
+    def apply[A, B, T <: Product](a: ResultMapper[A], b: ResultMapper[B])(f: (A, B) => T): ResultMapper[T] =
+      fromFunction(f)(a, b)
+
     trait DerivedProductResultMapper[T <: Product] extends ResultMapper[T]
 
     def derive[T <: Product](implicit mapper: DerivedProductResultMapper[T]): ResultMapper[T] =
       mapper
-
-    def named[A, B, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]))(f: (A, B) => T): ResultMapper[T] =
-      fromFunction(a._1, b._1)(f)(a._2, b._2)
-
-    def named[A, B, C, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]), c: (String, ResultMapper[C]))(f: (A, B, C) => T): ResultMapper[T] =
-      ???
-
-    def apply[A, B, T <: Product](a: ResultMapper[A], b: ResultMapper[B])(f: (A, B) => T): ResultMapper[T] =
-      fromFunction(f)(a, b)
   }
 
   object coproduct {
-    sealed trait DiscriminatorStrategy[S]
-    object DiscriminatorStrategy {
-      final case object NodeLabel extends DiscriminatorStrategy[String]
-      final case object RelationshipType extends DiscriminatorStrategy[String]
-      final case class Field[T](name: String, mapper: ResultMapper[T]) extends DiscriminatorStrategy[T]
-      object Field {
-        def apply[T](name: String)(implicit mapper: ResultMapper[T], ev: DummyImplicit): Field[T] =
-          new Field(name, mapper)
+    sealed trait discriminatorStrategy[S]
+    object discriminatorStrategy {
+      final case object nodeLabel extends discriminatorStrategy[String]
+      final case object relationshipType extends discriminatorStrategy[String]
+      final case class field[T](name: String, mapper: ResultMapper[T]) extends discriminatorStrategy[T]
+      object field {
+        def apply[T](name: String)(implicit mapper: ResultMapper[T], ev: DummyImplicit): field[T] =
+          new field(name, mapper)
       }
     }
 
-    trait DerivedCoproductInstances[T] {
-      def options: List[(String, ResultMapper[T])]
-    }
-
-    private[ResultMapper] final class CoproductDerivePartiallyApplied[T](private val dummy: Boolean) extends AnyVal {
-      def apply(strategy: DiscriminatorStrategy[String])(implicit instances: DerivedCoproductInstances[T]): ResultMapper[T] =
-        coproduct.apply(strategy)(instances.options : _*)
-    }
-
-    def derive[T]: CoproductDerivePartiallyApplied[T] =
-      new CoproductDerivePartiallyApplied(dummy = true)
-
-    def apply[S, T](strategy: DiscriminatorStrategy[S])(options: (S, ResultMapper[T])*): ResultMapper[T] = strategy match {
-      case DiscriminatorStrategy.NodeLabel =>
+    def apply[S, T](strategy: discriminatorStrategy[S])(options: (S, ResultMapper[T])*): ResultMapper[T] = strategy match {
+      case discriminatorStrategy.nodeLabel =>
         ResultMapper.node.flatMap { node =>
           options.collectFirst {
             case (label, mapper) if (node.hasLabel(label)) =>
@@ -441,7 +438,7 @@ object ResultMapper {
           )
         }
 
-      case DiscriminatorStrategy.RelationshipType =>
+      case discriminatorStrategy.relationshipType =>
         ResultMapper.relationship.flatMap { relationship =>
           options.collectFirst {
             case (label, mapper) if (relationship.hasType(tpe = label)) =>
@@ -451,7 +448,7 @@ object ResultMapper {
           )
         }
 
-      case DiscriminatorStrategy.Field(fieldName, fieldResultMapper) =>
+      case discriminatorStrategy.field(fieldName, fieldResultMapper) =>
         ResultMapper.field(key = fieldName)(fieldResultMapper).flatMap { label =>
           options.collectFirst {
             case (`label`, mapper) =>
@@ -461,5 +458,12 @@ object ResultMapper {
           )
         }
     }
+
+    trait DerivedCoproductInstances[T] {
+      def options: List[(String, ResultMapper[T])]
+    }
+
+    def derive[T](strategy: discriminatorStrategy[String])(implicit instances: DerivedCoproductInstances[T]): ResultMapper[T] =
+      apply(strategy)(instances.options : _*)
   }
 }

@@ -7,8 +7,8 @@ import mappers.ResultMapper
 import model.QueryParam
 import model.exceptions.MissingRecordException
 
-import org.neo4j.driver.async.{AsyncTransaction => NeoAsyncTransaction}
-import org.neo4j.driver.reactive.{ReactiveResult, ReactiveTransaction => NeoReactiveTransaction}
+import org.neo4j.driver.async.{ResultCursor => NeoAsyncResult, AsyncTransaction => NeoAsyncTransaction}
+import org.neo4j.driver.reactive.{ReactiveResult => NeoReactiveResult, ReactiveTransaction => NeoReactiveTransaction}
 import org.neo4j.driver.summary.ResultSummary
 
 import scala.collection.Factory
@@ -26,14 +26,14 @@ sealed trait Transaction[F[_]] {
   def single[T](
     query: String,
     params: Map[String, QueryParam],
-    resultMapper: ResultMapper[T]
+    mapper: ResultMapper[T]
   ): F[(T, ResultSummary)]
 
   def collectAs[T, C](
     query: String,
     params: Map[String, QueryParam],
     factory: Factory[T, C],
-    resultMapper: ResultMapper[T]
+    mapper: ResultMapper[T]
   ): F[(C, ResultSummary)]
 }
 
@@ -41,7 +41,8 @@ sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
   def stream[T](
     query: String,
     params: Map[String, QueryParam],
-    resultMapper: ResultMapper[T]
+    chunkSize: Int,
+    mapper: ResultMapper[T]
   ): S[Either[T, ResultSummary]]
 }
 
@@ -55,42 +56,46 @@ object Transaction {
       override final def rollback: F[Unit] =
         F.fromCompletionStage(transaction.rollbackAsync()).void.guarantee(_ => close())
 
+      private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoAsyncResult] =
+        F.fromCompletionStage(
+          transaction.runAsync(query, QueryParam.toJavaMap(params))
+        ).mapError(_ => MissingRecordException)
+
+      private def resultSummary(result: NeoAsyncResult): F[ResultSummary] =
+        F.fromCompletionStage(result.consumeAsync()).mapError(_ => MissingRecordException)
+
       override final def execute(
         query: String,
-        params: Map[String,QueryParam]
+        params: Map[String, QueryParam]
       ): F[ResultSummary] =
-        F.fromCompletionStage(transaction.runAsync(query, QueryParam.toJavaMap(params))).flatMap { result =>
-          F.fromCompletionStage(result.consumeAsync())
-        }
+        runQuery(query, params).flatMap(resultSummary)
 
       override final def single[T](
         query: String,
-        params: Map[String,QueryParam],
-        resultMapper: ResultMapper[T]
+        params: Map[String, QueryParam],
+        mapper: ResultMapper[T]
       ): F[(T, ResultSummary)] =
-        F.fromCompletionStage(transaction.runAsync(query, QueryParam.toJavaMap(params))).flatMap { result =>
-          F.fromCompletionStage(result.singleAsync()).flatMap { record =>
-            F.fromCompletionStage(result.consumeAsync()).flatMap { rs =>
-              F.fromEither(resultMapper.decode(parseRecord(record))).map(t => t -> rs)
-            }
-          }
-        }
+        for {
+          result <- runQuery(query, params)
+          record <- F.fromCompletionStage(result.singleAsync()).mapError(_ => MissingRecordException)
+          t <- F.fromEither(mapper.decode(parseRecord(record)))
+          rs <- resultSummary(result)
+        } yield t -> rs
 
       override final def collectAs[T, C](
         query: String,
         params: Map[String, QueryParam],
         factory: Factory[T, C],
-        resultMapper: ResultMapper[T]
+        mapper: ResultMapper[T]
       ): F[(C, ResultSummary)] =
-        F.fromCompletionStage(transaction.runAsync(query, QueryParam.toJavaMap(params))).flatMap { result =>
-          F.fromCompletionStage(result.listAsync()).flatMap { records =>
-            F.fromCompletionStage(result.consumeAsync()).flatMap { rs =>
-              F.fromEither(traverseAs(factory)(records.asScala.iterator) { record =>
-                resultMapper.decode(parseRecord(record))
-              }).map(col => col -> rs)
-            }
-          }
-        }
+        for {
+          result <- runQuery(query, params)
+          records <- F.fromCompletionStage(result.listAsync())
+          col <- F.fromEither(traverseAs(factory)(records.asScala.iterator) { record =>
+            mapper.decode(parseRecord(record))
+          })
+          rs <- resultSummary(result)
+        } yield col -> rs
     }
 
   private[neotypes] def apply[S[_], F[_]](transaction: NeoReactiveTransaction, close: () => F[Unit])
@@ -102,7 +107,7 @@ object Transaction {
       override final def rollback: F[Unit] =
         S.fromPublisher(transaction.rollback[Unit]).voidS[F].guarantee(_ => close())
 
-      private def resultSummary(result: ReactiveResult): F[ResultSummary] =
+      private def resultSummary(result: NeoReactiveResult): F[ResultSummary] =
         S.fromPublisher(result.consume()).single[F].flatMap {
           case Some(rs) =>
             F.delay(rs)
@@ -128,13 +133,13 @@ object Transaction {
       override final def single[T](
         query: String,
         params: Map[String, QueryParam],
-        resultMapper: ResultMapper[T]
+        mapper: ResultMapper[T]
       ): F[(T, ResultSummary)] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
           case Some(result) =>
             S.fromPublisher(result.records()).single[F].flatMap {
               case Some(record) =>
-                F.fromEither(resultMapper.decode(parseRecord(record))).flatMap { t =>
+                F.fromEither(mapper.decode(parseRecord(record))).flatMap { t =>
                   resultSummary(result).map(rs => t -> rs)
                 }
 
@@ -150,12 +155,12 @@ object Transaction {
         query: String,
         params: Map[String, QueryParam],
         factory: Factory[T, C],
-        resultMapper: ResultMapper[T]
+        mapper: ResultMapper[T]
       ): F[(C, ResultSummary)] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
           case Some(result) =>
-            val records = S.fromPublisher(result.records()).evalMap { record =>
-              F.fromEither(resultMapper.decode(parseRecord(record)))
+            val records = S.fromPublisher(result.records(), chunkSize = 256).evalMap { record =>
+              F.fromEither(mapper.decode(parseRecord(record)))
             }
 
             records.collectAs(factory).flatMap { col =>
@@ -169,11 +174,12 @@ object Transaction {
       override final def stream[T](
         query: String,
         params: Map[String, QueryParam],
-        resultMapper: ResultMapper[T]
+        chunkSize: Int,
+        mapper: ResultMapper[T]
       ): S[Either[T, ResultSummary]] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).flatMapS { result =>
-          val records = S.fromPublisher(result.records()).evalMap { record =>
-            F.fromEither(resultMapper.decode(parseRecord(record)))
+          val records = S.fromPublisher(result.records(), chunkSize).evalMap { record =>
+            F.fromEither(mapper.decode(parseRecord(record)))
           }
 
           val summary = S.fromPublisher(result.consume())

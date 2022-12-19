@@ -11,7 +11,7 @@ import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 import scala.util.control.NoStackTrace
 
-/** Safe wrapper over a Neo4j parameter. */
+/** Safe wrapper over a Neo4j query parameter. */
 final class QueryParam private[neotypes] (private[neotypes] val underlying: AnyRef) extends AnyVal
 object QueryParam {
   def apply[A](scalaValue: A)(implicit mapper: ParameterMapper[A]): QueryParam =
@@ -39,7 +39,7 @@ object types {
     final def getAs[T](key: String)(implicit mapper: ResultMapper[T]): Either[exceptions.ResultMapperException, T] =
       properties
         .get(key)
-        .toRight(left = exceptions.PropertyNotFoundException(s"Field ${key} not found"))
+        .toRight(left = exceptions.PropertyNotFoundException(key))
         .flatMap(mapper.decode)
 
     final def keys: Set[String] =
@@ -167,18 +167,24 @@ object exceptions {
 
   final case object CancellationException extends NeotypesException(message = "An operation was cancelled")
 
-  final case object MissingRecordException extends NeotypesException(message = "A record was expected but none was received")
-
   sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause) with NoStackTrace
 
-  final case class PropertyNotFoundException(message: String) extends ResultMapperException(message)
+  final case object MissingRecordException extends ResultMapperException(message = "A record was expected but none was received")
+
+  final case class PropertyNotFoundException(key: String) extends ResultMapperException(message = s"Field ${key} not found")
 
   final case class IncoercibleException(message: String, cause: Option[Throwable] = None) extends ResultMapperException(message, cause)
 
   final case class ChainException(parts: Iterable[ResultMapperException]) extends ResultMapperException(message = "") {
-    override def getMessage(): String = {
-      s"Multiple decoding errors:\n${parts.view.map(ex => ex.getMessage).mkString("\n")}"
-    }
+    override def getMessage(): String =
+      parts
+        .view
+        .map(ex => ex.getMessage)
+        .mkString(
+          start = "Multiple decoding errors:" + System.lineSeparator,
+          sep = System.lineSeparator,
+          end = System.lineSeparator
+        )
   }
   object ChainException {
     def from(exceptions: ResultMapperException*): ChainException =

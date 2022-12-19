@@ -7,7 +7,7 @@ import scala.collection.Factory
 trait Stream[S[_]] {
   type F[T]
 
-  private[neotypes] def fromPublisher[A](publisher: => Publisher[A]): S[A]
+  private[neotypes] def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int = 1): S[A]
 
   private[neotypes] def fromF[A](fa: F[A]): S[A]
 

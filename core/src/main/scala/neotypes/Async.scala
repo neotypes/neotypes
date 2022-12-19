@@ -23,6 +23,8 @@ trait Async[F[_]] {
 
   private[neotypes] def map[A, B](fa: F[A])(f: A => B): F[B]
 
+  private[neotypes] def mapError[A](fa: F[A])(f: Throwable => Throwable): F[A]
+
   private[neotypes] def resource[A](a: => A)(close: A => F[Unit]): R[A]
 }
 
@@ -58,6 +60,9 @@ object Async {
 
       override final def map[A, B](fa: Future[A])(f: A => B): Future[B] =
         fa.map(f)
+
+      override final def mapError[A](fa: Future[A])(f: Throwable => Throwable): Future[A] =
+        fa.transform(identity, f)
 
       override final def resource[A](a: => A)(close: A => Future[Unit]): A =
         a

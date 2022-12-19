@@ -44,9 +44,7 @@ object GraphDatabase {
       */
     def apply[R[_]](uri: String, authToken: AuthToken, config: Config)
                    (implicit F: Async.Aux[F, R]): R[Driver[F]] =
-      create(
-        NFactory.driver(URI.create(uri), authToken, config)
-      )
+      create(NFactory.driver(URI.create(uri), authToken, config))
 
     /** Creates a new Driver using the provided uri,
       * without authentication and with the default configuration.
@@ -72,9 +70,7 @@ object GraphDatabase {
     /** Creates a new Driver using the provided uri, authentication token & configuration. */
     def apply[R[_]](uri: URI, authToken: AuthToken, config: Config)
                    (implicit F: Async.Aux[F, R]): R[Driver[F]] =
-      create(
-        NFactory.driver(uri, authToken, config)
-      )
+      create(NFactory.driver(uri, authToken, config))
 
     private def create[R[_]](neoDriver: => NDriver)
                             (implicit F: Async.Aux[F, R]): R[Driver[F]] =
@@ -119,9 +115,7 @@ object GraphDatabase {
       */
     def apply[F[_], R[_]](uri: String, authToken: AuthToken, config: Config)
                          (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
-      create(
-        NFactory.driver(URI.create(uri), authToken, config)
-      )
+      create(NFactory.driver(URI.create(uri), authToken, config))
 
     /** Creates a new Driver using the provided uri,
       * without authentication and with the default configuration.
@@ -147,12 +141,10 @@ object GraphDatabase {
     /** Creates a new Driver using the provided uri, authentication token & configuration. */
     def apply[F[_], R[_]](uri: URI, authToken: AuthToken, config: Config)
                          (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
-      create(
-        NFactory.driver(uri, authToken, config)
-      )
+      create(NFactory.driver(uri, authToken, config))
 
     private def create[F[_], R[_]](neoDriver: => NDriver)
-                            (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                                  (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
       F.resource(Driver[S, F](neoDriver))(_.close)
   }
 }

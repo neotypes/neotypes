@@ -6,6 +6,9 @@ private[neotypes] object async {
     def map[B](f: A => B)(implicit F: Async[F]): F[B] =
       F.map(fa)(f)
 
+    def mapError(f: Throwable => Throwable)(implicit F: Async[F]): F[A] =
+      F.mapError(fa)(f)
+
     def flatMap[B](f: A => F[B])(implicit F: Async[F]): F[B] =
       F.flatMap(fa)(f)
 
