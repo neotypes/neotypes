@@ -52,5 +52,11 @@ final class TransactionConfig private (
 }
 
 object TransactionConfig {
-  def default: TransactionConfig = new TransactionConfig()
+  /** Default configuration. */
+  val default: TransactionConfig =
+    new TransactionConfig()
+
+  /** Same as [[default]], but overrides the access mode as [[READ]]. */
+  val readOnly: TransactionConfig =
+    default.withAccessMode(AccessMode.READ)
 }

@@ -1,5 +1,6 @@
 package neotypes
 
+import interna.syntax.async._
 import mappers.ResultMapper
 import model.QueryParam
 
@@ -111,7 +112,7 @@ final case class ExecuteQuery(
     * @return An effectual value that will execute the query.
     */
   def void[F[_]](tx: Transaction[F]): F[Unit] =
-    ???
+    tx.execute(query, params).void
 }
 
 private[neotypes] sealed trait BaseDeferredQuery[T] {
@@ -425,24 +426,6 @@ private[neotypes] object BaseDeferredQuery {
       tx.collectAs(dq.query, dq.params, factory, dq.mapper)
     }
   }
-
-  private[neotypes] final class ReadOnlyCollectAsPartiallyApplied[T, C](
-      private val factoryAndDq: (Factory[T, C], BaseDeferredQuery[T])
-  ) extends AnyVal with BaseCollectAsPartiallyApplied[T, C] {
-    override def apply[F[_]](driver: Driver[F]): F[(C, ResultSummary)] = {
-      val (factory, dq) = factoryAndDq
-      driver.readOnlyTransact { tx =>
-        tx.collectAs(dq.query, dq.params, factory, dq.mapper)
-      }
-    }
-
-    override def apply[F[_]](driver: Driver[F], config: TransactionConfig): F[(C, ResultSummary)] = {
-      val (factory, dq) = factoryAndDq
-      driver.readOnlyTransact(config) { tx =>
-        tx.collectAs(dq.query, dq.params, factory, dq.mapper)
-      }
-    }
-  }
 }
 
 /** Represents a Neo4j query that can be asynchronously on a effect type.
@@ -598,37 +581,6 @@ final case class DeferredQuery[T](
     tx.stream(query, params, chunkSize = 256, mapper)
 }
 
-/** A special case of [[DeferredQuery]] that only admits read-only operations. */
-final case class ReadOnlyDeferredQuery[T](
-    override final val query: String,
-    override final val params: Map[String, QueryParam],
-    override final val mapper: ResultMapper[T]
-) extends BaseDeferredQuery[T] {
-  import BaseDeferredQuery.ReadOnlyCollectAsPartiallyApplied
-
-  override def effectDriverTransaction[F[_], O](driver: Driver[F])
-                                               (tx: Transaction[F] => F[O]): F[O] =
-    driver.readOnlyTransact(tx)
-
-  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F], config: TransactionConfig)
-                                                     (tx: Transaction[F] => F[O]): F[O] =
-    driver.readOnlyTransact(config)(tx)
-
-  override def streamDriverTransaction[S[_], F[_], O](driver: StreamingDriver[S, F])
-                                                     (st: StreamingTransaction[S, F] => S[O]): S[O] =
-    driver.readOnlyStreamingTransact(st)
-
-  override def streamDriverTransactionConfig[S[_], F[_], O](driver: StreamingDriver[S, F], config: TransactionConfig)
-                                                           (st: StreamingTransaction[S, F] => S[O]): S[O] =
-    driver.readOnlyStreamingTransact(config)(st)
-
-  override def withParams(params: Map[String, QueryParam]): ReadOnlyDeferredQuery[T] =
-    this.copy(params = this.params ++ params)
-
-  override def collectAs[C](factory: Factory[T, C]): ReadOnlyCollectAsPartiallyApplied[T, C] =
-    new ReadOnlyCollectAsPartiallyApplied(factory -> this)
-}
-
 /** A builder for constructing instance of [[DeferredQuery]].
   *
   * The idiomatic way to use the DeferredQueryBuilder is with the `c` String Interpolation.
@@ -651,11 +603,6 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
   def query[T](mapper: ResultMapper[T]): DeferredQuery[T] = {
     val (query, params, _) = build()
     DeferredQuery(query, params, mapper)
-  }
-
-  def readOnlyQuery[T](mapper: ResultMapper[T]): ReadOnlyDeferredQuery[T] = {
-    val (query, params, _) = build()
-    ReadOnlyDeferredQuery(query, params, mapper)
   }
 
   private[neotypes] def build(): (String, Map[String, QueryParam], List[Int]) = {

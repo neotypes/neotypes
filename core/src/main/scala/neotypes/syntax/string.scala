@@ -21,11 +21,4 @@ private[neotypes] final class StringIdOps(private val underlying: String) extend
       params = Map.empty,
       mapper
     )
-
-  def readOnlyQuery[T](mapper: ResultMapper[T]): ReadOnlyDeferredQuery[T] =
-    ReadOnlyDeferredQuery(
-      query = underlying,
-      params = Map.empty,
-      mapper
-    )
 }
