@@ -2,7 +2,8 @@ package neotypes
 package generic
 
 import mappers.ParameterMapper
-import types.QueryParam
+import model.QueryParam
+import query.{QueryArg, QueryArgMapper}
 
 import shapeless.labelled.FieldType
 import shapeless.ops.hlist.MapFolder
