@@ -21,7 +21,7 @@ object CypherStringInterpolator {
       case Right(QueryArg.Param(param)) =>
         DeferredQueryBuilder.Param(param) :: Nil
 
-      case Right(QueryArg.CaseClass(params)) =>
+      case Right(QueryArg.Params(params)) =>
         caseClassParts(params)
 
       case Right(QueryArg.QueryBuilder(builder)) =>
@@ -110,7 +110,7 @@ object CypherStringInterpolator {
 
           loop(
             paramNext = false,
-            q"Right(_root_.neotypes.QueryArgMapper[${tpe}].toArg(${nextParam}))" :: acc
+            q"Right(_root_.neotypes.query.QueryArgMapper[${tpe}].toArg(${nextParam}))" :: acc
           )
         } else if (queries.hasNext) {
           val Literal(Constant(query: String)) = queries.next()
@@ -136,7 +136,7 @@ object CypherStringInterpolator {
     }
 
     c.Expr(
-      q"_root_.neotypes.CypherStringInterpolator.createQuery(..${queryData})"
+      q"_root_.neotypes.query.CypherStringInterpolator.createQuery(..${queryData})"
     )
   }
 }
@@ -144,7 +144,7 @@ object CypherStringInterpolator {
 sealed trait QueryArg
 object QueryArg {
   final case class Param(param: QueryParam) extends QueryArg
-  final case class CaseClass(params: Map[String, QueryParam]) extends QueryArg
+  final case class Params(params: Map[String, QueryParam]) extends QueryArg
   final case class QueryBuilder(builder: DeferredQueryBuilder) extends QueryArg
 }
 
@@ -153,19 +153,18 @@ object QueryArg {
 Could not find the ArgMapper for ${A}.
 
 Make sure ${A} is a supported type: https://neotypes.github.io/neotypes/types.html
-If ${A} is a case class then `import neotypes.generic.auto._` for the automated derivation,
-or use the semiauto one: `implicit val instance: CaseClassArgMapper[A] = neotypes.generic.semiauto.deriveCaseClassArgMapper`
+If ${A} is a case class then `import neotypes.generic.implicits._` for the automated derivation.
 """
 )
 trait QueryArgMapper[A] {
   def toArg(value: A): QueryArg
 }
-object QueryArgMapper extends QueryArgMappers {
+object QueryArgMapper {
   def apply[A](implicit ev: QueryArgMapper[A]): ev.type = ev
-}
 
-trait QueryArgMappers extends QueryArgMappersLowPriority {
-  implicit final def fromParameterMapper[A](implicit mapper: ParameterMapper[A]): QueryArgMapper[A] =
+  implicit final def fromParameterMapper[A](
+    implicit mapper: ParameterMapper[A]
+  ): QueryArgMapper[A] =
     new QueryArgMapper[A] {
       override def toArg(value: A): QueryArg =
         QueryArg.Param(mapper.toQueryParam(value))
@@ -176,9 +175,16 @@ trait QueryArgMappers extends QueryArgMappersLowPriority {
       override def toArg(value: DeferredQueryBuilder): QueryArg =
         QueryArg.QueryBuilder(value)
     }
-}
 
-trait QueryArgMappersLowPriority {
-  implicit final def exportedCaseClassArgMapper[A](implicit exported: Exported[QueryArgMapper[A]]): QueryArgMapper[A] =
-    exported.instance
+  implicit final def fromDerivedQueryParams[A](
+    implicit ev: DerivedQueryParams[A]
+  ): QueryArgMapper[A] =
+    new QueryArgMapper[A] {
+      override def toArg(value: A): QueryArg =
+        QueryArg.Params(params = ev.getParams(value))
+    }
+
+  trait DerivedQueryParams[A] {
+    def getParams(a: A): Map[String, QueryParam]
+  }
 }
