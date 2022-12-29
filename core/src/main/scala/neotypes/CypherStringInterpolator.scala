@@ -176,6 +176,10 @@ object QueryArgMapper {
         QueryArg.QueryBuilder(value)
     }
 
+  trait DerivedQueryParams[A] {
+    def getParams(a: A): Map[String, QueryParam]
+  }
+
   implicit final def fromDerivedQueryParams[A](
     implicit ev: DerivedQueryParams[A]
   ): QueryArgMapper[A] =
@@ -183,8 +187,4 @@ object QueryArgMapper {
       override def toArg(value: A): QueryArg =
         QueryArg.Params(params = ev.getParams(value))
     }
-
-  trait DerivedQueryParams[A] {
-    def getParams(a: A): Map[String, QueryParam]
-  }
 }

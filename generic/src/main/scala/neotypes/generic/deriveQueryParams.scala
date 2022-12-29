@@ -5,8 +5,8 @@ import mappers.ParameterMapper
 import model.QueryParam
 import query.QueryArgMapper.DerivedQueryParams
 
-import shapeless.labelled.FieldType
 import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Witness}
+import shapeless.labelled.FieldType
 
 trait CaseClassDerivedQueryParams[P <: Product] extends DerivedQueryParams[P]
 object CaseClassDerivedQueryParams {
@@ -19,7 +19,7 @@ object CaseClassDerivedQueryParams {
     }
 }
 
-trait ReprDerivedQueryParams[L <: HList] extends DerivedQueryParams[L]
+trait ReprDerivedQueryParams[R <: HList] extends DerivedQueryParams[R]
 object ReprDerivedQueryParams {
   implicit final val hnilInstance: ReprDerivedQueryParams[HNil] =
     new ReprDerivedQueryParams[HNil] {

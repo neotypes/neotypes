@@ -125,7 +125,7 @@ lazy val core = (project in file("core"))
   )
 
 lazy val coreTest = (project in file("core-test"))
-  .dependsOn(core % "test->compile;provided->provided", generic)
+  .dependsOn(core % "compile->compile;provided->provided", generic % "compile->compile")
   .settings(commonSettings, noPublishSettings)
   .settings(
     name := "neotypes-core-test",
@@ -151,24 +151,17 @@ lazy val generic = (project in file("generic"))
   )
 
 lazy val genericTest = (project in file("generic-test"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test", generic)
+  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test", generic % "compile->compile")
   .settings(commonSettings, noPublishSettings)
   .settings(
-    name := "neotypes-generic-test",
+    name := "neotypes-generic-test"
   )
-
-def enablePartialUnificationIn2_12(scalaVersion: String) =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, 12)) => Seq("-Ypartial-unification")
-    case _ => Seq()
-  }
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
-    Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version

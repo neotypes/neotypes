@@ -234,19 +234,20 @@ trait ParameterMappers {
     }
 }
 
-trait ResultMapper[+T] {
+trait ResultMapper[T] {
   def decode(value: NeoType): Either[ResultMapperException, T]
 
   def flatMap[U](f: T => ResultMapper[U]): ResultMapper[U]
 
-  def map[U](f: T => U): ResultMapper[U]
   def emap[U](f: T => Either[ResultMapperException, U]): ResultMapper[U]
+  def map[U](f: T => U): ResultMapper[U]
+  def widen[U >: T]: ResultMapper[U]
 
   def and[U](other: ResultMapper[U]): ResultMapper[(T, U)]
   def or[U >: T](other: ResultMapper[U]): ResultMapper[U]
 }
 
-object ResultMapper {
+object ResultMapper extends ResultMappersLowPriority {
   def apply[T](implicit mapper: ResultMapper[T]): ResultMapper[T] =
     mapper
 
@@ -277,6 +278,9 @@ object ResultMapper {
       case value: NeoType =>
         value
     }
+
+  implicit final def singleton[S <: Singleton](implicit ev: ValueOf[S]): ResultMapper[S] =
+    constant(ev.value)
 
   implicit final val int: ResultMapper[Int] = fromNumeric {
     case Value.Integer(value) =>
@@ -394,76 +398,78 @@ object ResultMapper {
       } yield f(aaa, bbb)
     }
 
-  object tuple {
-    implicit def apply[A, B](implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[(A, B)] =
-      fromFunction(Tuple2.apply[A, B])
+  implicit def tuple[A, B](implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[(A, B)] =
+    fromFunction(Tuple2.apply[A, B])
 
-    def named[A, B](a: (String, ResultMapper[A]), b: (String, ResultMapper[B])): ResultMapper[(A, B)] =
-      fromFunction(a._1, b._1)(Tuple2.apply[A, B])(a._2, b._2)
+  def tupleNamed[A, B](a: (String, ResultMapper[A]), b: (String, ResultMapper[B])): ResultMapper[(A, B)] =
+    fromFunction(a._1, b._1)(Tuple2.apply[A, B])(a._2, b._2)
+
+  def product[A, B, T <: Product](a: ResultMapper[A], b: ResultMapper[B])(f: (A, B) => T): ResultMapper[T] =
+    fromFunction(f)(a, b)
+
+  def productNamed[A, B, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]))(f: (A, B) => T): ResultMapper[T] =
+    fromFunction(a._1, b._1)(f)(a._2, b._2)
+
+  trait DerivedProductResultMapper[T] {
+    def instance: ResultMapper[T]
   }
 
-  object product {
-    def named[A, B, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]))(f: (A, B) => T): ResultMapper[T] =
-      fromFunction(a._1, b._1)(f)(a._2, b._2)
-
-    def apply[A, B, T <: Product](a: ResultMapper[A], b: ResultMapper[B])(f: (A, B) => T): ResultMapper[T] =
-      fromFunction(f)(a, b)
-
-    trait DerivedProductResultMapper[T <: Product] extends ResultMapper[T]
-
-    def derive[T <: Product](implicit mapper: DerivedProductResultMapper[T]): ResultMapper[T] =
-      mapper
+  sealed trait CoproductDiscriminatorStrategy[S]
+  object CoproductDiscriminatorStrategy {
+    final case object NodeLabel extends CoproductDiscriminatorStrategy[String]
+    final case object RelationshipType extends CoproductDiscriminatorStrategy[String]
+    final case class Field[T](name: String, mapper: ResultMapper[T]) extends CoproductDiscriminatorStrategy[T]
+    object Field {
+      def apply[T](name: String)(implicit mapper: ResultMapper[T], ev: DummyImplicit): Field[T] =
+        new Field(name, mapper)
+    }
   }
 
-  object coproduct {
-    sealed trait discriminatorStrategy[S]
-    object discriminatorStrategy {
-      final case object nodeLabel extends discriminatorStrategy[String]
-      final case object relationshipType extends discriminatorStrategy[String]
-      final case class field[T](name: String, mapper: ResultMapper[T]) extends discriminatorStrategy[T]
-      object field {
-        def apply[T](name: String)(implicit mapper: ResultMapper[T], ev: DummyImplicit): field[T] =
-          new field(name, mapper)
+  def coproduct[S, T](strategy: CoproductDiscriminatorStrategy[S])(options: (S, ResultMapper[T])*): ResultMapper[T] = strategy match {
+    case CoproductDiscriminatorStrategy.NodeLabel =>
+      ResultMapper.node.flatMap { node =>
+        options.collectFirst {
+          case (label, mapper) if (node.hasLabel(label)) =>
+            mapper
+        }.getOrElse(
+          ResultMapper.failed(IncoercibleException(s"Unexpected node labels: ${node.labels}"))
+        )
       }
-    }
 
-    def apply[S, T](strategy: discriminatorStrategy[S])(options: (S, ResultMapper[T])*): ResultMapper[T] = strategy match {
-      case discriminatorStrategy.nodeLabel =>
-        ResultMapper.node.flatMap { node =>
-          options.collectFirst {
-            case (label, mapper) if (node.hasLabel(label)) =>
-              mapper
-          }.getOrElse(
-            ResultMapper.failed(IncoercibleException(s"Unexpected node labels: ${node.labels}"))
-          )
-        }
+    case CoproductDiscriminatorStrategy.RelationshipType =>
+      ResultMapper.relationship.flatMap { relationship =>
+        options.collectFirst {
+          case (label, mapper) if (relationship.hasType(tpe = label)) =>
+            mapper
+        }.getOrElse(
+          ResultMapper.failed(IncoercibleException(s"Unexpected relationship type: ${relationship.relationshipType}"))
+        )
+      }
 
-      case discriminatorStrategy.relationshipType =>
-        ResultMapper.relationship.flatMap { relationship =>
-          options.collectFirst {
-            case (label, mapper) if (relationship.hasType(tpe = label)) =>
-              mapper
-          }.getOrElse(
-            ResultMapper.failed(IncoercibleException(s"Unexpected relationship type: ${relationship.relationshipType}"))
-          )
-        }
-
-      case discriminatorStrategy.field(fieldName, fieldResultMapper) =>
-        ResultMapper.field(key = fieldName)(fieldResultMapper).flatMap { label =>
-          options.collectFirst {
-            case (`label`, mapper) =>
-              mapper
-          }.getOrElse(
-            ResultMapper.failed(IncoercibleException(s"Unexpected field label: ${label}"))
-          )
-        }
-    }
-
-    trait DerivedCoproductInstances[T] {
-      def options: List[(String, ResultMapper[T])]
-    }
-
-    def derive[T](strategy: discriminatorStrategy[String])(implicit instances: DerivedCoproductInstances[T]): ResultMapper[T] =
-      apply(strategy)(instances.options : _*)
+    case CoproductDiscriminatorStrategy.Field(fieldName, fieldResultMapper) =>
+      ResultMapper.field(key = fieldName)(fieldResultMapper).flatMap { label =>
+        options.collectFirst {
+          case (`label`, mapper) =>
+            mapper
+        }.getOrElse(
+          ResultMapper.failed(IncoercibleException(s"Unexpected field label: ${label}"))
+        )
+      }
   }
+
+  trait DerivedCoproductInstances[T] {
+    def options: List[(String, ResultMapper[T])]
+  }
+}
+
+sealed trait ResultMappersLowPriority { self: ResultMapper.type =>
+  implicit def productDerive[T <: Product](
+    implicit ev: DerivedProductResultMapper[T]
+  ): ResultMapper[T] =
+    ev.instance
+
+  implicit def coproductDerive[T](
+    implicit instances: DerivedCoproductInstances[T]
+  ): ResultMapper[T] =
+    coproduct(strategy = CoproductDiscriminatorStrategy.Field[String](name = "type"))(instances.options : _*)
 }
