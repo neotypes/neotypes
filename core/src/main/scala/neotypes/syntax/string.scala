@@ -1,6 +1,8 @@
 package neotypes
 package implicits.syntax
 
+import query.{DeferredQuery, ExecuteQuery, ResultType}
+
 import mappers.ResultMapper
 
 trait StringSyntax {
@@ -10,15 +12,16 @@ trait StringSyntax {
 
 private[neotypes] final class StringIdOps(private val underlying: String) extends AnyVal {
   def execute: ExecuteQuery =
-    ExecuteQuery(
+    new ExecuteQuery(
       query = underlying,
       params = Map.empty
     )
 
-  def query[T](mapper: ResultMapper[T]): DeferredQuery[T] =
-    DeferredQuery(
+  def query[T](mapper: ResultMapper[T]): DeferredQuery[T, ResultType.Simple.type] =
+    new DeferredQuery(
       query = underlying,
       params = Map.empty,
+      RT = ResultType.Simple,
       mapper
     )
 }

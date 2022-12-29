@@ -17,6 +17,9 @@ private[neotypes] object stream {
     def evalMap[F[_], B](f: A => F[B])(implicit S: Stream.Aux[S, F]): S[B] =
       S.evalMap(sa)(f)
 
+    def collect[B](pf: PartialFunction[A, B])(implicit S: Stream[S]): S[B] =
+      S.collect(sa)(pf)
+
     def collectAs[F[_], C](factory: Factory[A, C])(implicit S: Stream.Aux[S, F]): F[C] =
       S.collectAs(sa)(factory)
 

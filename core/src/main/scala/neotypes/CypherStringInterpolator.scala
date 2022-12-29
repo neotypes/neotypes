@@ -1,4 +1,5 @@
 package neotypes
+package query
 
 import mappers.ParameterMapper
 import model.QueryParam

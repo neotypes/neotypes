@@ -15,6 +15,8 @@ import scala.collection.Factory
 import scala.jdk.CollectionConverters._
 
 sealed trait Transaction[F[_]] {
+  private[neotypes] def F: Async[F]
+
   def commit: F[Unit]
   def rollback: F[Unit]
 
@@ -32,24 +34,32 @@ sealed trait Transaction[F[_]] {
   def collectAs[T, C](
     query: String,
     params: Map[String, QueryParam],
-    factory: Factory[T, C],
-    mapper: ResultMapper[T]
+    mapper: ResultMapper[T],
+    factory: Factory[T, C]
   ): F[(C, ResultSummary)]
 }
 
 sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
+  private[neotypes] def S: Stream.Aux[S, F]
+
   def stream[T](
     query: String,
     params: Map[String, QueryParam],
-    chunkSize: Int,
-    mapper: ResultMapper[T]
+    mapper: ResultMapper[T],
+    chunkSize: Int
   ): S[Either[T, ResultSummary]]
 }
 
 object Transaction {
-  private[neotypes] def apply[F[_]](transaction: NeoAsyncTransaction, close: () => F[Unit])
-                                   (implicit F: Async[F]): Transaction[F] =
+  private[neotypes] def apply[F[_]](
+      transaction: NeoAsyncTransaction,
+      close: () => F[Unit]
+  ) (
+      implicit evF: Async[F]
+  ): Transaction[F] =
     new Transaction[F] {
+      override final val F: Async[F] = evF
+
       override final def commit: F[Unit] =
         F.fromCompletionStage(transaction.commitAsync()).void.guarantee(_ => close())
 
@@ -85,8 +95,8 @@ object Transaction {
       override final def collectAs[T, C](
         query: String,
         params: Map[String, QueryParam],
-        factory: Factory[T, C],
-        mapper: ResultMapper[T]
+        mapper: ResultMapper[T],
+        factory: Factory[T, C]
       ): F[(C, ResultSummary)] =
         for {
           result <- runQuery(query, params)
@@ -98,9 +108,16 @@ object Transaction {
         } yield col -> rs
     }
 
-  private[neotypes] def apply[S[_], F[_]](transaction: NeoReactiveTransaction, close: () => F[Unit])
-                                         (implicit S: Stream.Aux[S, F], F: Async[F]): StreamingTransaction[S, F] =
+  private[neotypes] def apply[S[_], F[_]](
+      transaction: NeoReactiveTransaction,
+      close: () => F[Unit]
+  ) (
+      implicit evS: Stream.Aux[S, F], evF: Async[F]
+  ): StreamingTransaction[S, F] =
     new StreamingTransaction[S, F] {
+      override final val F: Async[F] = evF
+      override final val S: Stream.Aux[S, F] = evS
+
       override final def commit: F[Unit] =
         S.fromPublisher(transaction.commit[Unit]).voidS[F].guarantee(_ => close())
 
@@ -154,8 +171,8 @@ object Transaction {
       override final def collectAs[T, C](
         query: String,
         params: Map[String, QueryParam],
-        factory: Factory[T, C],
-        mapper: ResultMapper[T]
+        mapper: ResultMapper[T],
+        factory: Factory[T, C]
       ): F[(C, ResultSummary)] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
           case Some(result) =>
@@ -174,8 +191,8 @@ object Transaction {
       override final def stream[T](
         query: String,
         params: Map[String, QueryParam],
-        chunkSize: Int,
-        mapper: ResultMapper[T]
+        mapper: ResultMapper[T],
+        chunkSize: Int
       ): S[Either[T, ResultSummary]] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).flatMapS { result =>
           val records = S.fromPublisher(result.records(), chunkSize).evalMap { record =>

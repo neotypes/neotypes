@@ -1,6 +1,8 @@
 package neotypes
+package query
 
-import interna.syntax.async._
+import internal.syntax.async._
+import internal.syntax.stream._
 import mappers.ResultMapper
 import model.QueryParam
 
@@ -9,20 +11,40 @@ import org.neo4j.driver.summary.ResultSummary
 import scala.collection.Factory
 import scala.collection.mutable.StringBuilder
 
-final case class ExecuteQuery(
-    query: String,
-    params: Map[String, QueryParam]
-) {
+sealed trait BaseQuery {
+  /** @param query The query statement that will be executed. */
+  def query: String
+
+  /** @param params The parameters that will be substituted into the query statement. */
+  def params: Map[String, QueryParam]
+
   /** Creates a new query with an updated set of parameters.
     *
     * @note If params contains a key that is already present in the current query,
-    * the new one will override the previous one.
+    * the new value one will override the previous one.
     *
     * @param params QueryParams to be added.
-    * @return ExecuteQuery with params added to existing params.
+    * @return a new query with params added to existing params.
     */
-  def withParams(params: Map[String, QueryParam]): ExecuteQuery =
-    this.copy(params = this.params ++ params)
+  def withParams(params: Map[String, QueryParam]): BaseQuery
+
+  override final def toString(): String =
+    s"""${this.getClass.getSimpleName}:
+       |${query}
+       |params: ${params.view.map(param => s"${param._1}: ${param._2.underlying}").mkString(", ")}
+     """.stripMargin
+}
+
+/** Represents a query that doesn't produce results when executed. */
+final class ExecuteQuery private[neotypes] (
+    val query: String,
+    val params: Map[String, QueryParam]
+) extends BaseQuery {
+  override def withParams(params: Map[String, QueryParam]): ExecuteQuery =
+    new ExecuteQuery(
+      query = this.query,
+      params = this.params ++ params
+    )
 
   /** Executes the query and returns its [[ResultSummary]].
     *
@@ -32,55 +54,12 @@ final case class ExecuteQuery(
     * }}}
     *
     * @param driver neotypes driver.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
-    */
-  def resultSummary[F[_]](driver: Driver[F]): F[ResultSummary] =
-    driver.transact(tx => resultSummary(tx))
-
-  /** Executes the query and ignores its output.
-    *
-    * @example
-    * {{{
-    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.void(driver)
-    * }}}
-    *
-    * @param driver neotypes driver.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
-    */
-  def void[F[_]](driver: Driver[F]): F[Unit] =
-    driver.transact(tx => void(tx))
-
-  /** Executes the query and returns its [[ResultSummary]].
-    *
-    * @example
-    * {{{
-    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.resultSummary(driver, myConfig)
-    * }}}
-    *
-    * @param driver neotypes driver.
     * @param config neotypes transaction config.
     * @tparam F effect type.
     * @return An effectual value that will execute the query.
     */
-  def resultSummary[F[_]](driver: Driver[F], config: TransactionConfig): F[ResultSummary] =
+  def resultSummary[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[ResultSummary] =
     driver.transact(config)(tx => resultSummary(tx))
-
-  /** Executes the query and ignores its output.
-    *
-    * @example
-    * {{{
-    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.void(driver, myConfig)
-    * }}}
-    *
-    * @param driver neotypes driver.
-    * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
-    */
-  def void[F[_]](driver: Driver[F], config: TransactionConfig): F[Unit] =
-    driver.transact(config)(tx => void(tx))
 
   /** Executes the query and returns its [[ResultSummary]].
     *
@@ -102,6 +81,21 @@ final case class ExecuteQuery(
     *
     * @example
     * {{{
+    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.void(driver)
+    * }}}
+    *
+    * @param driver neotypes driver.
+    * @param config neotypes transaction config.
+    * @tparam F effect type.
+    * @return An effectual value that will execute the query.
+    */
+  def void[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[Unit] =
+    driver.transact(config)(tx => void(tx))
+
+  /** Executes the query and ignores its output.
+    *
+    * @example
+    * {{{
     * driver.transact { tx =>
     *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.void(tx)
     * }
@@ -112,473 +106,374 @@ final case class ExecuteQuery(
     * @return An effectual value that will execute the query.
     */
   def void[F[_]](tx: Transaction[F]): F[Unit] =
-    tx.execute(query, params).void
+    tx.execute(query, params).void(tx.F)
 }
 
-private[neotypes] sealed trait BaseDeferredQuery[T] {
-  import BaseDeferredQuery.BaseCollectAsPartiallyApplied
+/** Phantom type to determine the appropriate return type of a DeferredQuery. */
+sealed trait ResultType {
+  type SingleR[T]
+  type StreamR[T]
 
-  /** The query statement that will be executed. */
-  def query: String
+  private[neotypes] def single[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[SingleR[T]]
+  private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]]
+}
+object ResultType {
+  final case object Simple extends ResultType {
+    override final type SingleR[T] = T
+    override final type StreamR[T] = T
 
-  /** The parameters that will be substituted into the query statement. */
-  def params: Map[String, QueryParam]
+    override private[neotypes] def single[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[SingleR[T]] =
+      result.map(_._1)
 
-  /** The result mapper that will be used to decode the results of this query. */
-  def mapper: ResultMapper[T]
+    override private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]] =
+      result.collect {
+        case Left(t) => t
+      }
+  }
 
-  /** Creates a new query with an updated set of parameters.
-    *
-    * @note If params contains a key that is already present in the current query,
-    * the new one will override the previous one.
-    *
-    * @param params QueryParams to be added.
-    * @return DeferredQuery with params added to existing params.
-    */
-  def withParams(params: Map[String, QueryParam]): BaseDeferredQuery[T]
+  final case object WithResultSummary extends ResultType {
+    override final type SingleR[T] = (T, ResultSummary)
+    override final type StreamR[T] = Either[T, ResultSummary]
 
-  protected def effectDriverTransaction[F[_], O](driver: Driver[F])
-                                                (tx: Transaction[F] => F[O]): F[O]
-  protected def effectDriverTransactionConfig[F[_], O](driver: Driver[F], config: TransactionConfig)
-                                                      (tx: Transaction[F] => F[O]): F[O]
-  protected def streamDriverTransaction[S[_], F[_], O](driver: StreamingDriver[S, F])
-                                                      (st: StreamingTransaction[S, F] => S[O]): S[O]
-  protected def streamDriverTransactionConfig[S[_], F[_], O](driver: StreamingDriver[S, F], config: TransactionConfig)
-                                                            (st: StreamingTransaction[S, F] => S[O]): S[O]
+    override private[neotypes] def single[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[SingleR[T]] =
+      result
 
-  /** Executes the query and returns the unique record in the result.
+    override private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]] =
+      result
+  }
+}
+
+/** Represents a query that produces results when executed.
+  *
+  * @tparam T the type of the value(s) that will be returned.
+  *
+  * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
+  */
+final class DeferredQuery[T, RT <: ResultType](
+    val query: String,
+    val params: Map[String, QueryParam],
+    val RT: RT,
+    mapper: ResultMapper[T]
+) extends BaseQuery {
+  override def withParams(params: Map[String, QueryParam]): DeferredQuery[T, RT] =
+    new DeferredQuery(
+      query = this.query,
+      params = this.params ++ params,
+      RT = this.RT,
+      mapper = this.mapper
+    )
+
+  /** Transforms this simple query, into one that preserves the [[ResultSummary]] of its executions. */
+  def withResultSummary(
+    implicit ev: RT <:< ResultType.Simple.type
+  ): DeferredQuery[T, ResultType.WithResultSummary.type] =
+    new DeferredQuery(
+      query = this.query,
+      params = this.params,
+      RT = ResultType.WithResultSummary,
+      mapper = this.mapper
+    )
+
+  /** Executes the query and returns the unique / first value.
     *
     * @example
     * {{{
     * val result: F[(Person, Movie)] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
+    *   "MATCH (p: Person {name: 'Charlize Theron'})-[]->(m: Movie) RETURN p, m"
+    *     .query(ResultMapper[(Person, Movie)])
     *     .single(driver)
     * }}}
     *
-    * @note This will fail if the query returned more than a single result.
-    *
-    * @param driver neotypes driver.
-    * @param rm result mapper for type T.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a single T element.
-    */
-  final def single[F[_]](driver: Driver[F]): F[(T, ResultSummary)] =
-    effectDriverTransaction(driver) { tx =>
-      tx.single(query, params, mapper)
-    }
-
-  /** Executes the query and returns the unique record in the result.
-    *
-    * @example
-    * {{{
-    * val result: F[(Person, Movie)] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .single(driver, myConfig)
-    * }}}
-    *
-    * @note This will fail if the query returned more than a single result.
+    * @note May fail if the query doesn't return exactly one record.
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @param rm result mapper for type T.
     * @tparam F effect type.
     * @return An effectual value that will compute a single T element.
     */
-  final def single[F[_]](driver: Driver[F],config: TransactionConfig): F[(T, ResultSummary)] =
-    effectDriverTransactionConfig(driver, config) { tx =>
-      tx.single(query, params, mapper)
-    }
+  def single[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[T]] =
+    driver.transact(config)(tx => single(tx))
 
-  def collectAs[C](factory: Factory[T, C]): BaseCollectAsPartiallyApplied[T, C]
+  /** Executes the query and returns the unique / first value.
+    *
+    * @example
+    * {{{
+    * val result: F[(Person, Movie)] = driver.transact { tx =>
+    *   "MATCH (p: Person {name: 'Charlize Theron'})-[]->(m: Movie) RETURN p, m"
+    *     .query(ResultMapper[(Person, Movie)])
+    *     .single(tx)
+    * }
+    * }}}
+    *
+    * @note May fail if the query doesn't return exactly one record.
+    *
+    * @param tx neotypes transaction.
+    * @tparam F effect type.
+    * @return An effectual value that will compute a single T element.
+    */
+  def single[F[_]](tx: Transaction[F]): F[RT.SingleR[T]] =
+    RT.single(tx.single(query, params, mapper))(tx.F)
+
+  /** Executes the query and returns all results as a collection of values.
+    *
+    * @example
+    * {{{
+    * val result: F[List[Person]] =
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .collectAs(List, driver)
+    * }}}
+    *
+    * @param factory a Scala factory of the collection that will be collected.
+    * @param driver neotypes driver.
+    * @param config neotypes transaction config.
+    * @tparam F effect type.
+    * @tparam C collection type.
+    * @return An effectual value that will compute a collection of T elements.
+    */
+  def collectAs[F[_], C](factory: Factory[T, C], driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[C]] =
+    driver.transact(config)(tx => collectAs(factory, tx))
+
+  /** Executes the query and returns all results as a collection of values.
+    *
+    * @example
+    * {{{
+    * val result: F[List[Person]] = driver.transact { tx =>
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .collectAs(List, tx)
+    * }
+    * }}}
+    *
+    * @param factory a Scala factory of the collection that will be collected.
+    * @param tx neotypes transaction.
+    * @tparam F effect type.
+    * @tparam C collection type.
+    * @return An effectual value that will compute a collection of T elements.
+    */
+  def collectAs[F[_], C](factory: Factory[T, C], tx: Transaction[F]): F[RT.SingleR[C]] =
+    RT.single(tx.collectAs(query, params, mapper, factory))(tx.F)
 
   /** Executes the query and returns a List of values.
     *
     * @example
     * {{{
-    * val result: F[List[(Person, Movie)]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
+    * val result: F[List[Person]] =
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
     *     .list(driver)
     * }}}
     *
     * @param driver neotypes driver.
-    * @param rm result mapper for type T.
+    * @param config neotypes transaction config.
     * @tparam F effect type.
     * @return An effectual value that will compute a List of T elements.
     */
-  final def list[F[_], O](driver: Driver[F]): F[(List[T], ResultSummary)] =
-    effectDriverTransaction(driver) { tx =>
-      tx.collectAs(query, params, List, mapper)
-    }
+  def list[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[List[T]]] =
+    driver.transact(config)(tx => list(tx))
 
   /** Executes the query and returns a List of values.
     *
     * @example
     * {{{
-    * val result: F[List[(Person, Movie)]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .list(driver, myConfig)
+    * val result: F[List[Person]] = driver.transact { tx =>
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .list(tx)
+    * }
     * }}}
     *
-    * @param driver neotypes driver.
-    * @param config neotypes transaction config.
-    * @param rm result mapper for type T.
+    * @param tx neotypes transaction.
     * @tparam F effect type.
     * @return An effectual value that will compute a List of T elements.
     */
-  final def list[F[_], C[_]](driver: Driver[F], config: TransactionConfig): F[(List[T], ResultSummary)] =
-    effectDriverTransactionConfig(driver, config) { tx =>
-      tx.collectAs(query, params, List, mapper)
-    }
-
-  /** Executes the query and returns a Map[K,V] of values.
-    *
-    * @example
-    * {{{
-    * val result: F[Map[Person, Movie]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .map(driver)
-    * }}}
-    *
-    * @param driver neotypes driver.
-    * @param ev evidence that T is a tuple (K, V).
-    * @param rm result mapper for type (K, V).
-    * @tparam F effect type.
-    * @tparam K keys type.
-    * @tparam V values type.
-    * @return An effectual value that will compute a Map of key-value pairs.
-    */
-  final def map[F[_], O, K, V](driver: Driver[F])
-                              (implicit ev: T <:< (K, V)): F[(Map[K, V], ResultSummary)] =
-    effectDriverTransaction(driver) { tx =>
-      tx.collectAs(query, params, Map, mapper.map(ev))
-    }
-
-  /** Executes the query and returns a Map[K,V] of values.
-    *
-    * @example
-    * {{{
-    * val result: F[Map[Person, Movie]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .map(driver, myConfig)
-    * }}}
-    *
-    * @param driver neotypes driver.
-    * @param config neotypes transaction config.
-    * @param ev evidence that T is a tuple (K, V).
-    * @param rm result mapper for type (K, V).
-    * @tparam F effect type.
-    * @tparam K keys type.
-    * @tparam V values type.
-    * @return An effectual value that will compute a Map of key-value pairs.
-    */
-  final def map[F[_], O, K, V](driver: Driver[F], config: TransactionConfig)
-                              (implicit ev: T <:< (K, V)): F[(Map[K, V], ResultSummary)] =
-    effectDriverTransactionConfig(driver, config) { tx =>
-      tx.collectAs(query, params, Map, mapper.map(ev))
-    }
+  def list[F[_]](tx: Transaction[F]): F[RT.SingleR[List[T]]] =
+    collectAs(factory = List, tx)
 
   /** Executes the query and returns a Set of values.
     *
     * @example
     * {{{
-    * val result: F[Set[(Person, Movie)]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
+    * val result: F[Set[Person]] =
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
     *     .set(driver)
     * }}}
     *
     * @param driver neotypes driver.
-    * @param rm result mapper for type T.
+    * @param config neotypes transaction config.
     * @tparam F effect type.
     * @return An effectual value that will compute a Set of T elements.
     */
-  final def set[F[_]](driver: Driver[F]): F[(Set[T], ResultSummary)] =
-    effectDriverTransaction(driver) { tx =>
-      tx.collectAs(query, params, Set, mapper)
-    }
+  def set[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[Set[T]]] =
+    driver.transact(config)(tx => set(tx))
 
   /** Executes the query and returns a Set of values.
     *
     * @example
     * {{{
-    * val result: F[Set[(Person, Movie)]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .set(driver, myConfig)
+    * val result: F[Set[Person]] = driver.transact { tx =>
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .set(tx)
+    * }
     * }}}
     *
-    * @param driver neotypes driver.
-    * @param config neotypes transaction config.
-    * @param rm result mapper for type T.
+    * @param tx neotypes transaction.
     * @tparam F effect type.
     * @return An effectual value that will compute a Set of T elements.
     */
-  final def set[F[_]](driver: Driver[F], config: TransactionConfig): F[(Set[T], ResultSummary)] =
-    effectDriverTransactionConfig(driver, config) { tx =>
-      tx.collectAs(query, params, Set, mapper)
-    }
+  def set[F[_]](tx: Transaction[F]): F[RT.SingleR[Set[T]]] =
+    collectAs(factory = Set, tx)
 
   /** Executes the query and returns a Vector of values.
     *
     * @example
     * {{{
-    * val result: F[Vector[(Person, Movie)]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
+    * val result: F[Vector[Person]] =
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
     *     .vector(driver)
     * }}}
     *
     * @param driver neotypes driver.
-    * @param rm result mapper for type T.
+    * @param config neotypes transaction config.
     * @tparam F effect type.
     * @return An effectual value that will compute a Vector of T elements.
     */
-  final def vector[F[_]](driver: Driver[F]): F[(Vector[T], ResultSummary)] =
-    effectDriverTransaction(driver) { tx =>
-      tx.collectAs(query, params, Vector, mapper)
-    }
+  def vector[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[Vector[T]]] =
+    driver.transact(config)(tx => vector(tx))
 
   /** Executes the query and returns a Vector of values.
     *
     * @example
     * {{{
-    * val result: F[Vector[(Person, Movie)]] =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m"
-    *     .query[(Person, Movie)]
-    *     .vector(driver, myConfig)
+    * val result: F[Vector[Person]] = driver.transact { tx =>
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .vector(tx)
+    * }
     * }}}
     *
-    * @param driver neotypes driver.
-    * @param config neotypes transaction config.
-    * @param rm result mapper for type T.
+    * @param tx neotypes transaction.
     * @tparam F effect type.
     * @return An effectual value that will compute a Vector of T elements.
     */
-  final def vector[F[_]](driver: Driver[F], config: TransactionConfig): F[(Vector[T], ResultSummary)] =
-    effectDriverTransactionConfig(driver, config) { tx =>
-      tx.collectAs(query, params, Vector, mapper)
-    }
-
-  /** Evaluate the query an get the results as a Stream.
-    *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
-    *
-    * @param driver neotypes driver.
-    * @param rm result mapper for type T.
-    * @tparam S stream type.
-    * @tparam F effect type.
-    * @return An effectual Stream of T values.
-    */
-  final def stream[S[_], F[_]](driver: StreamingDriver[S, F], chunkSize: Int = 256): S[Either[T, ResultSummary]] =
-    streamDriverTransaction(driver) { tx =>
-      tx.stream(query, params, chunkSize, mapper)
-    }
-
-  /** Evaluate the query an get the results as a Stream.
-    *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
-    *
-    * @param driver neotypes driver.
-    * @param config neotypes transaction config.
-    * @param rm result mapper for type T.
-    * @tparam S stream type.
-    * @tparam F effect type.
-    * @return An effectual Stream of T values.
-    */
-  final def stream[S[_], F[_]](driver: StreamingDriver[S, F], config: TransactionConfig, chunkSize: Int): S[Either[T, ResultSummary]] =
-    streamDriverTransactionConfig(driver, config) { tx =>
-      tx.stream(query, params, chunkSize, mapper)
-    }
-}
-
-private[neotypes] object BaseDeferredQuery {
-  private[neotypes] sealed trait BaseCollectAsPartiallyApplied[T, C] extends Any {
-    def apply[F[_]](driver: Driver[F]): F[(C, ResultSummary)]
-
-    def apply[F[_]](driver: Driver[F], config: TransactionConfig): F[(C, ResultSummary)]
-  }
-
-  private[neotypes] final class CollectAsPartiallyApplied[T, C](
-      private val factoryAndDq: (Factory[T, C], BaseDeferredQuery[T])
-  ) extends AnyVal with BaseCollectAsPartiallyApplied[T, C] {
-    override def apply[F[_]](driver: Driver[F]): F[(C, ResultSummary)] = {
-      val (factory, dq) = factoryAndDq
-      driver.transact { tx =>
-        tx.collectAs(dq.query, dq.params, factory, dq.mapper)
-      }
-    }
-
-    override def apply[F[_]](driver: Driver[F], config: TransactionConfig): F[(C, ResultSummary)] = {
-      val (factory, dq) = factoryAndDq
-      driver.transact(config) { tx =>
-        tx.collectAs(dq.query, dq.params, factory, dq.mapper)
-      }
-    }
-
-    def apply[F[_]](tx: Transaction[F]): F[(C, ResultSummary)] = {
-      val (factory, dq) = factoryAndDq
-      tx.collectAs(dq.query, dq.params, factory, dq.mapper)
-    }
-  }
-}
-
-/** Represents a Neo4j query that can be asynchronously on a effect type.
-  *
-  * @tparam T the type of the value that will be returned when the query is executed.
-  *
-  * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
-  */
-final case class DeferredQuery[T](
-    override final val query: String,
-    override final val params: Map[String, QueryParam],
-    override final val mapper: ResultMapper[T]
-) extends BaseDeferredQuery[T] {
-  import BaseDeferredQuery.CollectAsPartiallyApplied
-
-  override def effectDriverTransaction[F[_], O](driver: Driver[F])
-                                               (tx: Transaction[F] => F[O]): F[O] =
-    driver.transact(tx)
-
-  override def effectDriverTransactionConfig[F[_], O](driver: Driver[F], config: TransactionConfig)
-                                                     (tx: Transaction[F] => F[O]): F[O] =
-    driver.transact(config)(tx)
-
-  override def streamDriverTransaction[S[_], F[_], O](driver: StreamingDriver[S, F])
-                                                     (st: StreamingTransaction[S, F] => S[O]): S[O] =
-    driver.streamingTransact(st)
-
-  override def streamDriverTransactionConfig[S[_], F[_], O](driver: StreamingDriver[S, F], config: TransactionConfig)
-                                                           (st: StreamingTransaction[S, F] => S[O]): S[O] =
-    driver.streamingTransact(config)(st)
-
-  override def withParams(params: Map[String, QueryParam]): DeferredQuery[T] =
-    this.copy(params = this.params ++ params)
-
-  override def collectAs[C](factory: Factory[T, C]): CollectAsPartiallyApplied[T, C] =
-    new CollectAsPartiallyApplied(factory -> this)
-
-  /** Executes the query and returns the unique record in the result.
-    *
-    * @example
-    * {{{
-    * val deferredQuery =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
-    *
-    * val result: F[(Person, Movie)] =
-    *   driver.transact(tx => deferredQuery.single(tx))
-    * }}}
-    *
-    * @note This will fail if the query returned more than a single result.
-    *
-    * @param tx neotypes transaction.
-    * @param rm result mapper for type T.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a single T element.
-    */
-  final def single[F[_]](tx: Transaction[F]): F[(T, ResultSummary)] =
-    tx.single(query, params, mapper)
-
-  /** Executes the query and returns a List of values.
-    *
-    * @example
-    * {{{
-    * val deferredQuery =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
-    *
-    * val result: F[List[(Person, Movie)]] =
-    *   driver.transact(tx => deferredQuery.list(tx))
-    * }}}
-    *
-    * @param tx neotypes transaction.
-    * @param rm result mapper for type T.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a List of T elements.
-    */
-  final def list[F[_]](tx: Transaction[F]): F[(List[T], ResultSummary)] =
-    tx.collectAs(query, params, List, mapper)
+  def vector[F[_]](tx: Transaction[F]): F[RT.SingleR[Vector[T]]] =
+    collectAs(factory = Vector, tx)
 
   /** Executes the query and returns a Map of values.
     *
     * @example
     * {{{
-    * val deferredQuery =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
+    * val result: F[Map[String, Person]] =
+    *   "MATCH (p: Person) RETURN elementId(p), p"
+    *     .query(ResultMapper[(String, Person)])
+    *     .map(driver)
+    * }}}
     *
-    * val result: F[Map[Person, Movie]] =
-    *   driver.transact(tx => deferredQuery.map(tx))
+    * @param driver neotypes driver.
+    * @param config neotypes transaction config.
+    * @param ev evidence that T is a tuple (K, V).
+    * @tparam F effect type.
+    * @tparam K keys type.
+    * @tparam V values type.
+    * @return An effectual value that will compute a Map of key-value elements.
+    */
+  def map[F[_], K, V](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
+                     (implicit ev: T <:< (K, V)): F[RT.SingleR[Map[K, V]]] =
+    driver.transact(config)(tx => map(tx))
+
+  /** Executes the query and returns a Map of values.
+    *
+    * @example
+    * {{{
+    * val result: F[Map[String, Person]] = driver.transact { tx =>
+    *   "MATCH (p: Person) RETURN elementId(p), p"
+    *     .query(ResultMapper[(String, Person)])
+    *     .map(tx)
+    * }
     * }}}
     *
     * @param tx neotypes transaction.
     * @param ev evidence that T is a tuple (K, V).
-    * @param rm result mapper for type (K, V).
     * @tparam F effect type.
     * @tparam K keys type.
     * @tparam V values type.
-    * @return An effectual value that will compute a Map of key-value pairs.
+    * @return An effectual value that will compute a Map of key-value elements.
     */
-  final def map[F[_], K, V](tx: Transaction[F])
-                           (implicit ev: T <:< (K, V)): F[(Map[K, V], ResultSummary)] =
-    tx.collectAs(query, params, Map, mapper.map(ev))
+  def map[F[_], K, V](tx: Transaction[F])
+                     (implicit ev: T <:< (K, V)): F[RT.SingleR[Map[K, V]]] =
+    RT.single(
+      tx.collectAs(query, params, mapper.map(ev), factory = Map.mapFactory[K, V])
+    )(tx.F)
 
-  /** Executes the query and returns a Set of values.
+  /** Executes the query and returns a Stream of values.
     *
     * @example
     * {{{
-    * val deferredQuery =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
-    *
-    * val result: F[Set[(Person, Movie)]] =
-    *   driver.transact(tx => deferredQuery.set(tx))
+    * val result: S[F, Person] =
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .stream(streamingDriver)
     * }}}
     *
-    * @param tx neotypes transaction.
-    * @param rm result mapper for type T.
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @param driver neotypes driver.
+    * @param config neotypes transaction config.
+    * @param chunkSize number of elements to pull each time from the database; by default 256.
+    * @tparam S stream type.
     * @tparam F effect type.
-    * @return An effectual value that will compute a Set of T elements.
+    * @return An effectual Stream of T elements.
     */
-  final def set[F[_]](tx: Transaction[F]): F[(Set[T], ResultSummary)] =
-    tx.collectAs(query, params, Set, mapper)
+  def stream[S[_], F[_]](
+    driver: StreamingDriver[S, F], config: TransactionConfig = TransactionConfig.default, chunkSize: Int = 256
+  ): S[RT.StreamR[T]] =
+    driver.streamingTransact(config)(tx => stream(tx, chunkSize))
 
-  /** Executes the query and returns a Vector of values.
+  /** Executes the query and returns a Stream of values.
     *
     * @example
     * {{{
-    * val deferredQuery =
-    *   "MATCH (p:Person {name: 'Charlize Theron'})-[]->(m:Movie) RETURN p,m".query[(Person, Movie)]
-    *
-    * val result: F[Vector[(Person, Movie)]] =
-    *   driver.transact(tx => deferredQuery.vector(tx))
+    * val result: S[F, Person] = streamingDriver.streamingTransact { tx =>
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .stream(tx)
+    * }
     * }}}
-    *
-    * @param tx neotypes transaction.
-    * @param rm result mapper for type T.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a Vector of T elements.
-    */
-  final def vector[F[_]](tx: Transaction[F]): F[(Vector[T], ResultSummary)] =
-    tx.collectAs(query, params, Vector, mapper)
-
-  /** Evaluate the query and get the results as a Stream.
     *
     * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
     *
     * @param tx neotypes transaction.
-    * @param rm result mapper for type T.
     * @tparam S stream type.
     * @tparam F effect type.
-    * @return An effectual Stream of T values.
+    * @return An effectual Stream of T elements.
     */
-  final def stream[S[_], F[_]](tx: StreamingTransaction[S, F], chunkSize: Int): S[Either[T, ResultSummary]] =
-    tx.stream(query, params, chunkSize, mapper)
+  def stream[S[_], F[_]](tx: StreamingTransaction[S, F]): S[RT.StreamR[T]] =
+    stream(tx, chunkSize = 256)
 
-  final def stream[S[_], F[_]](tx: StreamingTransaction[S, F]): S[Either[T, ResultSummary]] =
-    tx.stream(query, params, chunkSize = 256, mapper)
+  /** Executes the query and returns a Stream of values.
+    *
+    * @example
+    * {{{
+    * val result: S[F, Person] = streamingDriver.streamingTransact { tx =>
+    *   "MATCH (p: Person) RETURN p"
+    *     .query(ResultMapper[Person])
+    *     .stream(tx)
+    * }
+    * }}}
+    *
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    *
+    * @param tx neotypes transaction.
+    * @param chunkSize number of elements to pull each time from the database; by default 256.
+    * @tparam S stream type.
+    * @tparam F effect type.
+    * @return An effectual Stream of T elements.
+    */
+  def stream[S[_], F[_]](tx: StreamingTransaction[S, F], chunkSize: Int): S[RT.StreamR[T]] =
+    RT.stream(tx.stream(query, params, mapper, chunkSize))(tx.S)
 }
 
 /** A builder for constructing instance of [[DeferredQuery]].
@@ -600,9 +495,14 @@ final case class DeferredQuery[T](
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
   import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query, SubQueryParam}
 
-  def query[T](mapper: ResultMapper[T]): DeferredQuery[T] = {
+  def execute: ExecuteQuery = {
     val (query, params, _) = build()
-    DeferredQuery(query, params, mapper)
+    new ExecuteQuery(query, params)
+  }
+
+  def query[T](mapper: ResultMapper[T]): DeferredQuery[T, ResultType.Simple.type] = {
+    val (query, params, _) = build()
+    new DeferredQuery(query, params, RT = ResultType.Simple, mapper)
   }
 
   private[neotypes] def build(): (String, Map[String, QueryParam], List[Int]) = {
@@ -670,18 +570,18 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
     )
   }
 
-  /** Concatenate another [DeferredQueryBuilder] with this one.
+  /** Concatenate another [[DeferredQueryBuilder]] with this one.
     *
-    * @param that [DeferredQueryBuilder] to be concatenated.
-    * @return A new [DeferredQueryBuilder].
+    * @param that the [[DeferredQueryBuilder]] to be concatenated.
+    * @return A new [[DeferredQueryBuilder]].
     */
   def +(that: DeferredQueryBuilder): DeferredQueryBuilder =
     new DeferredQueryBuilder(this.parts ::: that.parts)
 
-  /** Concatenate a [String] with this [DeferredQueryBuilder].
+  /** Concatenate a [[String]] with this [[DeferredQueryBuilder]].
     *
-    * @param that [String] to be concatenated.
-    * @return A new [DeferredQueryBuilder].
+    * @param that the [[String]] to be concatenated.
+    * @return A new [[DeferredQueryBuilder]].
     */
   def +(that: String): DeferredQueryBuilder =
     new DeferredQueryBuilder(this.parts :+ Query(that))

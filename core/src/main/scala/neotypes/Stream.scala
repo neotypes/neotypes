@@ -23,6 +23,8 @@ trait Stream[S[_]] {
 
   private[neotypes] def evalMap[A, B](sa: S[A])(f: A => F[B]): S[B]
 
+  private[neotypes] def collect[A, B](sa: S[A])(pf: PartialFunction[A, B]): S[B]
+
   private[neotypes] def collectAs[A, C](sa: S[A])(factory: Factory[A, C]): F[C]
 
   private[neotypes] def single[A](sa: S[A]): F[Option[A]]
