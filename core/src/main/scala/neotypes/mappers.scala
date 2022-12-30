@@ -410,10 +410,6 @@ object ResultMapper extends ResultMappersLowPriority {
   def productNamed[A, B, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]))(f: (A, B) => T): ResultMapper[T] =
     fromFunction(a._1, b._1)(f)(a._2, b._2)
 
-  trait DerivedProductResultMapper[T] {
-    def instance: ResultMapper[T]
-  }
-
   sealed trait CoproductDiscriminatorStrategy[S]
   object CoproductDiscriminatorStrategy {
     final case object NodeLabel extends CoproductDiscriminatorStrategy[String]
@@ -425,12 +421,15 @@ object ResultMapper extends ResultMappersLowPriority {
     }
   }
 
-  def coproduct[S, T](strategy: CoproductDiscriminatorStrategy[S])(options: (S, ResultMapper[T])*): ResultMapper[T] = strategy match {
+  protected def coproductImpl[S, T](
+    strategy: CoproductDiscriminatorStrategy[S],
+    options: (S, ResultMapper[? <: T])*
+  ): ResultMapper[T] = strategy match {
     case CoproductDiscriminatorStrategy.NodeLabel =>
       ResultMapper.node.flatMap { node =>
         options.collectFirst {
           case (label, mapper) if (node.hasLabel(label)) =>
-            mapper
+            mapper.widen[T]
         }.getOrElse(
           ResultMapper.failed(IncoercibleException(s"Unexpected node labels: ${node.labels}"))
         )
@@ -440,7 +439,7 @@ object ResultMapper extends ResultMappersLowPriority {
       ResultMapper.relationship.flatMap { relationship =>
         options.collectFirst {
           case (label, mapper) if (relationship.hasType(tpe = label)) =>
-            mapper
+            mapper.widen[T]
         }.getOrElse(
           ResultMapper.failed(IncoercibleException(s"Unexpected relationship type: ${relationship.relationshipType}"))
         )
@@ -450,11 +449,27 @@ object ResultMapper extends ResultMappersLowPriority {
       ResultMapper.field(key = fieldName)(fieldResultMapper).flatMap { label =>
         options.collectFirst {
           case (`label`, mapper) =>
-            mapper
+            mapper.widen[T]
         }.getOrElse(
           ResultMapper.failed(IncoercibleException(s"Unexpected field label: ${label}"))
         )
       }
+  }
+
+  def coproduct[T]: CoproductPartiallyApplied[T] =
+    new CoproductPartiallyApplied(dummy = true)
+
+  private[neotypes] final class CoproductPartiallyApplied[T](private val dummy: Boolean) extends AnyVal {
+    def apply[S](
+      strategy: CoproductDiscriminatorStrategy[S]
+    ) (
+      options: (S, ResultMapper[? <: T])*
+    ): ResultMapper[T] =
+      ResultMapper.coproductImpl(strategy, options : _*)
+  }
+
+  trait DerivedProductResultMapper[T] {
+    def instance: ResultMapper[T]
   }
 
   trait DerivedCoproductInstances[T] {
@@ -471,5 +486,8 @@ sealed trait ResultMappersLowPriority { self: ResultMapper.type =>
   implicit def coproductDerive[T](
     implicit instances: DerivedCoproductInstances[T]
   ): ResultMapper[T] =
-    coproduct(strategy = CoproductDiscriminatorStrategy.Field[String](name = "type"))(instances.options : _*)
+    coproductImpl(
+      strategy = CoproductDiscriminatorStrategy.Field[String](name = "type"),
+      instances.options : _*
+    )
 }
