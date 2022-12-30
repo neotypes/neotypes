@@ -105,6 +105,7 @@ val commonSettings = Seq(
 )
 
 lazy val noPublishSettings = Seq(
+  crossScalaVersions := Nil,
   publish / skip := true
 )
 
@@ -292,9 +293,10 @@ lazy val enumeratum = (project in file("enumeratum"))
   .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
   .settings(commonSettings)
   .settings(
+    crossScalaVersions := (ThisBuild / crossScalaVersions).value.filterNot(_.startsWith("3.")), // enumeratum is not a thing in scala3
     name := "neotypes-enumeratum",
     libraryDependencies ++= PROVIDED(
-      "com.beachape" %% "enumeratum" % enumeratumVersion
+      ("com.beachape" %% "enumeratum" % enumeratumVersion).cross(CrossVersion.for3Use2_13)
     )
   )
 
