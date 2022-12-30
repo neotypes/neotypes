@@ -1,10 +1,12 @@
 package neotypes
 
 import neotypes.internal.syntax.async._
+
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.FixtureAsyncFlatSpecLike
 import org.scalatest.matchers.should.Matchers
+
 import scala.concurrent.Future
 
 /** Base class for testing the Async[F].guarantee method. */

@@ -1,6 +1,7 @@
 package neotypes
 
 import neotypes.internal.syntax.async._
+
 import org.scalatest.FutureOutcome
 import org.scalatest.compatible.Assertion
 import org.scalatest.flatspec.FixtureAsyncFlatSpecLike

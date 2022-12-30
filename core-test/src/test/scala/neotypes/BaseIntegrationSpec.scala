@@ -4,15 +4,23 @@ import neotypes.internal.utils.void
 
 import com.dimafeng.testcontainers.{ForAllTestContainer, Neo4jContainer}
 import org.neo4j.{driver => neo4j}
+import org.scalatest.FutureOutcome
 import org.scalatest.flatspec.AsyncFlatSpecLike
 import org.testcontainers.images.{ImagePullPolicy, PullPolicy}
 import org.testcontainers.utility.DockerImageName
 
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
+/** Marker trait to signal that the test needs a driver. */
+trait DriverProvider[F[_]] extends { self: BaseIntegrationSpec[F] =>
+  type DriverType <: Driver[F]
+  protected def driver: DriverType
+}
+
 /** Base class for writing integration specs. */
-trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
+trait BaseIntegrationSpec[F[_]] extends BaseEffectSpec[F] with AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
   protected def initQuery: String
 
   override final val container =
@@ -64,6 +72,14 @@ trait BaseIntegrationSpec[F[_]] extends AsyncFlatSpecLike with ForAllTestContain
   override final def beforeStop(): Unit = {
     neoDriver.close()
   }
+
+  protected final def executeAsFuture[A](work: DriverType => F[A]): Future[A] =
+    fToFuture(work(driver))
+
+  protected final def debugMetrics(): F[Unit] =
+    F.map(driver.metrics) { metrics =>
+      println(s"METRICS: ${metrics}")
+    }
 }
 
 object BaseIntegrationSpec {
@@ -81,7 +97,15 @@ object BaseIntegrationSpec {
     null
 }
 
-trait DriverProvider[F[_]] { self: BaseIntegrationSpec[F] =>
-  type DriverType <: Driver[F]
-  protected val driver: DriverType
+/** Base class for integration specs that require to clean the graph after each test. */
+trait CleaningIntegrationSpec[F[_]] extends BaseIntegrationSpec[F] { self: DriverProvider[F] =>
+  override final def withFixture(test: NoArgAsyncTest): FutureOutcome = {
+    complete {
+      super.withFixture(test)
+    } lastly {
+      this.cleanDB()
+    }
+  }
+
+  override final val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
 }
