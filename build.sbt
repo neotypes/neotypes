@@ -116,6 +116,7 @@ lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-core",
+    Compile / sourceGenerators += Boilerplate.generatorTask.taskValue,
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion

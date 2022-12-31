@@ -9,10 +9,13 @@ import scala.collection.Factory
 import scala.collection.mutable.Builder
 
 private[neotypes] object utils {
-  /** Used to swallow unused warnings. */
+  /** Used to swallow warnings. */
   @inline
   final def void(as: Any*): Unit = (as, ())._2
 
+  /** Applies a function to all elements of an iterable,
+    * accumulating all success or stopping at the first failure.
+    */
   def traverseAs[A, B, C, E](factory: Factory[B, C])
                             (iter: Iterator[A])
                             (f: A => Either[E, B]): Either[E, C] = {
@@ -27,6 +30,7 @@ private[neotypes] object utils {
     loop(acc = factory.newBuilder)
   }
 
+  /** Parses a Neo4j [[Record]] into a [[NeoType]]. */
   def parseRecord(record: Record): NeoType =
     ???
 }

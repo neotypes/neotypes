@@ -176,7 +176,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Using the fromFunction factory (named).
     locally {
-      val mapper = fromFunction("name", "age")(User.apply)
+      val mapper = fromFunctionNamed("name", "age")(User.apply)
 
       for {
         user <- namedQuery.query(mapper).single(driver)
@@ -187,7 +187,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Using the fromFunction factory (unnamed).
     locally {
-      val mapper = fromFunction(User.apply)
+      val mapper = fromFunction(User.apply _)
 
       for {
         user <- unnamedQuery.query(mapper).single(driver)

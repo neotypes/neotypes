@@ -1,6 +1,7 @@
 package neotypes
 package mappers
 
+import boilerplate.BoilerplateResultMappers
 import model.QueryParam
 import model.types._
 import model.exceptions.{IncoercibleException, PropertyNotFoundException, ResultMapperException}
@@ -10,7 +11,6 @@ import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
 import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
 import java.util.UUID
-import scala.collection.Iterable
 import scala.collection.Factory
 import scala.jdk.CollectionConverters._
 
@@ -247,7 +247,7 @@ trait ResultMapper[T] {
   def or[U >: T](other: ResultMapper[U]): ResultMapper[U]
 }
 
-object ResultMapper extends ResultMappersLowPriority {
+object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriority {
   def apply[T](implicit mapper: ResultMapper[T]): ResultMapper[T] =
     mapper
 
@@ -335,6 +335,17 @@ object ResultMapper extends ResultMappersLowPriority {
       values
   }
 
+  def loneElement[A](mapper: ResultMapper[A]): ResultMapper[A] =
+    values.emap { col =>
+      col.headOption match {
+        case Some(a) =>
+          mapper.decode(a)
+
+        case None =>
+          Left(IncoercibleException("Values was empty"))
+      }
+    }
+
   implicit val neoObject: ResultMapper[NeoObject] = fromMatch {
     case value: NeoObject =>
       value
@@ -362,53 +373,15 @@ object ResultMapper extends ResultMappersLowPriority {
     neoObject.emap(_.getAs[T](key)(mapper))
 
   def at[T](idx: Int)(implicit mapper: ResultMapper[T]): ResultMapper[T] =
-    values.emap { iter =>
-      val element = iter match {
+    values.emap { col =>
+      val element = col match {
         case seq: collection.Seq[NeoType] => seq.lift(idx)
-        case _ => iter.slice(from = idx, until = idx + 1).headOption
+        case _ => col.slice(from = idx, until = idx + 1).headOption
       }
 
       val value = element.toRight(left = PropertyNotFoundException(key = s"index-${idx}"))
       value.flatMap(mapper.decode)
     }
-
-  def and[A, B](a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[(A, B)] =
-    a.and(b)
-
-  def combine[A, B, T](a: ResultMapper[A], b: ResultMapper[B])(f: (A, B) => T): ResultMapper[T] =
-    a.and(b).map(f.tupled)
-
-  def fromFunction[A, B, T](f: (A, B) => T)(implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[T] =
-    values.map(_.toList).emap {
-      case aa :: bb :: _ =>
-        for {
-          aaa <- a.decode(aa)
-          bbb <- b.decode(bb)
-        } yield f(aaa, bbb)
-
-      case values =>
-        Left(IncoercibleException(message = s"Wrong number of arguments: ${values}"))
-    }
-
-  def fromFunction[A, B, T](na: String, nb: String)(f: (A, B) => T)(implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[T] =
-    neoObject.emap { obj =>
-      for {
-        aaa <- obj.getAs(key = na)(a)
-        bbb <- obj.getAs(key = nb)(b)
-      } yield f(aaa, bbb)
-    }
-
-  implicit def tuple[A, B](implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[(A, B)] =
-    fromFunction(Tuple2.apply[A, B])
-
-  def tupleNamed[A, B](a: (String, ResultMapper[A]), b: (String, ResultMapper[B])): ResultMapper[(A, B)] =
-    fromFunction(a._1, b._1)(Tuple2.apply[A, B])(a._2, b._2)
-
-  def product[A, B, T <: Product](a: ResultMapper[A], b: ResultMapper[B])(f: (A, B) => T): ResultMapper[T] =
-    fromFunction(f)(a, b)
-
-  def productNamed[A, B, T <: Product](a: (String, ResultMapper[A]), b: (String, ResultMapper[B]))(f: (A, B) => T): ResultMapper[T] =
-    fromFunction(a._1, b._1)(f)(a._2, b._2)
 
   sealed trait CoproductDiscriminatorStrategy[S]
   object CoproductDiscriminatorStrategy {
