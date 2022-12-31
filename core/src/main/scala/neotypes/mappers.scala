@@ -441,8 +441,8 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       ResultMapper.coproductImpl(strategy, options : _*)
   }
 
-  trait DerivedProductResultMapper[T] {
-    def instance: ResultMapper[T]
+  trait DerivedProductMap[T] {
+    def map(obj: NeoObject): Either[ResultMapperException, T]
   }
 
   trait DerivedCoproductInstances[T] {
@@ -452,9 +452,9 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
 
 sealed trait ResultMappersLowPriority { self: ResultMapper.type =>
   implicit def productDerive[T <: Product](
-    implicit ev: DerivedProductResultMapper[T]
+    implicit ev: DerivedProductMap[T]
   ): ResultMapper[T] =
-    ev.instance
+    neoObject.emap(ev.map)
 
   implicit def coproductDerive[T](
     implicit instances: DerivedCoproductInstances[T]
