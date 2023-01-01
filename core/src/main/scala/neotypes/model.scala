@@ -36,7 +36,7 @@ object types {
     final def get(key: String): Option[NeoType] =
       properties.get(key)
 
-    final def getAs[T](key: String)(implicit mapper: ResultMapper[T]): Either[exceptions.ResultMapperException, T] =
+    final def getAs[A](key: String)(implicit mapper: ResultMapper[A]): Either[exceptions.ResultMapperException, A] =
       properties
         .get(key)
         .toRight(left = exceptions.PropertyNotFoundException(key))
