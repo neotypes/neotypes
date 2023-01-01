@@ -18,6 +18,7 @@ object Boilerplate {
 
   private def generateBoilerplateResultMappers(): List[String] = {
     def generateAnd(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Combines the given [[ResultMapper]s into a single tupled one, merges errors. */" ::
       s"final def and[${typeParameters}](" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
@@ -28,6 +29,7 @@ object Boilerplate {
       Nil
 
     def generateCombine(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Combines the given [[ResultMapper]s into a single one using the provided function, merges errors. */" ::
       s"final def combine[A, ${typeParameters}](" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s")(fun: (${typeParameters}) => A): ResultMapper[A] =" ::
@@ -38,6 +40,7 @@ object Boilerplate {
       Nil
 
     def generateFromFunction(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Creates a [[ResultMapper]] from the given function, based on a heterogenous list. */" ::
       s"final def fromFunction[A, ${typeParameters}]" ::
       s"(fun: (${typeParameters}) => A)" ::
       "(implicit " ::
@@ -55,6 +58,7 @@ object Boilerplate {
       Nil
 
     def generateFromFunctionNamed(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Creates a [[ResultMapper]] from the given function, based on a [[NeoObject]]. */" ::
       s"final def fromFunctionNamed[A, ${typeParameters}](" ::
       parameters.map(l => s"n${l}: String").mkString(", ") ::
       s")(fun: (${typeParameters}) => A)" ::
@@ -70,6 +74,7 @@ object Boilerplate {
       Nil
 
     def generateTuple(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Creates a tuple [[ResultMapper]], based on a heterogenous list. */" ::
       s"implicit final def tuple[${typeParameters}](implicit" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
@@ -85,6 +90,7 @@ object Boilerplate {
       Nil
 
     def generateTupleNamed(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Creates a tuple [[ResultMapper]], based on a [[NeoObject]]. */" ::
       s"final def tupleNamed[${typeParameters}](" ::
       parameters.map(l => s"n${l}: String").mkString(", ") ::
       ")(implicit " ::
@@ -99,6 +105,7 @@ object Boilerplate {
       Nil
 
     def generateProduct(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Creates a [[ResultMapper]] for a product, based on a heterogenous list. */" ::
       s"final def product[A <: Product, ${typeParameters}]" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString("(", ", ", ")") ::
       s"(fun: (${typeParameters}) => A): ResultMapper[A] =" ::
@@ -106,6 +113,7 @@ object Boilerplate {
       Nil
 
     def generateProductNamed(n: Int, parameters: List[Char], typeParameters: String): List[String] =
+      "/** Creates a [[ResultMapper]] for a product, based on a [[NeoObject]]. */" ::
       s"final def productNamed[A <: Product, ${typeParameters}]" ::
       parameters.map(l => s"${l}: (String, ResultMapper[${l.toUpper}])").mkString("(", ", ", ")") ::
       s"(fun: (${typeParameters}) => A): ResultMapper[A] =" ::
