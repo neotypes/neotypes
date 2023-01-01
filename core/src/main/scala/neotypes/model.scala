@@ -163,15 +163,32 @@ object types {
 object exceptions {
   sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull) with NoStackTrace
 
-  final object TransactionWasNotCreatedException extends NeotypesException(message = "Couldn't create a transaction")
+  final object TransactionWasNotCreatedException extends NeotypesException(
+    message = "Couldn't create a transaction"
+  )
 
-  final object CancellationException extends NeotypesException(message = "An operation was cancelled")
+  final object CancellationException extends NeotypesException(
+    message = "An operation was cancelled"
+  )
 
   sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause)
 
-  final object MissingRecordException extends ResultMapperException(message = "A record was expected but none was received")
+  final object MissingRecordException extends ResultMapperException(
+    message = "A record was expected but none was received"
+  )
 
-  final class PropertyNotFoundException(key: String) extends ResultMapperException(message = s"Field ${key} not found")
+  final class KeyMapperException(key: String, cause: Throwable) extends ResultMapperException(
+    message = s"Error decoding key: '${key}'",
+    Some(cause)
+  )
+  object KeyMapperException {
+    def apply(key: String, cause: Throwable): KeyMapperException =
+      new KeyMapperException(key, cause)
+  }
+
+  final class PropertyNotFoundException(key: String) extends ResultMapperException(
+    message = s"Field '${key}' not found"
+  )
   object PropertyNotFoundException {
     def apply(key: String): PropertyNotFoundException =
       new PropertyNotFoundException(key)

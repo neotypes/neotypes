@@ -453,13 +453,6 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
   def set[A](implicit mapper: ResultMapper[A]): ResultMapper[Set[A]] =
     collectAs(mapper, Set)
 
-  /** Creates a [[ResultMapper]] that will collect all values
-    * into an homogeneous [[Map]],
-    * using the provided mapper to decode each element.
-    */
-  def map[K, V](implicit mapper: ResultMapper[(K, V)]): ResultMapper[Map[K, V]] =
-    collectAs(mapper, Map)
-
   /** Creates a [[ResultMapper]] that will try to decode
     * the given field of an object,
     * using the provided mapper.
@@ -489,6 +482,34 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       val value = element.toRight(left = PropertyNotFoundException(key = s"index-${idx}"))
       value.flatMap(mapper.decode)
     }
+
+  /** Creates a [[ResultMapper]] that will try to decode a [[NeoObject]]
+    * into a some form of [[Map]].
+    *
+    * @tparam K the type of the keys.
+    * @tparam V the type of the values.
+    * @tparam M the kind of map to create.
+    * @param mapper the [[ResultMapper]] used to decode the values.
+    * @param keyMapper the [[KeyMapper]] used to decode the keys,
+    * by default uses the no-op decoder.
+    * @param mapFactory the specific [[Map]] to create.
+    */
+  def neoMap[K, V, M](
+    mapper: ResultMapper[V],
+    keyMapper: KeyMapper[K] = KeyMapper.StringKeyMapper
+  ) (
+    mapFactory: Factory[(K, V), M]
+  ): ResultMapper[M] =
+    neoObject.emap { obj =>
+      traverseAs(mapFactory)(obj.properties.iterator) {
+        case (key, value) =>
+          keyMapper.decodeKey(key) and mapper.decode(value)
+      }
+    }
+
+  /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
+  implicit def map[V](implicit mapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
+    neoMap(mapper)(mapFactory = Map)
 
   /** Strategy to distinguish cases of a coproduct. */
   sealed trait CoproductDiscriminatorStrategy[S]

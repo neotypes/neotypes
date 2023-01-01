@@ -3,17 +3,18 @@ package neotypes
 import neotypes.generic.implicits._
 import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
-import neotypes.mappers.ResultMapper._
-import neotypes.model.exceptions.IncoercibleException
+import neotypes.mappers.{KeyMapper, ResultMapper}
+import neotypes.model.exceptions.{IncoercibleException, KeyMapperException}
 
 import org.neo4j.driver.summary.ResultSummary
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.immutable.BitSet
+import scala.collection.immutable.{BitSet, SortedMap}
 import org.scalatest.OptionValues
 
 trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with OptionValues { self: DriverProvider[F] with BaseEffectSpec[F] =>
   import BaseDriverSpec._
+  import ResultMapper._
 
   it should "support querying primitive values" in executeAsFuture { driver =>
     for {
@@ -384,6 +385,36 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         rs.query.text shouldBe query
     }
   }
+
+  it should "support querying objects as custom maps" in executeAsFuture { driver =>
+    val customKeyMapper =
+      KeyMapper.StringKeyMapper.imap[CustomKey](_.name) { name =>
+        CustomKey.from(name).toRight(
+          left = KeyMapperException(
+            key = name,
+            cause = IncoercibleException(
+              message = s"${name} is not a valid CustomKey"
+            )
+          )
+        )
+      }
+
+    val mapper = neoMap(
+      mapper = int,
+      keyMapper = customKeyMapper
+    ) (
+      mapFactory = SortedMap
+    )
+
+    for {
+      map <- """RETURN { "foo": 3, "bar": 5 }""".query(mapper).single(driver)
+    } yield {
+      map shouldBe SortedMap(
+        CustomKey.Foo -> 3,
+        CustomKey.Bar -> 5
+      )
+    }
+  }
 }
 
 object BaseDriverSpec {
@@ -412,6 +443,27 @@ object BaseDriverSpec {
   final case class Nested(foo: Foo, bar: Bar)
   final case class Foo(a: Int, b: String)
   final case class Bar(c: Int, d: String)
+
+  sealed trait CustomKey extends Product with Serializable {
+    def name: String
+  }
+  object CustomKey {
+    final case object Foo extends CustomKey {
+      override final val name: String = "FOO"
+    }
+    final case object Bar extends CustomKey {
+      override final val name: String = "Bar"
+    }
+
+    def from(name: String): Option[CustomKey] = name.toUpperCase match {
+      case "FOO" => Some(Foo)
+      case "BAR" => Some(Bar)
+      case _ => None
+    }
+
+    implicit val ordering: Ordering[CustomKey] =
+      Ordering.by(_.name)
+  }
 }
 
 final class AsyncDriverSpec[F[_]](
@@ -427,7 +479,7 @@ final class StreamingDriverSpec[S[_], F[_]](
 
   it should "support stream the records" in {
     executeAsFutureList { driver =>
-      "UNWIND [1, 2, 3] AS x RETURN x".query(int).stream(driver)
+      "UNWIND [1, 2, 3] AS x RETURN x".query(ResultMapper.int).stream(driver)
     } map { ints =>
       ints shouldBe List(1, 2, 3)
     }

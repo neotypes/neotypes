@@ -1,6 +1,8 @@
 package neotypes
 package mappers
 
+import model.exceptions.KeyMapperException
+
 @annotation.implicitNotFound("${A} is not a valid type for keys")
 trait KeyMapper[A] { self =>
   /**
@@ -19,7 +21,7 @@ trait KeyMapper[A] { self =>
     * @tparam A The type of the value to decode.
     * @return The value corresponding to that key or an error.
     */
-  def decodeKey(key: String): Either[Throwable, A]
+  def decodeKey(key: String): Either[KeyMapperException, A]
 
   /**
     * Creates a new [[KeyMapper]] by providing
@@ -30,11 +32,11 @@ trait KeyMapper[A] { self =>
     * @tparam B The type of the new [[KeyMapper]]
     * @return A new [[KeyMapper]] for values of type B.
     */
-  final def imap[B](f: B => A)(g: A => Either[Throwable, B]): KeyMapper[B] = new KeyMapper[B] {
+  final def imap[B](f: B => A)(g: A => Either[KeyMapperException, B]): KeyMapper[B] = new KeyMapper[B] {
     override def encodeKey(b: B): String =
       self.encodeKey(f(b))
 
-    override def decodeKey(key: String): Either[Throwable, B] =
+    override def decodeKey(key: String): Either[KeyMapperException, B] =
       self.decodeKey(key).flatMap(g)
   }
 }
@@ -53,7 +55,7 @@ object KeyMapper {
     override def encodeKey(key: String): String =
       key
 
-    override def decodeKey(key: String): Either[Throwable, String] =
+    override def decodeKey(key: String): Either[KeyMapperException, String] =
       Right(key)
   }
 }
