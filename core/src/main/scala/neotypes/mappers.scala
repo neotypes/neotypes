@@ -9,9 +9,10 @@ import internal.utils.traverseAs
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
-import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetDateTime, OffsetTime, ZonedDateTime}
+import java.time.{Duration => JDuration, LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, Period => JPeriod, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
 import java.util.UUID
 import scala.collection.Factory
+import scala.concurrent.duration.{FiniteDuration => SDuration}
 import scala.jdk.CollectionConverters._
 
 @annotation.implicitNotFound("${A} is not a valid type for keys")
@@ -96,7 +97,7 @@ sealed trait ParameterMapper[A] { self =>
   }
 }
 
-object ParameterMapper extends ParameterMappers {
+object ParameterMapper {
   /**
     * Summons an implicit [[ParameterMapper]] already in scope by result type.
     *
@@ -143,9 +144,7 @@ object ParameterMapper extends ParameterMappers {
     override def toQueryParam(scalaValue: A): QueryParam =
       new QueryParam(scalaValue)
   }
-}
 
-trait ParameterMappers {
   implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
     ParameterMapper.fromCast(Boolean.box)
 
@@ -155,41 +154,14 @@ trait ParameterMappers {
   implicit final val DoubleParameterMapper: ParameterMapper[Double] =
     ParameterMapper.fromCast(Double.box)
 
-  implicit final val DurationParameterMapper: ParameterMapper[Duration] =
-    ParameterMapper.identity
-
   implicit final val FloatParameterMapper: ParameterMapper[Float] =
     ParameterMapper.fromCast(Float.box)
 
   implicit final val IntParameterMapper: ParameterMapper[Int] =
     ParameterMapper.fromCast(Int.box)
 
-  implicit final val IsoDurationParameterMapper: ParameterMapper[NeoDuration] =
-    ParameterMapper.identity
-
-  implicit final val LocalDateParameterMapper: ParameterMapper[LocalDate] =
-    ParameterMapper.identity
-
-  implicit final val LocalDateTimeParameterMapper: ParameterMapper[LocalDateTime] =
-    ParameterMapper.identity
-
-  implicit final val LocalTimeParameterMapper: ParameterMapper[LocalTime] =
-    ParameterMapper.identity
-
   implicit final val LongParameterMapper: ParameterMapper[Long] =
     ParameterMapper.fromCast(Long.box)
-
-  implicit final val OffsetDateTimeParameterMapper: ParameterMapper[OffsetDateTime] =
-    ParameterMapper.identity
-
-  implicit final val OffsetTimeParameterMapper: ParameterMapper[OffsetTime] =
-    ParameterMapper.identity
-
-  implicit final val PeriodParameterMapper: ParameterMapper[Period] =
-    ParameterMapper.identity
-
-  implicit final val PointParameterMapper: ParameterMapper[NeoPoint] =
-    ParameterMapper.identity
 
   implicit final val StringParameterMapper: ParameterMapper[String] =
     ParameterMapper.identity
@@ -197,10 +169,31 @@ trait ParameterMappers {
   implicit final val UUIDParameterMapper: ParameterMapper[UUID] =
     ParameterMapper[String].contramap(_.toString)
 
-  implicit final val ValueParameterMapper: ParameterMapper[Value] =
+  implicit final val NeoDurationParameterMapper: ParameterMapper[NeoDuration] =
     ParameterMapper.identity
 
-  implicit final val ZonedDateTimeParameterMapper: ParameterMapper[ZonedDateTime] =
+  implicit final val NeoPointParameterMapper: ParameterMapper[NeoPoint] =
+    ParameterMapper.identity
+
+  implicit final val JDurationParameterMapper: ParameterMapper[JDuration] =
+    ParameterMapper.identity
+
+  implicit final val JPeriodParameterMapper: ParameterMapper[JPeriod] =
+    ParameterMapper.identity
+
+  implicit final val JDateParameterMapper: ParameterMapper[JDate] =
+    ParameterMapper.identity
+
+  implicit final val JTimeParameterMapper: ParameterMapper[JTime] =
+    ParameterMapper.identity
+
+  implicit final val JDateTimeParameterMapper: ParameterMapper[JDateTime] =
+    ParameterMapper.identity
+
+  implicit final val JZTimeParameterMapper: ParameterMapper[JZTime] =
+    ParameterMapper.identity
+
+  implicit final val JZDateTimeParameterMapper: ParameterMapper[JZDateTime] =
     ParameterMapper.identity
 
   private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
@@ -320,6 +313,12 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     case Value.Duration(value) =>
       value
   }
+
+  implicit final val javaDuration: ResultMapper[JDuration] =
+    neoDuration.map(JDuration.from)
+
+  implicit final val scalaDuration: ResultMapper[SDuration] =
+    javaDuration.map(d => scala.concurrent.duration.Duration.fromNanos(d.toNanos))
 
   implicit val values: ResultMapper[Iterable[NeoType]] = fromMatch {
     case NeoList(values) =>
