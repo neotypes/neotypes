@@ -5,6 +5,7 @@ import ReleaseTransformations._
 val neo4jDriverVersion = "5.3.1"
 val scalaCollectionCompatVersion = "2.9.0"
 val shapelessVersion = "2.3.10"
+val shapeless3Version = "3.1.0"
 val testcontainersNeo4jVersion = "1.17.6"
 val testcontainersScalaVersion = "0.40.11"
 val scalaTestVersion = "3.2.14"
@@ -51,14 +52,41 @@ ThisBuild / scmInfo ~= {
 
 // Global settings.
 ThisBuild / scalaVersion := "2.13.10"
-ThisBuild / crossScalaVersions := Seq("2.13.10")
+ThisBuild / crossScalaVersions := Seq("2.13.10", "3.1.3")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
+def removeScalacOptionsInTest(scalaVersion: String) =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, 12)) => Seq("-Ywarn-value-discard", "-Ywarn-unused:params")
+    case _ => Seq("-Wvalue-discard", "-Wunused:explicits", "-Wunused:params", "-Wunused:imports")
+  }
+
+def macrosDepsByVersion(scalaVersion: String) =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, _)) =>
+      Seq(
+        "com.chuusai" %% "shapeless" % shapelessVersion,
+        "org.scala-lang" % "scala-reflect" % scalaVersion
+      )
+    case Some((3, _)) => 
+      Seq("org.typelevel" %% "shapeless3-deriving" % shapeless3Version)
+    case _ => Seq.empty  
+
+  }
+
+def compileOptsByVersion(scalaVersion: String) =
+  CrossVersion.partialVersion(scalaVersion) match {
+    case Some((2, _)) =>
+      Seq("-Ywarn-macros:after")
+    case _ => 
+      Seq.empty
+  }  
+
 // Common settings.
 val commonSettings = Seq(
-  scalacOptions += "-Ywarn-macros:after",
+  scalacOptions ++= compileOptsByVersion(scalaVersion.value),
 
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
@@ -121,8 +149,8 @@ lazy val core = (project in file("core"))
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       ) ++ COMPILE(
-        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
-      )
+        "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion
+      ) ++ macrosDepsByVersion(scalaVersion.value)
   )
 
 lazy val coreTest = (project in file("core-test"))
@@ -146,9 +174,7 @@ lazy val generic = (project in file("generic"))
   .settings(
     name := "neotypes-generic",
     libraryDependencies ++=
-      COMPILE(
-        "com.chuusai" %% "shapeless" % shapelessVersion
-      )
+      macrosDepsByVersion(scalaVersion.value)
   )
 
 lazy val genericTest = (project in file("generic-test"))
