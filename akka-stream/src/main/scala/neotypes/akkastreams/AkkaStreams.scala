@@ -1,13 +1,12 @@
 package neotypes.akkastreams
 
 import akka.NotUsed
-import akka.stream.{Attributes, Materializer, Outlet, SourceShape}
-import akka.stream.scaladsl.{Sink, Source}
+import akka.stream.{Attributes, Materializer, Outlet, OverflowStrategy, SourceShape}
+import akka.stream.scaladsl.{JavaFlowSupport, Sink, Source}
 import akka.stream.stage.{GraphStage, GraphStageLogic, OutHandler}
-import org.reactivestreams.FlowAdapters.toPublisher
 
 import java.util.concurrent.Flow.Publisher
-import scala.collection.compat._
+import scala.collection.Factory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
@@ -33,11 +32,14 @@ trait AkkaStreams {
         */
       override final type F[A] = Future[A]
 
-      override final def fromPublisher[A](publisher: Publisher[A]): AkkaStream[A] =
-        Source.fromPublisher(toPublisher(publisher))
+      override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): AkkaStream[A] =
+        JavaFlowSupport.Source.fromPublisher(publisher).buffer(chunkSize, OverflowStrategy.backpressure)
 
       override final def fromF[A](future: Future[A]): AkkaStream[A] =
         Source.future(future)
+
+      override final def append[A, B >: A](sa: AkkaStream[A], sb: AkkaStream[B]): AkkaStream[B] =
+        sa ++ sb
 
       override final def guarantee[A, B](r: Future[A])
                                         (f: A => AkkaStream[B])
@@ -45,11 +47,6 @@ trait AkkaStreams {
         Source.lazySource(
           () => Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
         ).mapMaterializedValue(_ => NotUsed)
-
-      override final def discardAppend[A](left: AkkaStream[_], right: AkkaStream[A]): AkkaStream[A] =
-        Source
-          .lazyFuture(create = () => left.run())
-          .flatMapConcat(_ => right)
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -60,7 +57,10 @@ trait AkkaStreams {
       override final def evalMap[A, B](sa: AkkaStream[A])(f: A => Future[B]): AkkaStream[B] =
         sa.mapAsync(parallelism = 1)(f)
 
-      override final def collectAs[A, C](sa: AkkaStream[A])(factory: Factory[A,C]): Future[C] =
+      override final def collect[A, B](sa: AkkaStream[A])(pf: PartialFunction[A, B]): AkkaStream[B] =
+        sa.collect(pf)
+
+      override final def collectAs[A, C](sa: AkkaStream[A])(factory: Factory[A, C]): Future[C] =
         sa.runWith(Sink.fold(factory.newBuilder)(_ += _)).map(_.result())
 
       override final def single[A](sa: AkkaStream[A]): Future[Option[A]] =

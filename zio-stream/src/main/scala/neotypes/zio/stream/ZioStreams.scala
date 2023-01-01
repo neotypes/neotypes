@@ -1,6 +1,6 @@
 package neotypes.zio.stream
 
-import neotypes.exceptions.CancellationException
+import neotypes.model.exceptions.CancellationException
 
 import zio.{Exit, Task}
 import zio.stream.{ZSink, ZStream}
@@ -8,15 +8,18 @@ import zio.interop.reactivestreams.Adapters
 import org.reactivestreams.FlowAdapters.toPublisher
 
 import java.util.concurrent.Flow.Publisher
-import scala.collection.compat._
+import scala.collection.Factory
 
 trait ZioStreams {
   implicit final val zioStream: neotypes.Stream.Aux[ZioStream, Task] =
     new neotypes.Stream[ZioStream] {
       override final type F[T] = Task[T]
 
-      override final def fromPublisher[A](publisher: Publisher[A]): ZioStream[A] =
-        Adapters.publisherToStream(toPublisher(publisher), bufferSize = 16)
+      override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): ZioStream[A] =
+        Adapters.publisherToStream(toPublisher(publisher), chunkSize)
+
+       override final def append[A, B >: A](sa: ZioStream[A], sb: ZioStream[B]): ZioStream[B] =
+        sa ++ sb
 
       override final def fromF[A](task: Task[A]): ZioStream[A] =
         ZStream.fromZIO(task)
@@ -41,9 +44,6 @@ trait ZioStreams {
             finalizer(a, None).orDie
         }.flatMap(f)
 
-      override final def discardAppend[A](left: ZioStream[_], right: ZioStream[A]): ZioStream[A] =
-        left.drain ++ right
-
       override final def map[A, B](sa: ZioStream[A])(f: A => B): ZioStream[B] =
         sa.map(f)
 
@@ -52,6 +52,9 @@ trait ZioStreams {
 
       override final def evalMap[A, B](sa: ZioStream[A])(f: A => Task[B]): ZioStream[B] =
         sa.mapZIO(f)
+
+      override final def collect[A, B](sa: ZioStream[A])(pf: PartialFunction[A, B]): ZioStream[B] =
+        sa.collect(pf)
 
       override final def collectAs[A, C](sa: ZioStream[A])(factory: Factory[A, C]): Task[C] =
         sa.run(ZSink.foldLeftChunks(factory.newBuilder)(_ ++= _)).map(_.result())

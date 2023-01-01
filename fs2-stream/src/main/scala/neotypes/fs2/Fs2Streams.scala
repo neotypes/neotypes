@@ -1,23 +1,26 @@
 package neotypes.fs2
 
-import neotypes.exceptions.CancellationException
+import neotypes.model.exceptions.CancellationException
 
 import cats.effect.{Async, Resource}
 import fs2.Stream
 import org.reactivestreams.FlowAdapters.toPublisher
 
 import java.util.concurrent.Flow.Publisher
-import scala.collection.compat.Factory
+import scala.collection.Factory
 
 trait Fs2Streams {
-  implicit final def fs2Stream[_F[_]: Async]: neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
+  implicit final def fs2Stream[_F[_]](implicit F: Async[_F]): neotypes.Stream.Aux[Fs2FStream[_F]#T, _F] =
     new neotypes.Stream[Fs2FStream[_F]#T] {
       override final type F[A] = _F[A]
 
-      // TODO: Check if a different buffer size would perform better,
-      //       or if there's a way to determine buffer size better.
-      override final def fromPublisher[A](publisher: Publisher[A]): Stream[F, A] =
-        fs2.interop.reactivestreams.fromPublisher(toPublisher(publisher), 16)
+      override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): Stream[F, A] =
+        Stream.eval(F.delay(toPublisher(publisher))).flatMap { p =>
+          fs2.interop.reactivestreams.fromPublisher(p, chunkSize)
+        }
+
+      override final def append[A, B >: A](sa: Stream[F, A], sb: Stream[F, B]): Stream[F, B] =
+        sa ++ sb
 
       override final def fromF[A](fa: F[A]): Stream[F, A] =
         Stream.eval(fa)
@@ -36,9 +39,6 @@ trait Fs2Streams {
             finalizer(a, Some(ex))
         }.flatMap(f)
 
-      override final def discardAppend[A](left: Stream[F, _], right: Stream[F, A]): Stream[F, A] =
-        left.drain ++ right
-
       override final def map[A, B](sa: Stream[F, A])(f: A => B): Stream[F, B] =
         sa.map(f)
 
@@ -47,6 +47,9 @@ trait Fs2Streams {
 
       override final def evalMap[A, B](sa: Stream[F, A])(f: A => F[B]): Stream[F, B] =
         sa.evalMap(f)
+
+      override final def collect[A, B](sa: Stream[F, A])(pf: PartialFunction[A, B]): Stream[F, B] =
+        sa.collect(pf)
 
       override final def collectAs[A, C](sa: Stream[F, A])(factory: Factory[A, C]): F[C] = {
         // Thanks to Jasper Moeys (@Jasper-M) for providing this workaround.

@@ -2,7 +2,8 @@ package neotypes.cats.effect
 
 import neotypes.{AsyncDriverProvider, BaseIntegrationSpec, Driver}
 import neotypes.cats.effect.implicits._
-import neotypes.implicits.all._
+import neotypes.implicits.syntax.all._
+import neotypes.mappers.ResultMapper
 
 import cats.{Applicative, Monad}
 import cats.effect.{Async, IO, Resource}
@@ -19,8 +20,8 @@ final class CatsImplicitsSpec extends AsyncDriverProvider(IOTestkit) with BaseIn
 
     def useDriver[F[_] : Async]: F[String] = makeDriver[F].use { d =>
       (test1[F] *> test2[F]).flatMap { _ =>
-        "MATCH (p: Person { name: \"Charlize Theron\" }) RETURN p.name"
-          .query[String]
+        """MATCH (p: Person { name: "Charlize Theron" }) RETURN p.name"""
+          .query(ResultMapper.string)
           .single(d)
       }
     }
