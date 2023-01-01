@@ -27,7 +27,7 @@ object QueryParam {
 /** Data types supported by Neo4j. */
 object types {
   /** Parent type of all Neo4j types. */
-  sealed trait NeoType extends Product with Serializable
+  sealed abstract class NeoType extends Product with Serializable
 
   /** Parent type of all Neo4j types that have named properties. */
   sealed trait NeoObject extends NeoType {
@@ -161,21 +161,29 @@ object types {
 
 /** Exceptions provided by this library. */
 object exceptions {
-  sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull)
+  sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull) with NoStackTrace
 
-  final case object TransactionWasNotCreatedException extends NeotypesException(message = "Couldn't create a transaction")
+  final object TransactionWasNotCreatedException extends NeotypesException(message = "Couldn't create a transaction")
 
-  final case object CancellationException extends NeotypesException(message = "An operation was cancelled")
+  final object CancellationException extends NeotypesException(message = "An operation was cancelled")
 
-  sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause) with NoStackTrace
+  sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause)
 
-  final case object MissingRecordException extends ResultMapperException(message = "A record was expected but none was received")
+  final object MissingRecordException extends ResultMapperException(message = "A record was expected but none was received")
 
-  final case class PropertyNotFoundException(key: String) extends ResultMapperException(message = s"Field ${key} not found")
+  final class PropertyNotFoundException(key: String) extends ResultMapperException(message = s"Field ${key} not found")
+  object PropertyNotFoundException {
+    def apply(key: String): PropertyNotFoundException =
+      new PropertyNotFoundException(key)
+  }
 
-  final case class IncoercibleException(message: String, cause: Option[Throwable] = None) extends ResultMapperException(message, cause)
+  final class IncoercibleException(message: String, cause: Option[Throwable]) extends ResultMapperException(message, cause)
+  object IncoercibleException {
+    def apply(message: String, cause: Option[Throwable] = None): IncoercibleException =
+      new IncoercibleException(message, cause)
+  }
 
-  final case class ChainException(parts: Iterable[ResultMapperException]) extends ResultMapperException(message = "") {
+  final class ChainException(private val parts: Iterable[ResultMapperException]) extends ResultMapperException(message = "") {
     override def getMessage(): String =
       parts
         .view
@@ -190,7 +198,7 @@ object exceptions {
     def from(exceptions: ResultMapperException*): ChainException =
       new ChainException(
         parts = exceptions.view.flatMap {
-          case ChainException(parts) => parts
+          case chainException: ChainException => chainException.parts
           case decodingException => decodingException :: Nil
         }
       )
