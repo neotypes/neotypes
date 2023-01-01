@@ -142,7 +142,7 @@ object types {
     final case class ListValue[V <: SimpleValue](values: Iterable[V]) extends Value
     sealed trait SimpleValue extends Value
     sealed trait NumberValue extends SimpleValue
-    final case class Integer(value: Int) extends NumberValue
+    final case class Integer(value: Long) extends NumberValue
     final case class Decimal(value: Double) extends NumberValue
     final case class Str(value: String) extends SimpleValue
     final case class Bool(value: Boolean) extends SimpleValue
@@ -153,8 +153,8 @@ object types {
     final case class LocalDate(value: JDate) extends TemporalInstantValue
     final case class LocalTime(value: JTime) extends TemporalInstantValue
     final case class LocalDateTime(value: JDateTime) extends TemporalInstantValue
-    final case class Time(value: JZTime) extends TemporalInstantValue
-    final case class DateTme(value: JZDateTime) extends TemporalInstantValue
+    final case class ZonedTime(value: JZTime) extends TemporalInstantValue
+    final case class ZonedDateTime(value: JZDateTime) extends TemporalInstantValue
     final case object NullValue extends SimpleValue
   }
 }

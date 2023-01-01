@@ -116,7 +116,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Single record of multiple values (collectAs).
     locally {
-      val mapper = collectAs(BitSet, int)
+      val mapper = collectAs(int, BitSet)
       for {
         nums <- singleRecordQuery.query(mapper).single(driver)
       } yield {
