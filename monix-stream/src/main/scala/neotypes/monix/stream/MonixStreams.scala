@@ -53,7 +53,7 @@ trait MonixStreams {
       override final def single[A](oa: Observable[A]): Task[Option[A]] =
         oa.firstOptionL
 
-      override final def void(o: Observable[_]): Task[Unit] =
+      override final def void[A](o: Observable[A]): Task[Unit] =
         o.completedL
     }
 }

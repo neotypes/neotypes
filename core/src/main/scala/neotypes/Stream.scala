@@ -29,7 +29,7 @@ trait Stream[S[_]] {
 
   private[neotypes] def single[A](sa: S[A]): F[Option[A]]
 
-  private[neotypes] def void(s: S[_]): F[Unit]
+  private[neotypes] def void[A](s: S[A]): F[Unit]
 }
 
 object Stream {

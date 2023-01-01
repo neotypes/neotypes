@@ -62,7 +62,7 @@ trait ZioStreams {
       override final def single[A](sa: ZioStream[A]): Task[Option[A]] =
         sa.runHead
 
-      override final def void(s: ZioStream[_]): Task[Unit] =
+      override final def void[A](s: ZioStream[A]): Task[Unit] =
         s.runDrain
     }
 }
