@@ -8,7 +8,7 @@ package object effect {
 
   type IOResource[A] = Resource[IO, A]
 
-  final object implicits extends CatsEffect {
+  object implicits extends CatsEffect {
     implicit final val IOAsync: Async.Aux[IO, IOResource] = catsAsync
   }
 }

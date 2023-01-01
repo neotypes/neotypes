@@ -162,7 +162,7 @@ object types {
     final case class LocalDateTime(value: JDateTime) extends TemporalInstantValue
     final case class ZonedTime(value: JZTime) extends TemporalInstantValue
     final case class ZonedDateTime(value: JZDateTime) extends TemporalInstantValue
-    final case object NullValue extends SimpleValue
+    case object NullValue extends SimpleValue
   }
 }
 
@@ -170,17 +170,17 @@ object types {
 object exceptions {
   sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull) with NoStackTrace
 
-  final object TransactionWasNotCreatedException extends NeotypesException(
+  object TransactionWasNotCreatedException extends NeotypesException(
     message = "Couldn't create a transaction"
   )
 
-  final object CancellationException extends NeotypesException(
+  object CancellationException extends NeotypesException(
     message = "An operation was cancelled"
   )
 
   sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause)
 
-  final object MissingRecordException extends ResultMapperException(
+  object MissingRecordException extends ResultMapperException(
     message = "A record was expected but none was received"
   )
 

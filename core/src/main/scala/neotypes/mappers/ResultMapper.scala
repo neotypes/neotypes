@@ -514,10 +514,10 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
   sealed trait CoproductDiscriminatorStrategy[S]
   object CoproductDiscriminatorStrategy {
     /** Discriminates cases based on a label of Node. */
-    final case object NodeLabel extends CoproductDiscriminatorStrategy[String]
+    case object NodeLabel extends CoproductDiscriminatorStrategy[String]
 
     /** Discriminates cases based on the type of a Relationship. */
-    final case object RelationshipType extends CoproductDiscriminatorStrategy[String]
+    case object RelationshipType extends CoproductDiscriminatorStrategy[String]
 
     /** Discriminates cases based on field of an object. */
     final case class Field[T](name: String, mapper: ResultMapper[T]) extends CoproductDiscriminatorStrategy[T]

@@ -127,12 +127,12 @@ final class AsyncGuaranteeSpec[F[_]](testkit: EffectTestkit[F]) extends BaseEffe
 }
 
 object AsyncGuaranteeSpec {
-  final case object InputException extends Exception("Input failed")
+  case object InputException extends Exception("Input failed")
   type InputException = InputException.type
 
-  final case object UseException extends Exception("Use failed")
+  case object UseException extends Exception("Use failed")
   type UseException = UseException.type
 
-  final case object FinalizerException extends Exception("Finalizer failed")
+  case object FinalizerException extends Exception("Finalizer failed")
   type FinalizerException = FinalizerException.type
 }

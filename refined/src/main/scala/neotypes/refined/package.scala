@@ -1,5 +1,5 @@
 package neotypes
 
 package object refined {
-  final object implicits extends RefinedMappers
+  object implicits extends RefinedMappers
 }

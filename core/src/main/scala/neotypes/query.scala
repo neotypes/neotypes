@@ -118,7 +118,7 @@ sealed trait ResultType {
   private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]]
 }
 object ResultType {
-  final case object Simple extends ResultType {
+  case object Simple extends ResultType {
     override final type SingleR[T] = T
     override final type StreamR[T] = T
 
@@ -131,7 +131,7 @@ object ResultType {
       }
   }
 
-  final case object WithResultSummary extends ResultType {
+  case object WithResultSummary extends ResultType {
     override final type SingleR[T] = (T, ResultSummary)
     override final type StreamR[T] = Either[T, ResultSummary]
 

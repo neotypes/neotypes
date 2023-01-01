@@ -510,7 +510,7 @@ object BaseDriverSpec {
   object Problem {
     final case class Error(msg: String) extends Problem
     final case class Warning(msg: String) extends Problem
-    final case object Unknown extends Problem
+    case object Unknown extends Problem
   }
 
   final case class Id(int: Int)
