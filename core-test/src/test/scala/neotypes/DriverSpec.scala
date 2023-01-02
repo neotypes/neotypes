@@ -5,25 +5,111 @@ import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.{KeyMapper, ResultMapper}
 import neotypes.model.exceptions.{IncoercibleException, KeyMapperException}
+import neotypes.model.types.Path.Segment
 
 import org.neo4j.driver.summary.ResultSummary
+import org.scalatest.{Inside, LoneElement, OptionValues}
 import org.scalatest.matchers.should.Matchers
 
-import scala.collection.immutable.{BitSet, SortedMap}
-import org.scalatest.OptionValues
+import java.util.UUID
+import java.time.{LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
+import scala.collection.immutable.{ArraySeq, BitSet, SortedMap}
 
-trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with OptionValues { self: DriverProvider[F] with BaseEffectSpec[F] =>
+trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with Inside with LoneElement with OptionValues { self: DriverProvider[F] with BaseEffectSpec[F] =>
   import BaseDriverSpec._
   import ResultMapper._
 
   it should "support querying primitive values" in executeAsFuture { driver =>
-    for {
-      i <- "RETURN 3".query(int).single(driver)
-      s <- """RETURN "foo"""".query(string).single(driver)
-      // TODO: Add all other primitives.
-    } yield {
-      i shouldBe 3
-      s shouldBe "foo"
+    // Value types.
+    locally {
+      val expectedBytes = ArraySeq(1.byteValue, 3.byteValue, 5.byteValue)
+
+      for {
+        i <- "RETURN 3".query(int).single(driver)
+        s <- "RETURN 3".query(short).single(driver)
+        bit <- "RETURN 3".query(byte).single(driver)
+        l <- "RETURN 3".query(long).single(driver)
+        f <- "RETURN 3.0".query(float).single(driver)
+        d <- "RETURN 3.0".query(double).single(driver)
+        bi <- "RETURN 3".query(bigInt).single(driver)
+        bd <- "RETURN 3.0".query(bigDecimal).single(driver)
+        b <- "RETURN true".query(boolean).single(driver)
+        str <- """RETURN "foo"""".query(string).single(driver)
+        id <- """RETURN "d18e9810-87ad-444c-871e-7e41e0e4623c"""".query(uuid).single(driver)
+        bytes <- c"RETURN ${expectedBytes}".query(bytes).single(driver)
+        point <- c"RETURN point({x: 1, y: 3, z: 5})".query(neoPoint).single(driver)
+        dur <- c"RETURN duration({seconds: 10})".query(javaDuration).single(driver)
+      } yield {
+        i shouldBe 3
+        s shouldBe 3.toShort
+        bit shouldBe 3.toByte
+        l shouldBe 3L
+        f shouldBe 3.0F
+        d shouldBe 3.0D
+        bi shouldBe BigInt("3")
+        bd shouldBe BigDecimal("3.0")
+        b shouldBe true
+        str shouldBe "foo"
+        id shouldBe UUID.fromString("d18e9810-87ad-444c-871e-7e41e0e4623c")
+        bytes shouldBe expectedBytes
+
+        point.x.toInt shouldBe 1
+        point.y.toInt shouldBe 3
+        point.z.toInt shouldBe 5
+
+        dur.toSeconds shouldBe 10L
+      }
+    }
+
+    // Date types.
+    locally {
+      val localDate = "2023-01-02"
+      val localTime = "13:30:00"
+      val localDateTime = s"${localDate}T${localTime}"
+      val timeZone = "[America/Bogota]"
+      val zonedTime = s"${localTime}${timeZone}"
+      val zonedDateTime = s"${localDateTime}${timeZone}"
+
+      for {
+        ld <- c"RETURN date(${localDate})".query(javaLocalDate).single(driver)
+        lt <- c"RETURN time(${localTime})".query(javaLocalTime).single(driver)
+        ldt <- c"RETURN datetime(${localDateTime})".query(javaLocalDateTime).single(driver)
+        zt <- c"RETURN time(${zonedTime})".query(javaOffsetTime).single(driver)
+        zdt <- c"RETURN datetime(${zonedDateTime})".query(javaZonedDateTime).single(driver)
+      } yield {
+        ld shouldBe JDate.parse(localDate)
+        lt shouldBe JTime.parse(localTime)
+        ldt shouldBe JDateTime.parse(localDateTime)
+        zt shouldBe JZTime.parse(zonedTime)
+        zdt shouldBe JZDateTime.parse(zonedDateTime)
+      }
+    }
+
+    // Structural types.
+    locally {
+      for {
+        n <- "CREATE (n: Node { data: 0 }) RETURN n".query(node).single(driver)
+        r <- "CREATE ()-[r: RELATIONSHIP { data: 1 }]->() RETURN r".query(relationship).single(driver)
+        p <- "CREATE p=(: Node { data: 3 })-[r: RELATIONSHIP { data: 5 }]->(: Node { data: 10 }) RETURN p".query(path).single(driver)
+      } yield {
+        assert(n.hasLabel("node"))
+        n.properties should contain theSameElementsAs Map("data" -> 0)
+
+        assert(r.hasType("relationship"))
+        r.properties should contain theSameElementsAs Map("data" -> 1)
+
+        inside(p.segments.loneElement) {
+          case Segment(start, relationship, end) =>
+            assert(start.hasLabel("node"))
+            start.properties should contain theSameElementsAs Map("data" -> 3)
+
+            assert(relationship.hasType("relationship"))
+            relationship.properties should contain theSameElementsAs Map("data" -> 5)
+
+            assert(end.hasLabel("node"))
+            end.properties should contain theSameElementsAs Map("data" -> 10)
+        }
+      }
     }
   }
 
