@@ -124,7 +124,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
         Left(IncoercibleException(s"Couldn't decode ${value} into a ${ct.runtimeClass.getSimpleName}"))
     }
 
-    instance(pf orElse singletonRecordFallback.andThen(pf) orElse fail)
+    instance(singletonRecordFallback.andThen(pf) orElse pf orElse fail)
   }
 
   /** Factory to create a [[ResultMapper]] from a decoding function,}
@@ -538,32 +538,32 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     options: (S, ResultMapper[? <: A])*
   ): ResultMapper[A] = strategy match {
     case CoproductDiscriminatorStrategy.NodeLabel =>
-      ResultMapper.node.flatMap { node =>
+      node.flatMap { node =>
         options.collectFirst {
           case (label, mapper) if (node.hasLabel(label)) =>
             mapper.widen[A]
         }.getOrElse(
-          ResultMapper.failed(IncoercibleException(s"Unexpected node labels: ${node.labels}"))
+          failed(IncoercibleException(s"Unexpected node labels: ${node.labels}"))
         )
       }
 
     case CoproductDiscriminatorStrategy.RelationshipType =>
-      ResultMapper.relationship.flatMap { relationship =>
+      relationship.flatMap { relationship =>
         options.collectFirst {
           case (label, mapper) if (relationship.hasType(tpe = label)) =>
             mapper.widen[A]
         }.getOrElse(
-          ResultMapper.failed(IncoercibleException(s"Unexpected relationship type: ${relationship.relationshipType}"))
+          failed(IncoercibleException(s"Unexpected relationship type: ${relationship.relationshipType}"))
         )
       }
 
     case CoproductDiscriminatorStrategy.Field(fieldName, fieldResultMapper) =>
-      ResultMapper.field(key = fieldName)(fieldResultMapper).flatMap { label =>
+      field(key = fieldName)(fieldResultMapper).flatMap { label =>
         options.collectFirst {
           case (`label`, mapper) =>
             mapper.widen[A]
         }.getOrElse(
-          ResultMapper.failed(IncoercibleException(s"Unexpected field label: ${label}"))
+          failed(IncoercibleException(s"Unexpected field label: ${label}"))
         )
       }
   }
