@@ -46,7 +46,7 @@ object Boilerplate {
       "(implicit " ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       "): ResultMapper[A] =" ::
-      "values.map(_.toList).emap {" ::
+      "values.emap {" ::
       s"case ${parameters.map(l => s"v${l}").mkString(" :: ")} :: _ =>" ::
       s"(${parameters.map(l => s"${l}.decode(v${l})").mkString(" and ")}).map {" ::
       s"case ${"(" * n}${parameters.mkString("), ")}) =>" ::
@@ -78,7 +78,7 @@ object Boilerplate {
       s"implicit final def tuple[${typeParameters}](implicit" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
-      "values.map(_.toList).emap {" ::
+      "values.emap {" ::
       s"case ${parameters.map(l => s"v${l}").mkString(" :: ")} :: _ =>" ::
       s"(${parameters.map(l => s"${l}.decode(v${l})").mkString(" and ")}).map {" ::
       s"case ${"(" * n}${parameters.mkString("), ")}) =>" ::

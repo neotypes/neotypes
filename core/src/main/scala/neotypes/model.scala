@@ -30,7 +30,7 @@ object types {
   sealed abstract class NeoType extends Product with Serializable
 
   /** Represents a Neo4j heterogeneous list (composite type) */
-  final case class NeoList(values: Iterable[NeoType]) extends NeoType
+  final case class NeoList(values: List[NeoType]) extends NeoType
 
   /** Parent type of all Neo4j types that have named properties. */
   sealed trait NeoObject extends NeoType {
@@ -48,8 +48,8 @@ object types {
     final def keys: Set[String] =
       properties.keySet
 
-    final def values: Iterable[NeoType] =
-      properties.values
+    final def values: List[NeoType] =
+      properties.valuesIterator.toList
   }
 
   /** Represents a Neo4j heterogeneous map (composite type) */
@@ -70,7 +70,7 @@ object types {
   ) extends Entity {
     /** Checks if this Node contains the given label; case insensitive. */
     def hasLabel(label: String): Boolean =
-      labels.contains(label.trim.toLowerCase)
+      labels.contains(label.toLowerCase)
   }
 
   /** Represents a Neo4j Relationship. */
@@ -83,7 +83,7 @@ object types {
   ) extends Entity {
     /** Checks if this Relationship has the given type; case insensitive. */
     def hasType(tpe: String): Boolean =
-      relationshipType == tpe.trim.toLowerCase
+      relationshipType.equalsIgnoreCase(tpe)
   }
 
   /** Represents a Neo4j Path. */
@@ -139,7 +139,7 @@ object types {
   /** Parent type of all Neo4j property types. */
   sealed trait Value extends NeoType
   object Value {
-    final case class ListValue[V <: SimpleValue](values: Iterable[V]) extends Value
+    final case class ListValue[V <: SimpleValue](values: List[V]) extends Value
     sealed trait SimpleValue extends Value
     sealed trait NumberValue extends SimpleValue
     final case class Integer(value: Long) extends NumberValue

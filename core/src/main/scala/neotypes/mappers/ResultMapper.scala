@@ -383,15 +383,12 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
   }
 
   /** [[ResultMapper]] that will attempt to decode the input as an heterogeneous list of [[NeoType]] values. */
-  implicit val values: ResultMapper[Iterable[NeoType]] = fromMatch {
+  implicit val values: ResultMapper[List[NeoType]] = fromMatch {
     case NeoList(values) =>
       values
 
-    case NeoMap(values) =>
-      values.values
-
-    case entity: Entity =>
-      entity.values
+    case value: NeoObject =>
+      value.values
 
     case Value.ListValue(values) =>
       values
@@ -482,13 +479,10 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     */
   def at[A](idx: Int)(implicit mapper: ResultMapper[A]): ResultMapper[A] =
     values.emap { col =>
-      val element = col match {
-        case seq: collection.Seq[NeoType] => seq.lift(idx)
-        case _ => col.slice(from = idx, until = idx + 1).headOption
-      }
-
-      val value = element.toRight(left = PropertyNotFoundException(key = s"index-${idx}"))
-      value.flatMap(mapper.decode)
+      col
+        .lift(idx)
+        .toRight(left = PropertyNotFoundException(key = s"index-${idx}"))
+        .flatMap(mapper.decode)
     }
 
   /** Creates a [[ResultMapper]] that will try to decode a [[NeoObject]]
