@@ -425,15 +425,9 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
   implicit def option[A](implicit mapper: ResultMapper[A]): ResultMapper[Option[A]] = fromMatch {
     case Value.NullValue =>
       Right(Option.empty[A])
-  } or mapper.transform {
-    case Right(value) =>
-      Right(Some(value))
 
-    case Left(_ : PropertyNotFoundException) =>
-      Right(None)
-
-    case Left(ex) =>
-      Left(ex)
+    case value =>
+      mapper.decode(value).map(Some.apply)
   }
 
   /** Creates a [[ResultMapper]] that will attempt to decode the input using the two provided mappers. */

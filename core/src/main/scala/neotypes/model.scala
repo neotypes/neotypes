@@ -36,14 +36,21 @@ object types {
   sealed trait NeoObject extends NeoType {
     def properties: Map[String, NeoType]
 
-    final def get(key: String): Option[NeoType] =
-      properties.get(key)
+    final def get(key: String): NeoType =
+      properties.getOrElse(key, default = Value.NullValue)
 
     final def getAs[A](key: String)(implicit mapper: ResultMapper[A]): Either[exceptions.ResultMapperException, A] =
-      properties
-        .get(key)
-        .toRight(left = exceptions.PropertyNotFoundException(key))
-        .flatMap(mapper.decode)
+      properties.get(key) match {
+        case Some(value) =>
+          mapper.decode(value)
+
+        case None =>
+          mapper.decode(Value.NullValue).left.map { ex =>
+            exceptions.ChainException.from(
+              exceptions = ex, exceptions.PropertyNotFoundException(key)
+            )
+          }
+      }
 
     final def keys: Set[String] =
       properties.keySet
