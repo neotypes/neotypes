@@ -107,11 +107,19 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     pf: PartialFunction[NeoType, Either[ResultMapperException, A]]
   ) (
     implicit ct: ClassTag[A]
-  ): ResultMapper[A] =
-    instance(pf.orElse({
+  ): ResultMapper[A] = {
+    val singletonRecordFallback: PartialFunction[NeoType, NeoType] = {
+      case NeoMap(values) if (values.size == 1) =>
+        values.head._2
+    }
+
+    val fail: PartialFunction[NeoType, Either[ResultMapperException, A]] = {
       case value =>
         Left(IncoercibleException(s"Couldn't decode ${value} into a ${ct.runtimeClass.getSimpleName}"))
-    }))
+    }
+
+    instance(pf orElse singletonRecordFallback.andThen(pf) orElse fail)
+  }
 
   /** Factory to create a [[ResultMapper]] from a decoding function,}
     * emulating pattern matching.

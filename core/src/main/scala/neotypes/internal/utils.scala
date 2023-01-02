@@ -1,10 +1,6 @@
 package neotypes
 package internal
 
-import model.types.NeoType
-
-import org.neo4j.driver.Record
-
 import scala.collection.Factory
 import scala.collection.mutable.Builder
 
@@ -29,8 +25,4 @@ private[neotypes] object utils {
       }
     loop(acc = factory.newBuilder)
   }
-
-  /** Parses a Neo4j [[Record]] into a [[NeoType]]. */
-  def parseRecord(record: Record): NeoType =
-    ???
 }

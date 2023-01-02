@@ -29,6 +29,9 @@ object types {
   /** Parent type of all Neo4j types. */
   sealed abstract class NeoType extends Product with Serializable
 
+  /** Represents a Neo4j heterogeneous list (composite type) */
+  final case class NeoList(values: Iterable[NeoType]) extends NeoType
+
   /** Parent type of all Neo4j types that have named properties. */
   sealed trait NeoObject extends NeoType {
     def properties: Map[String, NeoType]
@@ -48,9 +51,6 @@ object types {
     final def values: Iterable[NeoType] =
       properties.values
   }
-
-  /** Represents a Neo4j heterogeneous list (composite type) */
-  final case class NeoList(values: Iterable[NeoType]) extends NeoType
 
   /** Represents a Neo4j heterogeneous map (composite type) */
   final case class NeoMap(properties: Map[String, NeoType]) extends NeoObject
