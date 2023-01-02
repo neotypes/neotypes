@@ -101,7 +101,7 @@ object Transaction {
         for {
           result <- runQuery(query, params)
           records <- F.fromCompletionStage(result.listAsync())
-          col <- F.fromEither(traverseAs(factory)(records.asScala.iterator) { record =>
+          col <- F.fromEither(traverseAs(factory)(records.asScala) { record =>
             Parser.decodeRecord(record, mapper)
           })
           rs <- resultSummary(result)

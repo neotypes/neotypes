@@ -22,7 +22,7 @@ object Parser {
   ) (
     parseValue: NeoValue => Either[ResultMapperException, V]
   ): Either[ResultMapperException, Map[String, V]] =
-    traverseAs(Map.mapFactory[String, V])(entity.keys.asScala.iterator) { key =>
+    traverseAs(Map.mapFactory[String, V])(entity.keys.asScala) { key =>
       parseValue(entity.get(key)).map { value =>
         key -> value
       }
@@ -47,7 +47,7 @@ object Parser {
     else if (value.hasType(Types.MAP))
       parseProperties(entity = value)(parseNeoType).map(NeoMap.apply)
     else if (value.hasType(Types.LIST))
-      traverseAs(List.iterableFactory[NeoType])(value.values.asScala.iterator)(parseNeoType).map(NeoList.apply)
+      traverseAs(List.iterableFactory[NeoType])(value.values.asScala)(parseNeoType).map(NeoList.apply)
     else
       parseNeoValue(value)
 
@@ -86,7 +86,7 @@ object Parser {
         ))
 
     if (value.hasType(Types.LIST))
-      traverseAs(List.iterableFactory[Value.SimpleValue])(value.values.asScala.iterator)(parseSimpleValue).map(Value.ListValue.apply)
+      traverseAs(List.iterableFactory[Value.SimpleValue])(value.values.asScala)(parseSimpleValue).map(Value.ListValue.apply)
     else
       parseSimpleValue(value)
   }
@@ -115,7 +115,7 @@ object Parser {
 
   /** Attempts to parse a [[NeoPath]] as a [[Path]] */
   private def parseNeoPath(path: NeoPath): Either[ResultMapperException, Path] =
-    traverseAs(List.iterableFactory[Path.Segment])(path.asScala.iterator) { segment =>
+    traverseAs(List.iterableFactory[Path.Segment])(path.asScala) { segment =>
       (parseNeoNode(segment.start) and parseNeoRelationship(segment.relationship) and parseNeoNode(segment.end)).map {
         case ((start, relationship), end) =>
           Path.Segment(start, relationship, end)

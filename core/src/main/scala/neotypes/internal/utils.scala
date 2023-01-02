@@ -13,8 +13,9 @@ private[neotypes] object utils {
     * accumulating all success or stopping at the first failure.
     */
   def traverseAs[A, B, C, E](factory: Factory[B, C])
-                            (iter: Iterator[A])
+                            (col: IterableOnce[A])
                             (f: A => Either[E, B]): Either[E, C] = {
+    val iter = col.iterator
     @annotation.tailrec
     def loop(acc: Builder[B, C]): Either[E, C] =
       if (iter.hasNext) f(iter.next()) match {

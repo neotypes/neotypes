@@ -503,7 +503,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     mapFactory: Factory[(K, V), M]
   ): ResultMapper[M] =
     neoObject.emap { obj =>
-      traverseAs(mapFactory)(obj.properties.iterator) {
+      traverseAs(mapFactory)(obj.properties) {
         case (key, value) =>
           keyMapper.decodeKey(key) and mapper.decode(value)
       }
@@ -614,7 +614,7 @@ sealed trait ResultMappersLowPriority { self: ResultMapper.type =>
     * using the provided mapper to decode each element.
     */
   implicit def collectAs[C, A](implicit mapper: ResultMapper[A], factory: Factory[A, C]): ResultMapper[C] =
-    values.emap(col => traverseAs(factory)(col.iterator)(mapper.decode))
+    values.emap(col => traverseAs(factory)(col)(mapper.decode))
 
   /** Derives an opinionated [[ResultMapper]] for a given `case class`.
     * The derived mapper will attempt to decode the result as a [[NeoObject]],
