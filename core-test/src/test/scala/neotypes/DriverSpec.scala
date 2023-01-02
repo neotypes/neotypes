@@ -177,7 +177,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       for {
         nums <- multipleRecordQuery.query(mapper).list(driver)
       } yield {
-        nums shouldBe List(1, 3, 3)
+        nums shouldBe List(1, 2, 3)
       }
     }
 
@@ -187,7 +187,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       for {
         nums <- multipleRecordQuery.query(mapper).collectAs(BitSet, driver)
       } yield {
-        nums shouldBe BitSet(1, 3, 3)
+        nums shouldBe BitSet(1, 2, 3)
       }
     }
 
@@ -197,7 +197,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       for {
         nums <- singleRecordQuery.query(mapper).single(driver)
       } yield {
-        nums shouldBe List(1, 3, 3)
+        nums shouldBe List(1, 2, 3)
       }
     }
 
@@ -207,13 +207,13 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       for {
         nums <- singleRecordQuery.query(mapper).single(driver)
       } yield {
-        nums shouldBe BitSet(1, 3, 3)
+        nums shouldBe BitSet(1, 2, 3)
       }
     }
   }
 
   it should "support querying user defined case classes whose fields are supported types" in executeAsFuture { driver =>
-    val namedQuery = """RETURN "Luis" AS name 25 AS age"""
+    val namedQuery = """RETURN "Luis" AS name, 25 AS age"""
     val unnamedQuery = """RETURN ["Luis", 25]"""
     val expectedUser = User(name = "Luis", age = 25)
 
@@ -334,7 +334,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     locally {
       val mapper = coproductDerive[Problem]
       for {
-        problem <- """RETURN { type: "unknown", data: 10}""".query(mapper).single(driver)
+        problem <- """RETURN { type: "Unknown", data: 10 }""".query(mapper).single(driver)
       } yield {
         problem shouldBe Problem.Unknown
       }
@@ -348,7 +348,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     )(User.apply)
 
     for {
-      r <- """RETURN "Balmung" AS personName 135 AS personAge""".query(mapper).single(driver)
+      r <- """RETURN "Balmung" AS personName, 135 AS personAge""".query(mapper).single(driver)
     } yield {
       r shouldBe User(name = "Balmung", age = 135)
     }
@@ -369,7 +369,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     // Successful validation.
     executeAsFuture { driver =>
       for {
-        record <- """RETURN 1 AS id "foo" AS data""".query(recordMapper).single(driver)
+        record <- """RETURN 1 AS id, "foo" AS data""".query(recordMapper).single(driver)
       } yield {
         record shouldBe Record(id = Id(1), data = "foo")
       }
@@ -378,7 +378,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     // Failed validation.
     recoverToExceptionIf[IncoercibleException] {
       executeAsFuture { driver =>
-        """RETURN -1 AS id "foo" AS data""".query(recordMapper).single(driver)
+        """RETURN -1 AS id, "foo" AS data""".query(recordMapper).single(driver)
       }
     } map { ex =>
       ex.getMessage shouldBe "-1 is not a valid ID because is negative"
@@ -396,7 +396,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     }
 
     for {
-      r <- """RETURN 1 AS id "foo" AS dataStr 5 AS dataInt""".query(mapper).single(driver)
+      r <- """RETURN 1 AS id, "foo" AS dataStr, 5 AS dataInt""".query(mapper).single(driver)
     } yield {
       r shouldBe Combined(id = 1, data = ("foo", 5))
     }
@@ -412,7 +412,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     }
 
     for {
-      r <- """RETURN 1 AS id ["foo", 5] AS data""".query(mapper).single(driver)
+      r <- """RETURN 1 AS id, ["foo", 5] AS data""".query(mapper).single(driver)
     } yield {
       r shouldBe Divided(id = 1, dataStr = "foo", dataInt = 5)
     }
@@ -447,7 +447,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     )(Nested.apply)
 
     for {
-      r <- """RETURN 3 AS a "foo" AS b 5 AS c "bar" AS d""".query(mapper).single(driver)
+      r <- """RETURN 3 AS a, "foo" AS b, 5 AS c, "bar" AS d""".query(mapper).single(driver)
     } yield {
       r shouldBe Nested(
         foo = Foo(
@@ -493,7 +493,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     )
 
     for {
-      map <- """RETURN { "foo": 3, "bar": 5 }""".query(mapper).single(driver)
+      map <- "RETURN { foo: 3, bar: 5 }".query(mapper).single(driver)
     } yield {
       map shouldBe SortedMap(
         CustomKey.Foo -> 3,
