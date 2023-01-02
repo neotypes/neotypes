@@ -41,6 +41,12 @@ trait ResultMapper[A] { self =>
       }
     }
 
+  /** Chains a transformation function that can manage failures. */
+  final def transform[B](f: Either[ResultMapperException, A] => Either[ResultMapperException, B]): ResultMapper[B] =
+    ResultMapper.instance { value =>
+      f(self.decode(value))
+    }
+
   /** Chains a transformation function that can fail. */
   final def emap[B](f: A => Either[ResultMapperException, B]): ResultMapper[B] =
     ResultMapper.instance { value =>
@@ -418,19 +424,16 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     */
   implicit def option[A](implicit mapper: ResultMapper[A]): ResultMapper[Option[A]] = fromMatch {
     case Value.NullValue =>
+      Right(Option.empty[A])
+  } or mapper.transform {
+    case Right(value) =>
+      Right(Some(value))
+
+    case Left(_ : PropertyNotFoundException) =>
       Right(None)
 
-    case value =>
-      mapper.decode(value) match {
-        case Right(value) =>
-          Right(Some(value))
-
-        case Left(_ : PropertyNotFoundException) =>
-          Right(None)
-
-        case Left(ex) =>
-          Left(ex)
-      }
+    case Left(ex) =>
+      Left(ex)
   }
 
   /** Creates a [[ResultMapper]] that will attempt to decode the input using the two provided mappers. */

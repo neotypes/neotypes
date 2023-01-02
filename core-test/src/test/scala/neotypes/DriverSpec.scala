@@ -5,7 +5,7 @@ import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.{KeyMapper, ResultMapper}
 import neotypes.model.exceptions.{IncoercibleException, KeyMapperException}
-import neotypes.model.types.Path.Segment
+import neotypes.model.types._
 
 import org.neo4j.driver.summary.ResultSummary
 import org.scalatest.{Inside, LoneElement, OptionValues}
@@ -93,21 +93,21 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         p <- "CREATE p=(: Node { data: 3 })-[r: RELATIONSHIP { data: 5 }]->(: Node { data: 10 }) RETURN p".query(path).single(driver)
       } yield {
         assert(n.hasLabel("node"))
-        n.properties should contain theSameElementsAs Map("data" -> 0)
+        n.properties should contain theSameElementsAs Map("data" -> Value.Integer(0))
 
         assert(r.hasType("relationship"))
-        r.properties should contain theSameElementsAs Map("data" -> 1)
+        r.properties should contain theSameElementsAs Map("data" -> Value.Integer(1))
 
         inside(p.segments.loneElement) {
-          case Segment(start, relationship, end) =>
+          case Path.Segment(start, relationship, end) =>
             assert(start.hasLabel("node"))
-            start.properties should contain theSameElementsAs Map("data" -> 3)
+            start.properties should contain theSameElementsAs Map("data" -> Value.Integer(3))
 
             assert(relationship.hasType("relationship"))
-            relationship.properties should contain theSameElementsAs Map("data" -> 5)
+            relationship.properties should contain theSameElementsAs Map("data" -> Value.Integer(5))
 
             assert(end.hasLabel("node"))
-            end.properties should contain theSameElementsAs Map("data" -> 10)
+            end.properties should contain theSameElementsAs Map("data" -> Value.Integer(10))
         }
       }
     }
