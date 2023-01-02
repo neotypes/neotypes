@@ -88,7 +88,7 @@ object Transaction {
         for {
           result <- runQuery(query, params)
           record <- F.fromCompletionStage(result.singleAsync()).mapError(_ => MissingRecordException)
-          t <- F.fromEither(mapper.decode(Parser.parseRecord(record)))
+          t <- F.fromEither(Parser.decodeRecord(record, mapper))
           rs <- resultSummary(result)
         } yield t -> rs
 
@@ -102,7 +102,7 @@ object Transaction {
           result <- runQuery(query, params)
           records <- F.fromCompletionStage(result.listAsync())
           col <- F.fromEither(traverseAs(factory)(records.asScala.iterator) { record =>
-            mapper.decode(Parser.parseRecord(record))
+            Parser.decodeRecord(record, mapper)
           })
           rs <- resultSummary(result)
         } yield col -> rs
@@ -156,7 +156,7 @@ object Transaction {
           case Some(result) =>
             S.fromPublisher(result.records()).single[F].flatMap {
               case Some(record) =>
-                F.fromEither(mapper.decode(Parser.parseRecord(record))).flatMap { t =>
+                F.fromEither(Parser.decodeRecord(record, mapper)).flatMap { t =>
                   resultSummary(result).map(rs => t -> rs)
                 }
 
@@ -177,7 +177,7 @@ object Transaction {
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
           case Some(result) =>
             val records = S.fromPublisher(result.records(), chunkSize = 256).evalMap { record =>
-              F.fromEither(mapper.decode(Parser.parseRecord(record)))
+              F.fromEither(Parser.decodeRecord(record, mapper))
             }
 
             records.collectAs(factory).flatMap { col =>
@@ -196,7 +196,7 @@ object Transaction {
       ): S[Either[T, ResultSummary]] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).flatMapS { result =>
           val records = S.fromPublisher(result.records(), chunkSize).evalMap { record =>
-            F.fromEither(mapper.decode(Parser.parseRecord(record)))
+            F.fromEither(Parser.decodeRecord(record, mapper))
           }
 
           val summary = S.fromPublisher(result.consume())

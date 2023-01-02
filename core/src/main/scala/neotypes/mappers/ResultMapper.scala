@@ -4,8 +4,8 @@ package mappers
 import boilerplate.BoilerplateResultMappers
 import internal.syntax.either._
 import internal.utils.traverseAs
-import model.types._
 import model.exceptions.{IncoercibleException, PropertyNotFoundException, ResultMapperException}
+import model.types._
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
