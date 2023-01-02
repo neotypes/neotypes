@@ -7,6 +7,7 @@ import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
 import java.time.{Duration => JDuration, LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, Period => JPeriod, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
 import java.util.UUID
+import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 
 @annotation.implicitNotFound("Could not find the ParameterMapper for ${A}")
@@ -87,6 +88,9 @@ object ParameterMapper {
 
   implicit final val ByteArrayParameterMapper: ParameterMapper[Array[Byte]] =
     ParameterMapper.identity
+
+  implicit final val ByteArraySeqParameterMapper: ParameterMapper[ArraySeq[Byte]] =
+    ByteArrayParameterMapper.contramap(arr => arr.unsafeArray.asInstanceOf[Array[Byte]])
 
   implicit final val DoubleParameterMapper: ParameterMapper[Double] =
     ParameterMapper.fromCast(Double.box)
