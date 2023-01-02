@@ -32,7 +32,7 @@ object CypherStringInterpolator {
 
   private val comma = DeferredQueryBuilder.Query(",")
 
-  private def caseClassParts(params: Map[String, QueryParam]): List[DeferredQueryBuilder.Part] = {
+  private def caseClassParts(params: List[(String, QueryParam)]): List[DeferredQueryBuilder.Part] = {
     @annotation.tailrec
     def loop(input: List[(String, QueryParam)], acc: List[DeferredQueryBuilder.Part]): List[DeferredQueryBuilder.Part] =
       input match {
@@ -49,7 +49,7 @@ object CypherStringInterpolator {
           acc.tail.reverse
       }
 
-    loop(params.toList, acc = Nil)
+    loop(params, acc = Nil)
   }
 
   private def withParameterPrefix(
@@ -144,7 +144,7 @@ object CypherStringInterpolator {
 sealed trait QueryArg
 object QueryArg {
   final case class Param(param: QueryParam) extends QueryArg
-  final case class Params(params: Map[String, QueryParam]) extends QueryArg
+  final case class Params(params: List[(String, QueryParam)]) extends QueryArg
   final case class QueryBuilder(builder: DeferredQueryBuilder) extends QueryArg
 }
 
@@ -177,7 +177,7 @@ object QueryArgMapper {
     }
 
   trait DerivedQueryParams[A] {
-    def getParams(a: A): Map[String, QueryParam]
+    def getParams(a: A): List[(String, QueryParam)]
   }
 
   implicit final def fromDerivedQueryParams[A](

@@ -53,11 +53,11 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
           })""".build()
 
     assert(query ==
-      """CREATE (a: Test {
-           name: $p1,
-           age: $p2,
-           born: $p3
-         })"""
+       """CREATE (a: Test {
+            name: $p1,
+            age: $p2,
+            born: $p3
+          })"""
     )
     assert(params == Map(
       "p1" -> QueryParam(name),
