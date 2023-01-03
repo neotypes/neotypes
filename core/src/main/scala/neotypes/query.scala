@@ -12,10 +12,10 @@ import scala.collection.Factory
 import scala.collection.mutable.StringBuilder
 
 sealed trait BaseQuery {
-  /** @param query The query statement that will be executed. */
+  /** The query statement that will be executed. */
   def query: String
 
-  /** @param params The parameters that will be substituted into the query statement. */
+  /** @The parameters that will be substituted into the query statement. */
   def params: Map[String, QueryParam]
 
   /** Creates a new query with an updated set of parameters.
@@ -50,7 +50,10 @@ final class ExecuteQuery private[neotypes] (
     *
     * @example
     * {{{
-    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.resultSummary(driver)
+    * val result: F[ResultSummary] =
+    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *     .execute
+    *     .resultSummary(driver)
     * }}}
     *
     * @param driver neotypes driver.
@@ -65,8 +68,10 @@ final class ExecuteQuery private[neotypes] (
     *
     * @example
     * {{{
-    * driver.transact { tx =>
-    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.resultSummary(tx)
+    * val result: F[ResultSummary] = driver.transact { tx =>
+    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *     .execute
+    *     .resultSummary(tx)
     * }
     * }}}
     *
@@ -81,7 +86,10 @@ final class ExecuteQuery private[neotypes] (
     *
     * @example
     * {{{
-    * "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.void(driver)
+    * val result: F[Unit] =
+    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *     .execute
+    *     .void(driver)
     * }}}
     *
     * @param driver neotypes driver.
@@ -96,8 +104,10 @@ final class ExecuteQuery private[neotypes] (
     *
     * @example
     * {{{
-    * driver.transact { tx =>
-    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })".execute.void(tx)
+    * val result: F[Unit] = driver.transact { tx =>
+    *   "CREATE (p:Person { name: 'Charlize Theron', born: 1975 })"
+    *     .execute
+    *     .void(tx)
     * }
     * }}}
     *
@@ -111,18 +121,18 @@ final class ExecuteQuery private[neotypes] (
 
 /** Phantom type to determine the appropriate return type of a DeferredQuery. */
 sealed trait ResultType {
-  type SingleR[T]
+  type AsyncR[T]
   type StreamR[T]
 
-  private[neotypes] def single[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[SingleR[T]]
+  private[neotypes] def async[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[AsyncR[T]]
   private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]]
 }
 object ResultType {
   final case object Simple extends ResultType {
-    override final type SingleR[T] = T
+    override final type AsyncR[T] = T
     override final type StreamR[T] = T
 
-    override private[neotypes] def single[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[SingleR[T]] =
+    override private[neotypes] def async[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[AsyncR[T]] =
       result.map(_._1)
 
     override private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]] =
@@ -132,10 +142,10 @@ object ResultType {
   }
 
   final case object WithResultSummary extends ResultType {
-    override final type SingleR[T] = (T, ResultSummary)
+    override final type AsyncR[T] = (T, ResultSummary)
     override final type StreamR[T] = Either[T, ResultSummary]
 
-    override private[neotypes] def single[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[SingleR[T]] =
+    override private[neotypes] def async[F[_], T](result: F[(T, ResultSummary)])(implicit F: Async[F]): F[AsyncR[T]] =
       result
 
     override private[neotypes] def stream[S[_], T](result: S[Either[T, ResultSummary]])(implicit S: Stream[S]): S[StreamR[T]] =
@@ -149,7 +159,7 @@ object ResultType {
   *
   * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
   */
-final class DeferredQuery[T, RT <: ResultType](
+final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     val query: String,
     val params: Map[String, QueryParam],
     val RT: RT,
@@ -191,7 +201,7 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a single T element.
     */
-  def single[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[T]] =
+  def single[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[T]] =
     driver.transact(config)(tx => single(tx))
 
   /** Executes the query and returns the unique / first value.
@@ -211,8 +221,8 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a single T element.
     */
-  def single[F[_]](tx: Transaction[F]): F[RT.SingleR[T]] =
-    RT.single(tx.single(query, params, mapper))(tx.F)
+  def single[F[_]](tx: Transaction[F]): F[RT.AsyncR[T]] =
+    RT.async(tx.single(query, params, mapper))(tx.F)
 
   /** Executes the query and returns all results as a collection of values.
     *
@@ -231,7 +241,7 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam C collection type.
     * @return An effectual value that will compute a collection of T elements.
     */
-  def collectAs[F[_], C](factory: Factory[T, C], driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[C]] =
+  def collectAs[F[_], C](factory: Factory[T, C], driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[C]] =
     driver.transact(config)(tx => collectAs(factory, tx))
 
   /** Executes the query and returns all results as a collection of values.
@@ -251,10 +261,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam C collection type.
     * @return An effectual value that will compute a collection of T elements.
     */
-  def collectAs[F[_], C](factory: Factory[T, C], tx: Transaction[F]): F[RT.SingleR[C]] =
-    RT.single(tx.collectAs(query, params, mapper, factory))(tx.F)
+  def collectAs[F[_], C](factory: Factory[T, C], tx: Transaction[F]): F[RT.AsyncR[C]] =
+    RT.async(tx.collectAs(query, params, mapper, factory))(tx.F)
 
-  /** Executes the query and returns a List of values.
+  /** Executes the query and returns a [[List]] of values.
     *
     * @example
     * {{{
@@ -269,10 +279,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a List of T elements.
     */
-  def list[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[List[T]]] =
+  def list[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[List[T]]] =
     driver.transact(config)(tx => list(tx))
 
-  /** Executes the query and returns a List of values.
+  /** Executes the query and returns a [[List]] of values.
     *
     * @example
     * {{{
@@ -287,10 +297,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a List of T elements.
     */
-  def list[F[_]](tx: Transaction[F]): F[RT.SingleR[List[T]]] =
+  def list[F[_]](tx: Transaction[F]): F[RT.AsyncR[List[T]]] =
     collectAs(factory = List, tx)
 
-  /** Executes the query and returns a Set of values.
+  /** Executes the query and returns a [[Set]] of values.
     *
     * @example
     * {{{
@@ -305,10 +315,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a Set of T elements.
     */
-  def set[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[Set[T]]] =
+  def set[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Set[T]]] =
     driver.transact(config)(tx => set(tx))
 
-  /** Executes the query and returns a Set of values.
+  /** Executes the query and returns a [[Set]] of values.
     *
     * @example
     * {{{
@@ -323,10 +333,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a Set of T elements.
     */
-  def set[F[_]](tx: Transaction[F]): F[RT.SingleR[Set[T]]] =
+  def set[F[_]](tx: Transaction[F]): F[RT.AsyncR[Set[T]]] =
     collectAs(factory = Set, tx)
 
-  /** Executes the query and returns a Vector of values.
+  /** Executes the query and returns a [[Vector]] of values.
     *
     * @example
     * {{{
@@ -341,10 +351,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a Vector of T elements.
     */
-  def vector[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.SingleR[Vector[T]]] =
+  def vector[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Vector[T]]] =
     driver.transact(config)(tx => vector(tx))
 
-  /** Executes the query and returns a Vector of values.
+  /** Executes the query and returns a [[Vector]] of values.
     *
     * @example
     * {{{
@@ -359,10 +369,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @tparam F effect type.
     * @return An effectual value that will compute a Vector of T elements.
     */
-  def vector[F[_]](tx: Transaction[F]): F[RT.SingleR[Vector[T]]] =
+  def vector[F[_]](tx: Transaction[F]): F[RT.AsyncR[Vector[T]]] =
     collectAs(factory = Vector, tx)
 
-  /** Executes the query and returns a Map of values.
+  /** Executes the query and returns a [[Map]] of values.
     *
     * @example
     * {{{
@@ -381,10 +391,10 @@ final class DeferredQuery[T, RT <: ResultType](
     * @return An effectual value that will compute a Map of key-value elements.
     */
   def map[F[_], K, V](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
-                     (implicit ev: T <:< (K, V)): F[RT.SingleR[Map[K, V]]] =
+                     (implicit ev: T <:< (K, V)): F[RT.AsyncR[Map[K, V]]] =
     driver.transact(config)(tx => map(tx))
 
-  /** Executes the query and returns a Map of values.
+  /** Executes the query and returns a [[Map]] of values.
     *
     * @example
     * {{{
@@ -403,8 +413,8 @@ final class DeferredQuery[T, RT <: ResultType](
     * @return An effectual value that will compute a Map of key-value elements.
     */
   def map[F[_], K, V](tx: Transaction[F])
-                     (implicit ev: T <:< (K, V)): F[RT.SingleR[Map[K, V]]] =
-    RT.single(
+                     (implicit ev: T <:< (K, V)): F[RT.AsyncR[Map[K, V]]] =
+    RT.async(
       tx.collectAs(query, params, mapper.map(ev), factory = Map.mapFactory[K, V])
     )(tx.F)
 
@@ -478,7 +488,7 @@ final class DeferredQuery[T, RT <: ResultType](
 
 /** A builder for constructing instance of [[DeferredQuery]].
   *
-  * The idiomatic way to use the DeferredQueryBuilder is with the `c` String Interpolation.
+  * The idiomatic way to use the [[DeferredQueryBuilder]] is with the `c` string interpolator.
   *
   * @see <a href="https://neotypes.github.io/neotypes/parameterized_queries.html">The parametrized queries documentation</a>.
   *
@@ -487,19 +497,19 @@ final class DeferredQuery[T, RT <: ResultType](
   * val name = "John"
   * val born = 1980
   *
-  * val deferredQueryBuilder = c"create (a: Person { name: \$name," + c"born: \$born })"
-  *
-  * val deferredQuery = deferredQueryBuilder.query[Unit]
+  * val query = c"CREATE (: Person { name: \${name}, born: \${born} })"
   * }}}
   */
 final class DeferredQueryBuilder private[neotypes] (private val parts: List[DeferredQueryBuilder.Part]) {
   import DeferredQueryBuilder.{PARAMETER_NAME_PREFIX, Param, Part, Query, SubQueryParam}
 
+  /** Creates a [[ExecuteQuery]]. */
   def execute: ExecuteQuery = {
     val (query, params, _) = build()
     new ExecuteQuery(query, params)
   }
 
+  /** Creates a [[DeferredQuery]] using the provided [[ResultMapper]]. */
   def query[T](mapper: ResultMapper[T]): DeferredQuery[T, ResultType.Simple.type] = {
     val (query, params, _) = build()
     new DeferredQuery(query, params, RT = ResultType.Simple, mapper)
