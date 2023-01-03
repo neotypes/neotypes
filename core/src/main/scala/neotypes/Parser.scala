@@ -16,25 +16,13 @@ import scala.util.Try
 object Parser {
   val Types = TypeSystem.getDefault
 
-  /** Attempts to parse the properties of a [[NeoEntity]]. */
-  private def parseProperties[V <: NeoType](
-    entity: NeoEntity
-  ) (
-    parseValue: NeoValue => Either[ResultMapperException, V]
-  ): Either[ResultMapperException, Map[String, V]] =
-    traverseAs(Map.mapFactory[String, V])(entity.keys.asScala) { key =>
-      parseValue(entity.get(key)).map { value =>
-        key -> value
-      }
-    }
-
   /** Parses and decodes a [[NeoRecord]] into a value using a [[ResultMapper]]. */
   def decodeRecord[A](record: NeoRecord, mapper: ResultMapper[A]): Either[ResultMapperException, A] =
     parseRecord(record).flatMap(mapper.decode)
 
   /** Parses a Neo4j [[NeoRecord]] into a [[NeoMap]]. */
   def parseRecord(record: NeoRecord): Either[ResultMapperException, NeoMap] =
-    parseProperties(entity = record)(parseNeoType).map(NeoMap.apply)
+    parseNeoMap(entity = record)
 
   /** Parses a Neo4j [[NeoValue]] into a [[NeoType]]. */
   def parseNeoType(value: NeoValue): Either[ResultMapperException, NeoType] =
@@ -45,7 +33,7 @@ object Parser {
     else if (value.hasType(Types.PATH))
       parseNeoPath(value.asPath)
     else if (value.hasType(Types.MAP))
-      parseProperties(entity = value)(parseNeoType).map(NeoMap.apply)
+      parseNeoMap(entity = value)
     else if (value.hasType(Types.LIST))
       traverseAs(List.iterableFactory[NeoType])(value.values.asScala)(parseNeoType).map(NeoList.apply)
     else
@@ -53,7 +41,7 @@ object Parser {
 
   /** Parses a Neo4j [[NeoValue]] into a [[Value]]. */
   def parseNeoValue(value: NeoValue): Either[ResultMapperException, Value] = {
-    def parseSimpleValue(value: NeoValue):  Either[ResultMapperException, Value.SimpleValue] =
+    def parseSimpleValue(value: NeoValue): Either[ResultMapperException, Value.SimpleValue] =
       if (value.hasType(Types.INTEGER))
         Right(Value.Integer(value.asLong))
       else if (value.hasType(Types.FLOAT))
@@ -91,7 +79,23 @@ object Parser {
       parseSimpleValue(value)
   }
 
-  /** Attempts to parse a [[NeoNode]] as a [[Node]] */
+  /** Attempts to parse the properties of a [[NeoEntity]]. */
+  private def parseProperties[V <: NeoType](
+    entity: NeoEntity
+  ) (
+    parseValue: NeoValue => Either[ResultMapperException, V]
+  ): Either[ResultMapperException, Map[String, V]] =
+    traverseAs(Map.mapFactory[String, V])(entity.keys.asScala) { key =>
+      parseValue(entity.get(key)).map { value =>
+        key -> value
+      }
+    }
+
+  /** Attempts to parse a [[NeoEntity]] as a [[NeoMap]]. */
+  private def parseNeoMap(entity: NeoEntity): Either[ResultMapperException, NeoMap] =
+    parseProperties(entity)(parseNeoType).map(NeoMap.apply)
+
+  /** Attempts to parse a [[NeoNode]] as a [[Node]]. */
   private def parseNeoNode(node: NeoNode): Either[ResultMapperException, Node] =
     parseProperties(entity = node)(parseNeoValue).map { properties =>
       Node(
@@ -101,7 +105,7 @@ object Parser {
       )
     }
 
-  /** Attempts to parse a [[NeoRelationship]] as a [[Relationship]] */
+  /** Attempts to parse a [[NeoRelationship]] as a [[Relationship]]. */
   private def parseNeoRelationship(relationship: NeoRelationship): Either[ResultMapperException, Relationship] =
     parseProperties(entity = relationship)(parseNeoValue).map { properties =>
       Relationship(
@@ -113,7 +117,7 @@ object Parser {
       )
     }
 
-  /** Attempts to parse a [[NeoPath]] as a [[Path]] */
+  /** Attempts to parse a [[NeoPath]] as a [[Path]]. */
   private def parseNeoPath(path: NeoPath): Either[ResultMapperException, Path] =
     traverseAs(List.iterableFactory[Path.Segment])(path.asScala) { segment =>
       (parseNeoNode(segment.start) and parseNeoRelationship(segment.relationship) and parseNeoNode(segment.end)).map {

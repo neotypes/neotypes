@@ -124,6 +124,11 @@ object Transaction {
       override final def rollback: F[Unit] =
         S.fromPublisher(transaction.rollback[Unit]).voidS[F].guarantee(_ => close())
 
+      private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoReactiveResult] =
+        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap { result =>
+          F.fromEither(result.toRight(left = MissingRecordException))
+        }
+
       private def resultSummary(result: NeoReactiveResult): F[ResultSummary] =
         S.fromPublisher(result.consume()).single[F].flatMap {
           case Some(rs) =>
@@ -137,36 +142,24 @@ object Transaction {
         query: String,
         params: Map[String, QueryParam]
       ): F[ResultSummary] =
-        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
-          case Some(result) =>
-            S.fromPublisher(result.records()).voidS[F].flatMap { _ =>
-              resultSummary(result)
-            }
-
-          case None =>
-            F.fromEither(Left(MissingRecordException))
-        }
+        for {
+          result <- runQuery(query, params)
+          _ <- S.fromPublisher(result.records()).voidS[F]
+          rs <- resultSummary(result)
+        } yield rs
 
       override final def single[T](
         query: String,
         params: Map[String, QueryParam],
         mapper: ResultMapper[T]
       ): F[(T, ResultSummary)] =
-        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
-          case Some(result) =>
-            S.fromPublisher(result.records()).single[F].flatMap {
-              case Some(record) =>
-                F.fromEither(Parser.decodeRecord(record, mapper)).flatMap { t =>
-                  resultSummary(result).map(rs => t -> rs)
-                }
-
-              case None =>
-                F.fromEither(Left(MissingRecordException))
-            }
-
-          case None =>
-            F.fromEither(Left(MissingRecordException))
-        }
+        for {
+          result <- runQuery(query, params)
+          recordOpt <- S.fromPublisher(result.records()).single[F]
+          record <- F.fromEither(recordOpt.toRight(left = MissingRecordException))
+          t <- F.fromEither(Parser.decodeRecord(record, mapper))
+          rs <- resultSummary(result)
+        } yield t -> rs
 
       override final def collectAs[T, C](
         query: String,
@@ -174,19 +167,14 @@ object Transaction {
         mapper: ResultMapper[T],
         factory: Factory[T, C]
       ): F[(C, ResultSummary)] =
-        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap {
-          case Some(result) =>
-            val records = S.fromPublisher(result.records(), chunkSize = 256).evalMap { record =>
-              F.fromEither(Parser.decodeRecord(record, mapper))
-            }
-
-            records.collectAs(factory).flatMap { col =>
-              resultSummary(result).map(rs => col -> rs)
-            }
-
-          case None =>
-            F.fromEither(Left(MissingRecordException))
-        }
+        for {
+          result <- runQuery(query, params)
+          records = S.fromPublisher(result.records(), chunkSize = 256).evalMap { record =>
+            F.fromEither(Parser.decodeRecord(record, mapper))
+          }
+          col <- records.collectAs(factory)
+          rs <- resultSummary(result)
+        } yield col -> rs
 
       override final def stream[T](
         query: String,
