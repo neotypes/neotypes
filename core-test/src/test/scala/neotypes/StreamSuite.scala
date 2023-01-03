@@ -3,12 +3,12 @@ package neotypes
 import org.scalatest.Suites
 
 import scala.concurrent.{ExecutionContext, Future}
-import scala.reflect.ClassTag
+import izumi.reflect.TagK
 
 /** Testkit used to write specs abstracted from any concrete stream. */
 abstract class StreamTestkit[S[_], F[_]](val effectTestkit: EffectTestkit[F])
-                                        (implicit ctS: ClassTag[S[_]]) {
-  final val streamName: String = ctS.runtimeClass.getCanonicalName
+                                        (implicit ctS: TagK[S]) {
+  final val streamName: String = ctS.tag.shortName
 
   trait Behaviour {
     def streamToFList[A](stream: S[A]): F[List[A]]

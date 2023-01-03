@@ -4,10 +4,11 @@ import org.scalatest.{AsyncTestSuite, Suites}
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
+import izumi.reflect.TagK
 
 /** Testkit used to write specs abstracted from any concrete effect. */
-abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
-  final val effectName: String = ct.runtimeClass.getCanonicalName
+abstract class EffectTestkit[F[_]](implicit ct: TagK[F]) {
+  final val effectName: String = ct.tag.shortName
 
   trait Behaviour {
     def fToFuture[A](fa: F[A]): Future[A]

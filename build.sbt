@@ -51,7 +51,8 @@ ThisBuild / scmInfo ~= {
 }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.13.10"
+// ThisBuild / scalaVersion := "2.13.10"
+ThisBuild / scalaVersion := "3.2.1"
 ThisBuild / crossScalaVersions := Seq("2.13.10", "3.1.3")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
@@ -63,14 +64,14 @@ def removeScalacOptionsInTest(scalaVersion: String) =
     case _ => Seq("-Wvalue-discard", "-Wunused:explicits", "-Wunused:params", "-Wunused:imports")
   }
 
-def macrosDepsByVersion(scalaVersion: String) =
+def macrosDepsByVersion(scalaVersion: String, inclShapeless3: Boolean = true) =
   CrossVersion.partialVersion(scalaVersion) match {
     case Some((2, _)) =>
       Seq(
         "com.chuusai" %% "shapeless" % shapelessVersion,
         "org.scala-lang" % "scala-reflect" % scalaVersion
       )
-    case Some((3, _)) => 
+    case Some((3, _)) if inclShapeless3=> 
       Seq("org.typelevel" %% "shapeless3-deriving" % shapeless3Version)
     case _ => Seq.empty  
 
@@ -80,6 +81,9 @@ def compileOptsByVersion(scalaVersion: String) =
   CrossVersion.partialVersion(scalaVersion) match {
     case Some((2, _)) =>
       Seq("-Ywarn-macros:after")
+    case Some((3, _)) =>
+      Seq.empty
+      // Seq("-Ytasty-reader")
     case _ => 
       Seq.empty
   }  
@@ -165,8 +169,9 @@ lazy val coreTest = (project in file("core-test"))
         "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
         "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
         "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
+        "dev.zio" %% "izumi-reflect" % "2.2.3",
         "ch.qos.logback" % "logback-classic" % logbackVersion
-      )
+      ) ++ macrosDepsByVersion(scalaVersion.value, false)
   )
 
 lazy val generic = (project in file("generic"))

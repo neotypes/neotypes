@@ -16,7 +16,7 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
   import StreamingGuaranteeSpec._
 
   final class StreamingGuaranteeFixture {
-     var counter = 0
+    var counter = 0
 
     def assertFinalizerWasCalledOnlyOnce: Assertion = {
       withClue("Finalizer was not called -") {
@@ -36,8 +36,9 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
     def runStreaming[T](result: Either[Throwable, T],
                         inputEx: Option[Throwable] = None,
                         finalizerEx: Option[Throwable] = None): Future[List[T]] = {
-      def effectFromOption(opt: Option[Throwable]): F[Unit] =
+      def effectFromOption(opt: Option[Throwable]): F[Unit] = {
         F.fromEither(opt.toLeft(right = ()))
+      }
 
       fToFuture(streamToFList(
         S.guarantee(

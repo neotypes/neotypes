@@ -14,7 +14,7 @@ import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
 /** Marker trait to signal that the test needs a driver. */
-trait DriverProvider[F[_]] extends { self: BaseIntegrationSpec[F] =>
+trait DriverProvider[F[_]] { self: BaseIntegrationSpec[F] =>
   type DriverType <: Driver[F]
   protected def driver: DriverType
 }

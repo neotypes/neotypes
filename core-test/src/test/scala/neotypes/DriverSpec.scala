@@ -534,10 +534,10 @@ object BaseDriverSpec {
     def name: String
   }
   object CustomKey {
-    final case object Foo extends CustomKey {
+    case object Foo extends CustomKey {
       override final val name: String = "FOO"
     }
-    final case object Bar extends CustomKey {
+    case object Bar extends CustomKey {
       override final val name: String = "Bar"
     }
 
