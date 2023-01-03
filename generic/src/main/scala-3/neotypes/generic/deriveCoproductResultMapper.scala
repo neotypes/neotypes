@@ -3,8 +3,9 @@ package generic
 
 import shapeless3.deriving.* 
 import mappers.ResultMapper
+import mappers.DerivedCoproductInstances
 
-trait SealedTraitDerivedCoproductInstances[C] extends ResultMapper.DerivedCoproductInstances[C]
+trait SealedTraitDerivedCoproductInstances[C] extends DerivedCoproductInstances[C]
 object SealedTraitDerivedCoproductInstances:
   given [C](using labelled: Labelling[C], inst: K0.CoproductInstances[ResultMapper, C]): SealedTraitDerivedCoproductInstances[C] =
     new SealedTraitDerivedCoproductInstances[C] {

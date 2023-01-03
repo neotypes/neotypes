@@ -578,21 +578,23 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       ResultMapper.coproductImpl(strategy, options : _*)
   }
 
+}
+
   /** Allows decoding a [[NeoType]] into a value of type [[A]]. */
-  @annotation.implicitNotFound(
+@annotation.implicitNotFound(
 """
 Could not derive a ResultMapper for ${A}".
 
 Make sure ${A} is a case class composed of supported types: https://neotypes.github.io/neotypes/types.html,
 and that you imported `neotypes.generic.implicits._`
 """
-  )
-  trait DerivedProductMap[A] {
-    def map(obj: NeoObject): Either[ResultMapperException, A]
-  }
+)
+trait DerivedProductMap[A] {
+  def map(obj: NeoObject): Either[ResultMapperException, A]
+}
 
   /** Allows decoding a [[NeoType]] into a value of type [[A]]. */
-  @annotation.implicitNotFound(
+@annotation.implicitNotFound(
 """
 Could not derive a ResultMapper for ${A}".
 
@@ -600,9 +602,8 @@ Make sure ${A} is a sealed trait composed of supported types: https://neotypes.g
 and that you imported `neotypes.generic.implicits._`
 """
   )
-  trait DerivedCoproductInstances[A] {
-    def options: List[(String, ResultMapper[A])]
-  }
+trait DerivedCoproductInstances[A] {
+  def options: List[(String, ResultMapper[A])]
 }
 
 sealed trait ResultMappersLowPriority { self: ResultMapper.type =>

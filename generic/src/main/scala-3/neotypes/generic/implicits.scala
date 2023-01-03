@@ -1,7 +1,7 @@
 package neotypes
 package generic
 
-import mappers.ResultMapper.{DerivedCoproductInstances, DerivedProductMap}
+import mappers.{DerivedProductMap, DerivedCoproductInstances}
 import query.QueryArgMapper.DerivedQueryParams
 
 object implicits:
