@@ -149,7 +149,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     * emulating pattern matching.
     */
   def fromNumeric[A](
-    f: Value.NumberValue => Either[ResultMapperException, A]
+    f: Value.NumberValue => A
   ) (
     implicit ct: ClassTag[A]
   ): ResultMapper[A] = fromMatch {
@@ -182,58 +182,58 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
   /** [[ResultMapper]] that will decode any numeric value into an [[Int]], may lose precision. */
   implicit final val int: ResultMapper[Int] = fromNumeric {
     case Value.Integer(value) =>
-      Right(value.toInt)
+      value.toInt
 
     case Value.Decimal(value) =>
-      Right(value.toInt)
+      value.toInt
   }
 
   /** [[ResultMapper]] that will decode any numeric value into an [[Short]], may lose precision. */
   implicit final val short: ResultMapper[Short] = fromNumeric {
     case Value.Integer(value) =>
-      Right(value.toShort)
+      value.toShort
 
     case Value.Decimal(value) =>
-      Right(value.toShort)
+      value.toShort
   }
 
   /** [[ResultMapper]] that will decode any numeric value into an [[Byte]], may lose precision. */
   implicit final val byte: ResultMapper[Byte] = fromNumeric {
     case Value.Integer(value) =>
-      Right(value.toByte)
+      value.toByte
 
     case Value.Decimal(value) =>
-      Right(value.toByte)
+      value.toByte
   }
 
   /** [[ResultMapper]] that will decode any numeric value into an [[Long]], may lose precision. */
   implicit final val long: ResultMapper[Long] = fromNumeric {
     case Value.Integer(value) =>
-      Right(value)
+      value
 
     case Value.Decimal(value) =>
-      Right(value.toLong)
+      value.toLong
   }
 
   /** [[ResultMapper]] that will decode any numeric value into an [[Float]], may lose precision. */
   implicit final val float: ResultMapper[Float] = fromNumeric {
     case Value.Integer(value) =>
-      Right(value.toFloat)
+      value.toFloat
 
     case Value.Decimal(value) =>
-      Right(value.toFloat)
+      value.toFloat
   }
 
   /** [[ResultMapper]] that will decode any numeric value into an [[Double]]. */
   implicit final val double: ResultMapper[Double] = fromNumeric {
     case Value.Integer(value) =>
-      Right(value.toDouble)
+      value.toDouble
 
     case Value.Decimal(value) =>
-      Right(value)
+      value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[BigInt]]. */
+  /** [[ResultMapper]] that will decode the input as a [[BigInt]]. */
   implicit final val bigInt: ResultMapper[BigInt] = fromMatch {
     case Value.Integer(value) =>
       BigInt(value)
@@ -245,7 +245,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       BigInt(value.unsafeArray.asInstanceOf[Array[Byte]])
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[BigDecimal]]. */
+  /** [[ResultMapper]] that will decode the input as a [[BigDecimal]]. */
   implicit final val bigDecimal: ResultMapper[BigDecimal] = fromMatch {
     case Value.Integer(value) =>
       BigDecimal(value)
@@ -260,19 +260,19 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       BigDecimal(BigInt(value.unsafeArray.asInstanceOf[Array[Byte]]))
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[Boolean]]. */
+  /** [[ResultMapper]] that will decode the input as a [[Boolean]]. */
   implicit final val boolean: ResultMapper[Boolean] = fromMatch {
     case Value.Bool(value) =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[String]]. */
+  /** [[ResultMapper]] that will decode the input as a [[String]]. */
   implicit final val string: ResultMapper[String] = fromMatch {
     case Value.Str(value) =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[UUID]]. */
+  /** [[ResultMapper]] that will decode the input as a [[UUID]]. */
   implicit final val uuid: ResultMapper[UUID] = fromMatch {
     case Value.Str(value) =>
       Try(UUID.fromString(value)).toEither.left.map { ex =>
@@ -291,51 +291,51 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       }
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a byte array. */
+  /** [[ResultMapper]] that will decode the input as a byte array. */
   implicit final val bytes: ResultMapper[ArraySeq[Byte]] = fromMatch {
     case Value.Bytes(value) =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[Node]]. */
+  /** [[ResultMapper]] that will decode the input as a [[Node]]. */
   implicit final val node: ResultMapper[Node] = fromMatch {
     case value: Node =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[Relationship]]. */
+  /** [[ResultMapper]] that will decode the input as a [[Relationship]]. */
   implicit final val relationship: ResultMapper[Relationship] = fromMatch {
     case value: Relationship =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[Path]]. */
+  /** [[ResultMapper]] that will decode the input as a [[Path]]. */
   implicit final val path: ResultMapper[Path] = fromMatch {
     case value: Path =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[NeoPoint]]. */
+  /** [[ResultMapper]] that will decode the input as a [[NeoPoint]]. */
   implicit final val neoPoint: ResultMapper[NeoPoint] = fromMatch {
     case Value.Point(value) =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[NeoDuration]]. */
+  /** [[ResultMapper]] that will decode the input as a [[NeoDuration]]. */
   implicit final val neoDuration: ResultMapper[NeoDuration] = fromMatch {
     case Value.Duration(value) =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[JDuration]]. */
+  /** [[ResultMapper]] that will decode the input as a [[JDuration]]. */
   implicit final val javaDuration: ResultMapper[JDuration] =
     neoDuration.map(JDuration.from)
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[JPeriod]]. */
+  /** [[ResultMapper]] that will decode the input as a [[JPeriod]]. */
   implicit final val javaPeriod: ResultMapper[JPeriod] =
     neoDuration.map(JPeriod.from)
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[SDuration]]. */
+  /** [[ResultMapper]] that will decode the input as a [[SDuration]]. */
   implicit final val scalaDuration: ResultMapper[SDuration] =
     javaDuration.map(d => scala.concurrent.duration.Duration.fromNanos(d.toNanos))
 
@@ -390,13 +390,13 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as a [[NeoObject]]. */
+  /** [[ResultMapper]] that will decode the input as a [[NeoObject]]. */
   implicit val neoObject: ResultMapper[NeoObject] = fromMatch {
     case value: NeoObject =>
       value
   }
 
-  /** [[ResultMapper]] that will attempt to decode the input as an heterogeneous list of [[NeoType]] values. */
+  /** [[ResultMapper]] that will decode the input as an heterogeneous list of [[NeoType]] values. */
   implicit val values: ResultMapper[List[NeoType]] = fromMatch {
     case NeoList(values) =>
       values
@@ -427,8 +427,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     }
 
   /** Creates a new [[ResultMapper]] from a base one,
-    * which will recover from `null` values
-    * and [[PropertyNotFoundException]]s into a `None`.
+    * which will recover from `null` values into a `None`.
     */
   implicit def option[A](implicit mapper: ResultMapper[A]): ResultMapper[Option[A]] = fromMatch {
     case Value.NullValue =>
@@ -586,7 +585,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       ResultMapper.coproductImpl(strategy, options : _*)
   }
 
-  /** Allows decoding a [[NeoType]] into a value of type [[A]]. */
+  /** Allows deriving a [[ResultMapper]] for the product type (case class) A. */
   @annotation.implicitNotFound(
 """
 Could not derive a ResultMapper for ${A}".
@@ -599,7 +598,7 @@ and that you imported `neotypes.generic.implicits._`
     def map(obj: NeoObject): Either[ResultMapperException, A]
   }
 
-  /** Allows decoding a [[NeoType]] into a value of type [[A]]. */
+  /** Allows deriving a [[ResultMapper]] for the coproduct type (sealed trait) A. */
   @annotation.implicitNotFound(
 """
 Could not derive a ResultMapper for ${A}".
