@@ -4,7 +4,7 @@ package mappers
 import boilerplate.BoilerplateResultMappers
 import internal.syntax.either._
 import internal.utils.traverseAs
-import model.exceptions.{IncoercibleException, PropertyNotFoundException, ResultMapperException}
+import model.exceptions.{ChainException, IncoercibleException, PropertyNotFoundException, ResultMapperException}
 import model.types._
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
@@ -65,10 +65,18 @@ trait ResultMapper[A] { self =>
       self.decode(value) and other.decode(value)
     }
 
-  /** Chains a fallback mapper, in case this one fails. */
+  /** Chains a mapper as a fallback when this one fails.
+    * In case both fail, the errors will be merged into a [[model.exceptions.ChainException]].
+    */
   final def or[B >: A](other: ResultMapper[B]): ResultMapper[B] =
     ResultMapper.instance { value =>
-      self.decode(value) orElse other.decode(value)
+      self.decode(value).left.flatMap { thisEx =>
+        other.decode(value).left.map { otherEx =>
+          ChainException.from(
+            exceptions = thisEx, otherEx
+          )
+        }
+      }
     }
 
   /** Used to emulate covariance subtyping. */
@@ -78,7 +86,7 @@ trait ResultMapper[A] { self =>
 
 object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriority {
   /** Allows materializing an implicit [[ResultMapper]] as an explicit value. */
-  def apply[A](implicit mapper: ResultMapper[A]): ResultMapper[A] =
+  def apply[A](implicit mapper: ResultMapper[A]): mapper.type =
     mapper
 
   /** Factory to create a [[ResultMapper]] from a decoding function. */
@@ -127,7 +135,7 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     instance(singletonRecordFallback.andThen(pf) orElse pf orElse fail)
   }
 
-  /** Factory to create a [[ResultMapper]] from a decoding function,}
+  /** Factory to create a [[ResultMapper]] from a decoding function,
     * emulating pattern matching.
     */
   def fromMatch[A](
