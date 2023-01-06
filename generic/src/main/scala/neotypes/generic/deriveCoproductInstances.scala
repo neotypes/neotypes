@@ -15,7 +15,7 @@ object SealedTraitDerivedCoproductInstances {
     implicit @unused gen: LabelledGeneric.Aux[A, C], @unused hlist: ToHList.Aux[C, R], ev: ReprDerivedCoproductInstances[A, R]
   ): SealedTraitDerivedCoproductInstances[A] =
     new SealedTraitDerivedCoproductInstances[A] {
-      override final val options: List[(String, ResultMapper[A])] =
+      override final val options: List[(String, ResultMapper[? <: A])] =
         ev.options
     }
 }
@@ -32,7 +32,7 @@ object ReprDerivedCoproductInstances {
     implicit key: Witness.Aux[K], head: ResultMapper[H], tail: ReprDerivedCoproductInstances[A, T]
   ): ReprDerivedCoproductInstances[A, FieldType[K, H] :!: T] =
     new ReprDerivedCoproductInstances[A, FieldType[K, H] :!: T] {
-      override final val options: List[(String, ResultMapper[A])] =
-        (key.value.name -> head.widen[A]) :: tail.options
+      override final val options: List[(String, ResultMapper[? <: A])] =
+        (key.value.name -> head) :: tail.options
     }
 }

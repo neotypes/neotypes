@@ -608,7 +608,7 @@ and that you imported `neotypes.generic.implicits._`
 """
   )
   trait DerivedCoproductInstances[A] {
-    def options: List[(String, ResultMapper[A])]
+    def options: List[(String, ResultMapper[? <: A])]
   }
 }
 
