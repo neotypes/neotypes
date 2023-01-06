@@ -92,12 +92,10 @@ object Boilerplate {
     def generateTupleNamed(n: Int, parameters: List[Char], typeParameters: String): List[String] =
       "/** Creates a tuple [[ResultMapper]], based on a [[NeoObject]]. */" ::
       s"final def tupleNamed[${typeParameters}](" ::
-      parameters.map(l => s"n${l}: String").mkString(", ") ::
-      ")(implicit " ::
-      parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
+      parameters.map(l => s"${l}: (String, ResultMapper[${l.toUpper}])").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
       "neoObject.emap { obj =>" ::
-      s"(${parameters.map(l => s"obj.getAs(key = n${l})(${l})").mkString(" and ")}).map {" ::
+      s"(${parameters.map(l => s"obj.getAs(key = ${l}._1)(${l}._2)").mkString(" and ")}).map {" ::
       s"case ${"(" * n}${parameters.mkString("), ")}) =>" ::
       parameters.mkString("(", ",", ")") ::
       "}" ::

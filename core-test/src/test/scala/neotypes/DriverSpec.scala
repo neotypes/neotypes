@@ -137,11 +137,27 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "support querying tuples of supported types" in executeAsFuture { driver =>
-    val mapper = tuple(int, string)
-    for {
-      tuple <- """RETURN 3, "foo"""".query(mapper).single(driver)
-    } yield {
-      tuple shouldBe (3, "foo")
+    // Unnamed.
+    locally {
+      val mapper = tuple(int, string)
+      for {
+        tuple <- """RETURN 3, "foo"""".query(mapper).single(driver)
+      } yield {
+        tuple shouldBe (3, "foo")
+      }
+    }
+
+    // Named.
+    locally {
+      val mapper = tupleNamed(
+        "age" -> int,
+        "name" -> string
+      )
+      for {
+        tuple <- """RETURN 3 AS age, "foo" AS name""".query(mapper).single(driver)
+      } yield {
+        tuple shouldBe (3, "foo")
+      }
     }
   }
 
