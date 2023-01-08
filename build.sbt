@@ -63,8 +63,14 @@ val commonSettings = Seq(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
 
+  // Make all warnings verbose.
+  scalacOptions += "-Wconf:any:warning-verbose",
+
   Test / parallelExecution := false,
   Test / fork := true,
+
+  // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
+  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
 
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
