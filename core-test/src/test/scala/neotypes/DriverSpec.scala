@@ -334,7 +334,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Using the coproduct factory.
     locally {
-      val mapper = coproduct[Problem](strategy = CoproductDiscriminatorStrategy.RelationshipType)(
+      val mapper = coproduct(strategy = CoproductDiscriminatorStrategy.RelationshipType)(
         "error" -> errorResultMapper,
         "warning" -> warningResultMapper,
         "unknown" -> unknownResultMapper
@@ -522,7 +522,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 object BaseDriverSpec {
   final case class User(name: String, age: Int)
 
-  sealed trait Problem
+  sealed trait Problem extends Product with Serializable
   object Problem {
     final case class Error(msg: String) extends Problem
     final case class Warning(msg: String) extends Problem

@@ -55,7 +55,9 @@ trait ResultMapper[A] { self =>
 
   /** Chains a transformation function that can not fail. */
   final def map[B](f: A => B): ResultMapper[B] =
-    emap(f andThen Right.apply)
+    ResultMapper.instance { value =>
+      self.decode(value).map(f)
+    }
 
   /** Combines the result of another mapper with this one.
     * In case both fail, the errors will be merged into a [[model.exceptions.ChainException]].
@@ -534,8 +536,13 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
     }
   }
 
-  protected def coproductImpl[S, A](
-    strategy: CoproductDiscriminatorStrategy[S],
+  /** Creates a [[ResultMapper]] for a coproduct.
+    * Based on a given [[CoproductDiscriminatorStrategy]],
+    * and the tagged [[ResultMapper]]s of each case.
+    */
+  def coproduct[S, A](
+    strategy: CoproductDiscriminatorStrategy[S]
+  ) (
     options: (S, ResultMapper[? <: A])*
   ): ResultMapper[A] = strategy match {
     case CoproductDiscriminatorStrategy.NodeLabel =>
@@ -567,22 +574,6 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
           failed(IncoercibleException(s"Unexpected field label: ${label}"))
         )
       }
-  }
-
-  /** Creates a [[ResultMapper]] for a coproduct.
-    * Based on a given [[CoproductDiscriminatorStrategy]],
-    * and the tagged [[ResultMapper]]s of each case.
-    */
-  def coproduct[A]: CoproductPartiallyApplied[A] =
-    new CoproductPartiallyApplied(dummy = true)
-
-  private[neotypes] final class CoproductPartiallyApplied[T](private val dummy: Boolean) extends AnyVal {
-    def apply[S](
-      strategy: CoproductDiscriminatorStrategy[S]
-    ) (
-      options: (S, ResultMapper[? <: T])*
-    ): ResultMapper[T] =
-      ResultMapper.coproductImpl(strategy, options : _*)
   }
 
   /** Allows deriving a [[ResultMapper]] for the product type (case class) A. */
@@ -645,8 +636,9 @@ sealed trait ResultMappersLowPriority { self: ResultMapper.type =>
   implicit def coproductDerive[A](
     implicit instances: DerivedCoproductInstances[A]
   ): ResultMapper[A] =
-    coproductImpl(
+    coproduct(
       strategy = CoproductDiscriminatorStrategy.Field(name = "type", mapper = string),
+    ) (
       instances.options : _*
     )
 }
