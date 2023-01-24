@@ -737,6 +737,15 @@ object mappers {
   }
 
   trait ParameterMappers {
+    /** A QueryParam is already encoded so all we need to do is return the same value.
+      * This instance is useful to pass heterogeneous Lists and Maps.
+      */
+    implicit final val PassthroughParameterMapper: ParameterMapper[QueryParam] =
+      new ParameterMapper[QueryParam] {
+        override def toQueryParam(param: QueryParam): QueryParam =
+          param
+      }
+
     implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
       ParameterMapper.fromCast(Boolean.box)
 
