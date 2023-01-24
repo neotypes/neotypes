@@ -7,6 +7,16 @@ position: 100
 
 # Changelog
 
+## v0.23.2 _(2023-01-24)_
+
+This releases mostly bumps dependencies.
+But also adds a minor improvement.
+
+### Allow using heterogeneous lists and maps as parameters ([#595](https://github.com/neotypes/neotypes/pull/595){:target="_blank"})
+
+We added a passthrough `ParameterMapper` for `QueryParam`,
+which allow interpolating lists and maps of `QueryParams`.
+
 ## v0.23.1 _(2022-11-29)_
 
 ### Update neo4j-java-driver to 5.3.0 & bump dependencies ([#576](https://github.com/neotypes/neotypes/pull/576){:target="_blank"})
