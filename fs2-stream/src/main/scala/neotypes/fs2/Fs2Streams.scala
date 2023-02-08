@@ -4,7 +4,6 @@ import neotypes.exceptions.CancellationException
 
 import cats.effect.{Async, Resource}
 import fs2.Stream
-import org.reactivestreams.FlowAdapters.toPublisher
 
 import java.util.concurrent.Flow.Publisher
 import scala.collection.compat.Factory
@@ -17,7 +16,7 @@ trait Fs2Streams {
       // TODO: Check if a different buffer size would perform better,
       //       or if there's a way to determine buffer size better.
       override final def fromPublisher[A](publisher: Publisher[A]): Stream[F, A] =
-        fs2.interop.reactivestreams.fromPublisher(toPublisher(publisher), 16)
+        fs2.interop.flow.fromPublisher(publisher, 16)
 
       override final def fromF[A](fa: F[A]): Stream[F, A] =
         Stream.eval(fa)
