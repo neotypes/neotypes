@@ -11,17 +11,22 @@ import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 import scala.util.control.NoStackTrace
 
-/** Safe wrapper over a Neo4j query parameter. */
-final class QueryParam private[neotypes] (private[neotypes] val underlying: AnyRef) extends AnyVal
-object QueryParam {
-  def apply[A](scalaValue: A)(implicit mapper: ParameterMapper[A]): QueryParam =
-    mapper.toQueryParam(scalaValue)
+object query{
+  /** Safe wrapper over a Neo4j query parameter. */
+  type QueryParam <: AnyRef
+  object QueryParam {
+    private[neotypes] final def tag[A](a: A): QueryParam =
+      a.asInstanceOf[A with QueryParam]
 
-  private[neotypes] def toJavaMap(map: Map[String, QueryParam]): JMap[String, Object] =
-    map.map {
-      case (key, value) =>
-        key -> value.underlying
-    }.asJava
+    def apply[A](scalaValue: A)(implicit mapper: ParameterMapper[A]): QueryParam =
+      mapper.toQueryParam(scalaValue)
+
+    private[neotypes] def toJavaMap(map: Map[String, QueryParam]): JMap[String, Object] =
+      map.map {
+        case (key, value) =>
+          key -> value.asInstanceOf[Object]
+      }.asJava
+  }
 }
 
 /** Data types supported by Neo4j. */

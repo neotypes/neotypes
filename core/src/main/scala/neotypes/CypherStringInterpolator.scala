@@ -2,7 +2,7 @@ package neotypes
 package query
 
 import mappers.ParameterMapper
-import model.QueryParam
+import model.query.QueryParam
 
 import scala.reflect.macros.blackbox
 

@@ -4,8 +4,8 @@ import internal.utils.traverseAs
 import internal.syntax.async._
 import internal.syntax.stream._
 import mappers.ResultMapper
-import model.QueryParam
 import model.exceptions.MissingRecordException
+import model.query.QueryParam
 
 import org.neo4j.driver.async.{ResultCursor => NeoAsyncResult, AsyncTransaction => NeoAsyncTransaction}
 import org.neo4j.driver.reactive.{ReactiveResult => NeoReactiveResult, ReactiveTransaction => NeoReactiveTransaction}

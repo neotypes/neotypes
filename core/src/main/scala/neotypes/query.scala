@@ -4,7 +4,7 @@ package query
 import internal.syntax.async._
 import internal.syntax.stream._
 import mappers.ResultMapper
-import model.QueryParam
+import model.query.QueryParam
 
 import org.neo4j.driver.summary.ResultSummary
 
@@ -28,10 +28,11 @@ sealed trait BaseQuery {
     */
   def withParams(params: Map[String, QueryParam]): BaseQuery
 
-  override final def toString(): String =
+  override final def toString: String =
     s"""${this.getClass.getSimpleName}:
+       |query:
        |${query}
-       |params: ${params.view.map(param => s"${param._1}: ${param._2.underlying}").mkString(", ")}
+       |params:${params.view.map(param => s"\t${param._1}: ${param._2}").mkString("\n")}
      """.stripMargin
 }
 

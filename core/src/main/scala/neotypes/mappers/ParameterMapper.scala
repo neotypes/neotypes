@@ -1,7 +1,7 @@
 package neotypes
 package mappers
 
-import model.QueryParam
+import model.query.QueryParam
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
@@ -54,7 +54,7 @@ object ParameterMapper {
     */
   def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
     override def toQueryParam(scalaValue: A): QueryParam =
-      new QueryParam(v)
+      QueryParam.tag[AnyRef](v)
   }
 
   /**
@@ -66,7 +66,7 @@ object ParameterMapper {
     */
   private[neotypes] def fromCast[A](f: A => AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
     override def toQueryParam(scalaValue: A): QueryParam =
-      new QueryParam(f(scalaValue))
+      QueryParam.tag[AnyRef](f(scalaValue))
   }
 
   /**
@@ -80,7 +80,7 @@ object ParameterMapper {
     */
   private[neotypes] def identity[A <: AnyRef] = new ParameterMapper[A] {
     override def toQueryParam(scalaValue: A): QueryParam =
-      new QueryParam(scalaValue)
+      QueryParam.tag[A](scalaValue)
   }
 
   implicit final val BooleanParameterMapper: ParameterMapper[Boolean] =
@@ -139,7 +139,7 @@ object ParameterMapper {
 
   private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
     ParameterMapper.fromCast { col =>
-      col.iterator.map(v => mapper.toQueryParam(v).underlying).asJava
+      col.iterator.map(v => mapper.toQueryParam(v)).asJava
     }
 
   implicit final def collectionParameterMapper[T, C[_]](
@@ -153,7 +153,7 @@ object ParameterMapper {
     ParameterMapper.fromCast { col =>
       col.iterator.map {
         case (key, v) =>
-          keyMapper.encodeKey(key) -> valueMapper.toQueryParam(v).underlying
+          keyMapper.encodeKey(key) -> valueMapper.toQueryParam(v)
       }.toMap.asJava
     }
 
@@ -164,6 +164,6 @@ object ParameterMapper {
 
   implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     ParameterMapper.fromCast { optional =>
-      optional.map(v => mapper.toQueryParam(v).underlying).orNull
+      optional.map(v => mapper.toQueryParam(v)).orNull
     }
 }

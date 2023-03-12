@@ -1,6 +1,6 @@
 package neotypes
 
-import model.QueryParam
+import model.query.QueryParam
 
 import org.neo4j.driver.{AccessMode, SessionConfig => NeoSessionConfig, TransactionConfig => NeoTransactionConfig}
 

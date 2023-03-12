@@ -2,7 +2,7 @@ package neotypes
 package generic
 
 import mappers.ParameterMapper
-import model.QueryParam
+import model.query.QueryParam
 import query.QueryArgMapper.DerivedQueryParams
 
 import shapeless.{:: => :!:, HList, HNil, LabelledGeneric, Witness}

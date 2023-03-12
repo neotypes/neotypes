@@ -37,8 +37,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         str <- """RETURN "foo"""".query(string).single(driver)
         id <- """RETURN "d18e9810-87ad-444c-871e-7e41e0e4623c"""".query(uuid).single(driver)
         bytes <- c"RETURN ${expectedBytes}".query(bytes).single(driver)
-        point <- c"RETURN point({x: 1, y: 3, z: 5})".query(neoPoint).single(driver)
-        dur <- c"RETURN duration({seconds: 10})".query(javaDuration).single(driver)
+        point <- "RETURN point({x: 1, y: 3, z: 5})".query(neoPoint).single(driver)
+        dur <- "RETURN duration({seconds: 10})".query(javaDuration).single(driver)
       } yield {
         i shouldBe 3
         s shouldBe 3.toShort
