@@ -108,9 +108,15 @@ object CypherStringInterpolator {
           val nextParam = params.next().tree
           val tpe = nextParam.tpe.widen
 
+          val newTree =
+            if (nextParam.symbol eq null)
+              q"Right(_root_.neotypes.query.QueryArg.Param(_root_.neotypes.model.query.QueryParam.NullValue))"
+            else
+              q"Right(_root_.neotypes.query.QueryArgMapper[${tpe}].toArg(${nextParam}))"
+
           loop(
             paramNext = false,
-            q"Right(_root_.neotypes.query.QueryArgMapper[${tpe}].toArg(${nextParam}))" :: acc
+            newTree :: acc
           )
         } else if (queries.hasNext) {
           val Literal(Constant(query: String)) = queries.next()

@@ -19,7 +19,11 @@ object query{
       a.asInstanceOf[A with QueryParam]
 
     def apply[A](scalaValue: A)(implicit mapper: ParameterMapper[A]): QueryParam =
-      mapper.toQueryParam(scalaValue)
+      if (scalaValue == null) NullValue
+      else mapper.toQueryParam(scalaValue)
+
+    final val NullValue: QueryParam =
+      tag(null)
 
     private[neotypes] def toJavaMap(map: Map[String, QueryParam]): JMap[String, Object] =
       map.map {

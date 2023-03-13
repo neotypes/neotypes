@@ -163,7 +163,8 @@ object ParameterMapper {
     iterableMapParameterMapper(keyMapper, valueMapper).contramap(ev)
 
   implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
-    ParameterMapper.fromCast { optional =>
-      optional.map(v => mapper.toQueryParam(v)).orNull
+    new ParameterMapper[Option[T]] {
+      override def toQueryParam(optional: Option[T]): QueryParam =
+        optional.fold(ifEmpty = QueryParam.NullValue)(mapper.toQueryParam)
     }
 }
