@@ -410,6 +410,16 @@ object ResultMapper extends BoilerplateResultMappers with ResultMappersLowPriori
       values
   }
 
+  /** [[ResultMapper]] that will decode the input as fixed size heterogeneous list of [[NeoType]] values.
+    *
+    * @note Pads with [[Value.NullValue]] in case it is necessary.
+    * @see [[values]]
+    */
+  def take(n: Int): ResultMapper[List[NeoType]] =
+    values.map { col =>
+      (col.iterator ++ Iterator.continually(Value.NullValue)).take(n).toList
+    }
+
   /** Creates a [[ResultMapper]] that will try to decode
     * the first / single element list of values,
     * using the provided mapper.

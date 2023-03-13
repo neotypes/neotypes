@@ -230,7 +230,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
   it should "support querying user defined case classes whose fields are supported types" in executeAsFuture { driver =>
     val namedQuery = """RETURN "Luis" AS name, 25 AS age"""
-    val unnamedQuery = """RETURN ["Luis", 25]"""
+    val unnamedQuery = """RETURN "Luis", 25"""
     val expectedUser = User(name = "Luis", age = 25)
 
     // Full manual definition.
@@ -517,6 +517,40 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       )
     }
   }
+
+  it should "support treating missing fields as nulls" in executeAsFuture { driver =>
+    val expectedResult = MissingFields(a = 1, b = None)
+
+    // Using named fields.
+    locally {
+      val query = "RETURN 1 AS a"
+      val mapper = productNamed(
+        "a" -> int,
+        "b" -> option(string)
+      )(MissingFields.apply)
+
+      for {
+        result <- query.query(mapper).single(driver)
+      } yield {
+        result shouldBe expectedResult
+      }
+    }
+
+    // Using positional fields.
+    locally {
+      val query = "RETURN 1"
+      val mapper = product(
+        int,
+        option(string)
+      )(MissingFields.apply)
+
+      for {
+        result <- query.query(mapper).single(driver)
+      } yield {
+        result shouldBe expectedResult
+      }
+    }
+  }
 }
 
 object BaseDriverSpec {
@@ -566,6 +600,8 @@ object BaseDriverSpec {
     implicit val ordering: Ordering[CustomKey] =
       Ordering.by(_.name)
   }
+
+  final case class MissingFields(a: Int, b: Option[String])
 }
 
 final class AsyncDriverSpec[F[_]](
