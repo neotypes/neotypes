@@ -63,6 +63,9 @@ val commonSettings = Seq(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
 
+  // Implicit resolution debug flags
+  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
+
   Test / parallelExecution := false,
   Test / fork := true,
 
