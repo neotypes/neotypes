@@ -188,8 +188,6 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   it should "support querying any collection of supported types" in executeAsFuture { driver =>
     val multipleRecordQuery = "UNWIND [1, 2, 3] AS x RETURN x"
     val singleRecordQuery = "RETURN [1, 2, 3]"
-    val multipleTupleRecordQuery = """UNWIND [[1, "a"], [2, "b"], [3, "B"]] AS x RETURN x"""
-    val singleTupleRecordQuery = """RETURN [[1, "a"], [2, "b"], [3, "B"]]"""
 
     // Multiples records of single values (list).
     locally {
@@ -208,17 +206,6 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
       for {
         nums <- multipleRecordQuery.query(mapper).collectAs(BitSet, driver)
-      } yield {
-        nums shouldBe BitSet(1, 2, 3)
-      }
-    }
-
-    // Multiples records of single values (map).
-    locally {
-      val mapper = tuple(int, string)
-
-      for {
-        nums <- multipleTupleRecordQuery.query(mapper).map(driver)
       } yield {
         nums shouldBe BitSet(1, 2, 3)
       }
@@ -246,18 +233,6 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
     }
 
-    // Single record of multiple values (collectAs).
-    locally {
-      val mapper = collectAs(Map.mapFactory[Int, String], tuple(int, string))
-      //val mapper2 = ResultMapper[Map[Int, String]]
-
-      for {
-        nums <- singleTupleRecordQuery.query(mapper).single(driver)
-      } yield {
-        nums shouldBe BitSet(1, 2, 3)
-      }
-    }
-
     // Single record of multiple values (implicit).
     locally {
       val mapper = ResultMapper[BitSet]
@@ -266,6 +241,71 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         nums <- singleRecordQuery.query(mapper).single(driver)
       } yield {
         nums shouldBe BitSet(1, 2, 3)
+      }
+    }
+  }
+
+  it should "support querying any map of supported types" in executeAsFuture { driver =>
+    val multipleTupleRecordQuery = """UNWIND [[1, "a"], [2, "b"], [3, "c"]] AS x RETURN x"""
+    val singleTupleRecordQuery = """RETURN [[1, "a"], [2, "b"], [3, "c"]]"""
+
+    // Multiples records of single key-value pairs (map).
+    locally {
+      val mapper = tuple(int, string)
+
+      for {
+        nums <- multipleTupleRecordQuery.query(mapper).map(driver)
+      } yield {
+        nums shouldBe Map(
+          1 -> "a",
+          2 -> "b",
+          3 -> "c"
+        )
+      }
+    }
+
+    // Single record of multiple key-value pairs (map).
+    locally {
+      val mapper = map(int, string)
+
+      for {
+        nums <- singleTupleRecordQuery.query(mapper).single(driver)
+      } yield {
+        nums shouldBe Map(
+          1 -> "a",
+          2 -> "b",
+          3 -> "c"
+        )
+      }
+    }
+
+    // Single record of multiple key-value pairs (collectAs).
+    locally {
+      val mapper = collectAs(Map.mapFactory[Int, String], tuple(int, string))
+
+      for {
+        nums <- singleTupleRecordQuery.query(mapper).single(driver)
+      } yield {
+        nums shouldBe Map(
+          1 -> "a",
+          2 -> "b",
+          3 -> "c"
+        )
+      }
+    }
+
+    // Single record of multiple key-values pairs (implicitly).
+    locally {
+      val mapper = ResultMapper[Map[Int, String]]
+
+      for {
+        nums <- singleTupleRecordQuery.query(mapper).single(driver)
+      } yield {
+        nums shouldBe Map(
+          1 -> "a",
+          2 -> "b",
+          3 -> "c"
+        )
       }
     }
   }
@@ -536,9 +576,21 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   it should "support querying objects as maps" in executeAsFuture { driver =>
     val query = "RETURN { foo: 3, bar: 5 }"
 
-    // Explicit default map.
+    implicit val customKeyMapper =
+      KeyMapper.StringKeyMapper.imap[CustomKey](_.name) { name =>
+        CustomKey.from(name).toRight(
+          left = KeyMapperException(
+            key = name,
+            cause = IncoercibleException(
+              message = s"${name} is not a valid CustomKey"
+            )
+          )
+        )
+      }
+
+    // Default map (explicit).
     locally {
-      val mapper = map(int)
+      val mapper = neoMap(int)
 
       for {
         map <- query.query(mapper).single(driver)
@@ -550,24 +602,12 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
     }
 
-    // Explicit custom map.
+    // Custom map (explicit).
     locally {
-      val customKeyMapper =
-        KeyMapper.StringKeyMapper.imap[CustomKey](_.name) { name =>
-          CustomKey.from(name).toRight(
-            left = KeyMapperException(
-              key = name,
-              cause = IncoercibleException(
-                message = s"${name} is not a valid CustomKey"
-              )
-            )
-          )
-        }
-
-      val mapper = map(
-        mapper = int,
-        keyMapper = customKeyMapper,
-        mapFactory = SortedMap.sortedMapFactory[CustomKey, Int]
+      val mapper = neoMap(
+        mapFactory = SortedMap.sortedMapFactory[CustomKey, Int],
+        valueMapper = int,
+        keyMapper = customKeyMapper
       )
 
       for {
@@ -580,7 +620,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
     }
 
-    // Implicit default map.
+    // Default map (implicit).
     locally {
       val mapper = ResultMapper[Map[String, Int]]
 
@@ -594,9 +634,9 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
     }
 
-    // Implicit custom map.
+    // Custom map (implicit).
     locally {
-      val mapper = ResultMapper[SortedMap[String, Int]]
+      val mapper = ResultMapper[SortedMap[CustomKey, Int]]
 
       for {
         map <- query.query(mapper).single(driver)

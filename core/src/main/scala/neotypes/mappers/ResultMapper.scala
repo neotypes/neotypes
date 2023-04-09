@@ -587,6 +587,25 @@ private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultM
   implicit def collectAs[C, A](implicit factory: Factory[A, C], mapper: ResultMapper[A]): ResultMapper[C] =
     values.emap(col => traverseAs(factory)(col)(mapper.decode))
 
+  /** Creates a [[ResultMapper]] that will collect all values
+    * into an homogeneous map-like collection,
+    * using the provided mapper to decode each key-value element.
+    */
+  implicit def map[K, V, M](
+    implicit
+    mapFactory: Factory[(K, V), M],
+    keyMapper: ResultMapper[K],
+    valueMapper: ResultMapper[V]
+  ): ResultMapper[M] =
+    collectAs(mapFactory, tuple(keyMapper, valueMapper))
+
+  /** Creates a [[ResultMapper]] that will collect all values
+    * into an homogeneous [[Map]],
+    * using the provided mapper to decode each key-value element.
+    */
+  def map[K, V](implicit keyMapper: ResultMapper[K], valueMapper: ResultMapper[V]): ResultMapper[Map[K, V]] =
+    map(Map, keyMapper, valueMapper)
+
   /** Creates a [[ResultMapper]] that will try to decode a [[NeoObject]]
     * into a some form of [[Map]].
     *
@@ -598,22 +617,22 @@ private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultM
     * by default uses the no-op decoder.
     * @param mapFactory the specific [[Map]] to create.
     */
-  implicit def map[K, V, M[_, _]](
+  implicit def neoMap[K, V, M[_, _]](
     implicit
-    mapper: ResultMapper[V],
+    mapFactory: Factory[(K, V), M[K, V]],
     keyMapper: KeyMapper[K],
-    mapFactory: Factory[(K, V), M[K, V]]
+    valueMapper: ResultMapper[V]
   ): ResultMapper[M[K, V]] =
     neoObject.emap { obj =>
       traverseAs(mapFactory)(obj.properties) {
         case (key, value) =>
-          keyMapper.decodeKey(key) and mapper.decode(value)
+          keyMapper.decodeKey(key) and valueMapper.decode(value)
       }
     }
 
   /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
-  def map[V](mapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
-    map(mapper, KeyMapper.StringKeyMapper, Map)
+  def neoMap[V](valueMapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
+    neoMap(Map, KeyMapper.StringKeyMapper, valueMapper)
 }
 
 private[mappers] sealed abstract class ResultMappersLowPriority1 extends ResultMappersLowPriority2 { self: ResultMapper.type =>
