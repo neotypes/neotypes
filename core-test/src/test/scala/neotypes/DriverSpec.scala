@@ -296,12 +296,12 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Single record of multiple key-values pairs (implicitly).
     locally {
-      val mapper = ResultMapper[Map[Int, String]]
+      val mapper = ResultMapper[SortedMap[Int, String]]
 
       for {
         nums <- singleTupleRecordQuery.query(mapper).single(driver)
       } yield {
-        nums shouldBe Map(
+        nums shouldBe SortedMap(
           1 -> "a",
           2 -> "b",
           3 -> "c"

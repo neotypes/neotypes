@@ -443,6 +443,10 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
       mapper.decode(value).map(Some.apply)
   }
 
+  /** Creates a [[ResultMapper]] that will attempt to decode the input using the two provided mappers. */
+  implicit def either[A, B](implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[Either[A, B]] =
+    a.map(Left.apply).or(b.map(Right.apply))
+
   /** Creates a [[ResultMapper]] that will collect all values
     * into an homogeneous [[List]],
     * using the provided mapper to decode each element.
@@ -463,6 +467,17 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
     */
   def set[A](implicit mapper: ResultMapper[A]): ResultMapper[Set[A]] =
     collectAs(Set, mapper)
+
+  /** Creates a [[ResultMapper]] that will collect all values
+    * into an homogeneous [[Map]],
+    * using the provided mapper to decode each key-value element.
+    */
+  def map[K, V](implicit keyMapper: ResultMapper[K], valueMapper: ResultMapper[V]): ResultMapper[Map[K, V]] =
+    collectAsMap(Map, keyMapper, valueMapper)
+
+  /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
+  def neoMap[V](valueMapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
+    neoMap(Map, KeyMapper.StringKeyMapper, valueMapper)
 
   /** Creates a [[ResultMapper]] that will try to decode
     * the given field of an object,
@@ -576,36 +591,6 @@ and that you imported `neotypes.generic.implicits._`
 }
 
 private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultMappersLowPriority1 { self: ResultMapper.type =>
-  /** Creates a [[ResultMapper]] that will attempt to decode the input using the two provided mappers. */
-  implicit def either[A, B](implicit a: ResultMapper[A], b: ResultMapper[B]): ResultMapper[Either[A, B]] =
-    a.map(Left.apply).or(b.map(Right.apply))
-
-  /** Creates a [[ResultMapper]] that will collect all values
-    * into the homogeneous provided collection,
-    * using the provided mapper to decode each element.
-    */
-  implicit def collectAs[C, A](implicit factory: Factory[A, C], mapper: ResultMapper[A]): ResultMapper[C] =
-    values.emap(col => traverseAs(factory)(col)(mapper.decode))
-
-  /** Creates a [[ResultMapper]] that will collect all values
-    * into an homogeneous map-like collection,
-    * using the provided mapper to decode each key-value element.
-    */
-  implicit def map[K, V, M](
-    implicit
-    mapFactory: Factory[(K, V), M],
-    keyMapper: ResultMapper[K],
-    valueMapper: ResultMapper[V]
-  ): ResultMapper[M] =
-    collectAs(mapFactory, tuple(keyMapper, valueMapper))
-
-  /** Creates a [[ResultMapper]] that will collect all values
-    * into an homogeneous [[Map]],
-    * using the provided mapper to decode each key-value element.
-    */
-  def map[K, V](implicit keyMapper: ResultMapper[K], valueMapper: ResultMapper[V]): ResultMapper[Map[K, V]] =
-    map(Map, keyMapper, valueMapper)
-
   /** Creates a [[ResultMapper]] that will try to decode a [[NeoObject]]
     * into a some form of [[Map]].
     *
@@ -629,13 +614,34 @@ private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultM
           keyMapper.decodeKey(key) and valueMapper.decode(value)
       }
     }
-
-  /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
-  def neoMap[V](valueMapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
-    neoMap(Map, KeyMapper.StringKeyMapper, valueMapper)
 }
 
 private[mappers] sealed abstract class ResultMappersLowPriority1 extends ResultMappersLowPriority2 { self: ResultMapper.type =>
+  /** Creates a [[ResultMapper]] that will collect all values
+    * into the homogeneous provided collection,
+    * using the provided mapper to decode each element.
+    */
+  implicit def collectAs[A, C](implicit factory: Factory[A, C], mapper: ResultMapper[A]): ResultMapper[C] =
+    values.emap(col => traverseAs(factory)(col)(mapper.decode))
+
+  /** Overload of [[collectAs]] to help implicit inference, don't call explicitly. */
+  implicit def collectAsIterable[A, C[_]](implicit factory: Factory[A, C[A]], mapper: ResultMapper[A]): ResultMapper[C[A]] =
+    collectAs(factory, mapper)
+
+  /** Creates a [[ResultMapper]] that will collect all values
+    * into an homogeneous map-like collection,
+    * using the provided mapper to decode each key-value element.
+    */
+  implicit def collectAsMap[K, V, M[_, _]](
+    implicit
+    mapFactory: Factory[(K, V), M[K, V]],
+    keyMapper: ResultMapper[K],
+    valueMapper: ResultMapper[V]
+  ): ResultMapper[M[K, V]] =
+    collectAs(mapFactory, tuple(keyMapper, valueMapper))
+}
+
+private[mappers] sealed abstract class ResultMappersLowPriority2 extends ResultMappersLowPriority3 { self: ResultMapper.type =>
   /** Creates a [[ResultMapper]] that will always decode to the given singleton,
     * no matter the actual input passed to `decode`.
     */
@@ -643,7 +649,7 @@ private[mappers] sealed abstract class ResultMappersLowPriority1 extends ResultM
     constant(ev.value)
 }
 
-private[mappers] sealed abstract class ResultMappersLowPriority2 { self: ResultMapper.type =>
+private[mappers] sealed abstract class ResultMappersLowPriority3 { self: ResultMapper.type =>
   /** Derives an opinionated [[ResultMapper]] for a given `case class`.
     * The derived mapper will attempt to decode the result as a [[NeoObject]],
     * and then decode each field using exact names matches,
