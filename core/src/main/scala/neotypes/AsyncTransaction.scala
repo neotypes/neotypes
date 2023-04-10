@@ -14,7 +14,7 @@ import org.neo4j.driver.summary.ResultSummary
 import scala.collection.Factory
 import scala.jdk.CollectionConverters._
 
-sealed trait Transaction[F[_]] {
+sealed trait AsyncTransaction[F[_]] {
   private[neotypes] def F: Async[F]
 
   def commit: F[Unit]
@@ -39,7 +39,7 @@ sealed trait Transaction[F[_]] {
   ): F[(C, ResultSummary)]
 }
 
-sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
+sealed trait StreamTransaction[S[_], F[_]] extends AsyncTransaction[F] {
   private[neotypes] def S: Stream.Aux[S, F]
 
   def stream[T](
@@ -50,14 +50,14 @@ sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
   ): S[Either[T, ResultSummary]]
 }
 
-object Transaction {
+object AsyncTransaction {
   private[neotypes] def apply[F[_]](
       transaction: NeoAsyncTransaction,
       close: () => F[Unit]
   ) (
       implicit evF: Async[F]
-  ): Transaction[F] =
-    new Transaction[F] {
+  ): AsyncTransaction[F] =
+    new AsyncTransaction[F] {
       override final val F: Async[F] = evF
 
       override final def commit: F[Unit] =
@@ -113,8 +113,8 @@ object Transaction {
       close: () => F[Unit]
   ) (
       implicit evS: Stream.Aux[S, F], evF: Async[F]
-  ): StreamingTransaction[S, F] =
-    new StreamingTransaction[S, F] {
+  ): StreamTransaction[S, F] =
+    new StreamTransaction[S, F] {
       override final val F: Async[F] = evF
       override final val S: Stream.Aux[S, F] = evS
 

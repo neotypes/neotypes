@@ -8,7 +8,7 @@ import monix.reactive.Observable
 
 import scala.concurrent.ExecutionContext
 
-/** Implementation of the Stream Testkit for monix observables. */
+/** Implementation of the Stream Testkit for Monix Observable. */
 object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTaskTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
@@ -23,5 +23,5 @@ object MonixObservablesTestkit extends StreamTestkit[MonixStream, Task](MonixTas
     }
 }
 
-/** Execute all the stream specs using monix observables. */
+/** Execute all the Stream specs using Monix Observable. */
 final class MonixObservablesSuite extends StreamSuite(MonixObservablesTestkit)

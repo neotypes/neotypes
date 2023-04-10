@@ -8,7 +8,7 @@ import akka.stream.scaladsl.{Merge, Sink, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Implementation of the Stream Testkit for akka streams. */
+/** Implementation of the Stream Testkit for Akka streams. */
 object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
@@ -26,5 +26,5 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
     }
 }
 
-/** Execute all the stream specs using akka streams. */
+/** Execute all the Stream specs using Akka streams. */
 final class AkkaStreamsSuite extends StreamSuite(AkkaStreamsTestkit)

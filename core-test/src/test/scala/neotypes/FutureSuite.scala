@@ -2,8 +2,8 @@ package neotypes
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Implementation of the Effect Testkit for scala Future. */
-object FutureTestkit extends EffectTestkit[Future] {
+/** Implementation of the Async Testkit for Scala Future. */
+object FutureTestkit extends AsyncTestkit[Future] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       override final def fToFuture[A](future: Future[A]): Future[A] =
@@ -20,5 +20,5 @@ object FutureTestkit extends EffectTestkit[Future] {
     }
 }
 
-/** Execute all the effect specs using Future. */
-final class FutureSuite extends EffectSuite(FutureTestkit)
+/** Execute all the Async specs using Scala Future. */
+final class FutureSuite extends AsyncSuite(FutureTestkit)

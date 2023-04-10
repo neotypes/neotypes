@@ -15,12 +15,12 @@ import scala.jdk.DurationConverters._
 
 /** Marker trait to signal that the test needs a driver. */
 trait DriverProvider[F[_]] extends { self: BaseIntegrationSpec[F] =>
-  type DriverType <: Driver[F]
+  type DriverType <: AsyncDriver[F]
   protected def driver: DriverType
 }
 
 /** Base class for writing integration specs. */
-trait BaseIntegrationSpec[F[_]] extends BaseEffectSpec[F] with AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
+trait BaseIntegrationSpec[F[_]] extends BaseAsyncSpec[F] with AsyncFlatSpecLike with ForAllTestContainer { self: DriverProvider[F] =>
   protected def initQuery: String
 
   override final val container =

@@ -8,7 +8,7 @@ import neotypes.mappers.ResultMapper._
 import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the use of the library with the Neo4j graph-data-science plugin. */
-trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: DriverProvider[F] with BaseEffectSpec[F] =>
+trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   import BaseAlgorithmSpec._
 
   it should "execute the article rank centrality algorithm" in executeAsFuture { d =>
@@ -271,13 +271,13 @@ object BaseAlgorithmSpec {
 }
 
 final class AsyncAlgorithmSpec[F[_]](
-  testkit: EffectTestkit[F]
+  testkit: AsyncTestkit[F]
 ) extends AsyncDriverProvider(testkit) with BaseAlgorithmSpec[F] {
-  behavior of s"The Neo4j graph-data-science plugin used with: Driver[${effectName}]"
+  behavior of s"The Neo4j graph-data-science plugin used with: AsyncDriver[${asyncName}]"
 }
 
-final class StreamingAlgorithmSpec[S[_], F[_]](
+final class StreamAlgorithmSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamingDriverProvider(testkit) with BaseAlgorithmSpec[F] {
-  behavior of s"The Neo4j graph-data-science plugin used with: StreamDriver[${effectName}]"
+) extends StreamDriverProvider(testkit) with BaseAlgorithmSpec[F] {
+  behavior of s"The Neo4j graph-data-science plugin used with: StreamDriver[${streamName}, ${asyncName}]"
 }

@@ -11,6 +11,7 @@ import org.neo4j.driver.summary.ResultSummary
 import scala.collection.Factory
 import scala.collection.mutable.StringBuilder
 
+import neotypes.StreamTransaction
 sealed trait BaseQuery {
   /** The query statement that will be executed. */
   def query: String
@@ -59,10 +60,10 @@ final class ExecuteQuery private[neotypes] (
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
+    * @tparam F async type.
+    * @return An asyncual value that will execute the query.
     */
-  def resultSummary[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[ResultSummary] =
+  def resultSummary[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[ResultSummary] =
     driver.transact(config)(tx => resultSummary(tx))
 
   /** Executes the query and returns its [[ResultSummary]].
@@ -77,10 +78,10 @@ final class ExecuteQuery private[neotypes] (
     * }}}
     *
     * @param tx neotypes transaction.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
+    * @tparam F async type.
+    * @return An asyncual value that will execute the query.
     */
-  def resultSummary[F[_]](tx: Transaction[F]): F[ResultSummary] =
+  def resultSummary[F[_]](tx: AsyncTransaction[F]): F[ResultSummary] =
     tx.execute(query, params)
 
   /** Executes the query and ignores its output.
@@ -95,10 +96,10 @@ final class ExecuteQuery private[neotypes] (
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
+    * @tparam F async type.
+    * @return An asyncual value that will execute the query.
     */
-  def void[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[Unit] =
+  def void[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[Unit] =
     driver.transact(config)(tx => void(tx))
 
   /** Executes the query and ignores its output.
@@ -113,10 +114,10 @@ final class ExecuteQuery private[neotypes] (
     * }}}
     *
     * @param tx neotypes transaction.
-    * @tparam F effect type.
-    * @return An effectual value that will execute the query.
+    * @tparam F async type.
+    * @return An asyncual value that will execute the query.
     */
-  def void[F[_]](tx: Transaction[F]): F[Unit] =
+  def void[F[_]](tx: AsyncTransaction[F]): F[Unit] =
     tx.execute(query, params).void(tx.F)
 }
 
@@ -199,10 +200,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a single T element.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a single T element.
     */
-  def single[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[T]] =
+  def single[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[T]] =
     driver.transact(config)(tx => single(tx))
 
   /** Executes the query and returns the unique / first value.
@@ -219,10 +220,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * @note May fail if the query doesn't return exactly one record.
     *
     * @param tx neotypes transaction.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a single T element.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a single T element.
     */
-  def single[F[_]](tx: Transaction[F]): F[RT.AsyncR[T]] =
+  def single[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[T]] =
     RT.async(tx.single(query, params, mapper))(tx.F)
 
   /** Executes the query and returns all results as a collection of values.
@@ -238,11 +239,11 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * @param factory a Scala factory of the collection that will be collected.
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
+    * @tparam F async type.
     * @tparam C collection type.
-    * @return An effectual value that will compute a collection of T elements.
+    * @return An asyncual value that will compute a collection of T elements.
     */
-  def collectAs[F[_], C](factory: Factory[T, C], driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[C]] =
+  def collectAs[F[_], C](factory: Factory[T, C], driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[C]] =
     driver.transact(config)(tx => collectAs(factory, tx))
 
   /** Executes the query and returns all results as a collection of values.
@@ -258,11 +259,11 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     *
     * @param factory a Scala factory of the collection that will be collected.
     * @param tx neotypes transaction.
-    * @tparam F effect type.
+    * @tparam F async type.
     * @tparam C collection type.
-    * @return An effectual value that will compute a collection of T elements.
+    * @return An asyncual value that will compute a collection of T elements.
     */
-  def collectAs[F[_], C](factory: Factory[T, C], tx: Transaction[F]): F[RT.AsyncR[C]] =
+  def collectAs[F[_], C](factory: Factory[T, C], tx: AsyncTransaction[F]): F[RT.AsyncR[C]] =
     RT.async(tx.collectAs(query, params, mapper, factory))(tx.F)
 
   /** Executes the query and returns a [[List]] of values.
@@ -277,10 +278,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a List of T elements.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a List of T elements.
     */
-  def list[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[List[T]]] =
+  def list[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[List[T]]] =
     driver.transact(config)(tx => list(tx))
 
   /** Executes the query and returns a [[List]] of values.
@@ -295,10 +296,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * }}}
     *
     * @param tx neotypes transaction.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a List of T elements.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a List of T elements.
     */
-  def list[F[_]](tx: Transaction[F]): F[RT.AsyncR[List[T]]] =
+  def list[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[List[T]]] =
     collectAs(factory = List, tx)
 
   /** Executes the query and returns a [[Set]] of values.
@@ -313,10 +314,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a Set of T elements.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a Set of T elements.
     */
-  def set[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Set[T]]] =
+  def set[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Set[T]]] =
     driver.transact(config)(tx => set(tx))
 
   /** Executes the query and returns a [[Set]] of values.
@@ -331,10 +332,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * }}}
     *
     * @param tx neotypes transaction.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a Set of T elements.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a Set of T elements.
     */
-  def set[F[_]](tx: Transaction[F]): F[RT.AsyncR[Set[T]]] =
+  def set[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[Set[T]]] =
     collectAs(factory = Set, tx)
 
   /** Executes the query and returns a [[Vector]] of values.
@@ -349,10 +350,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a Vector of T elements.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a Vector of T elements.
     */
-  def vector[F[_]](driver: Driver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Vector[T]]] =
+  def vector[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Vector[T]]] =
     driver.transact(config)(tx => vector(tx))
 
   /** Executes the query and returns a [[Vector]] of values.
@@ -367,10 +368,10 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * }}}
     *
     * @param tx neotypes transaction.
-    * @tparam F effect type.
-    * @return An effectual value that will compute a Vector of T elements.
+    * @tparam F async type.
+    * @return An asyncual value that will compute a Vector of T elements.
     */
-  def vector[F[_]](tx: Transaction[F]): F[RT.AsyncR[Vector[T]]] =
+  def vector[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[Vector[T]]] =
     collectAs(factory = Vector, tx)
 
   /** Executes the query and returns a [[Map]] of values.
@@ -386,12 +387,12 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
     * @param ev evidence that T is a tuple (K, V).
-    * @tparam F effect type.
+    * @tparam F async type.
     * @tparam K keys type.
     * @tparam V values type.
-    * @return An effectual value that will compute a Map of key-value elements.
+    * @return An asyncual value that will compute a Map of key-value elements.
     */
-  def map[F[_], K, V](driver: Driver[F], config: TransactionConfig = TransactionConfig.default)
+  def map[F[_], K, V](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default)
                      (implicit ev: T <:< (K, V)): F[RT.AsyncR[Map[K, V]]] =
     driver.transact(config)(tx => map(tx))
 
@@ -408,12 +409,12 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     *
     * @param tx neotypes transaction.
     * @param ev evidence that T is a tuple (K, V).
-    * @tparam F effect type.
+    * @tparam F async type.
     * @tparam K keys type.
     * @tparam V values type.
-    * @return An effectual value that will compute a Map of key-value elements.
+    * @return An asyncual value that will compute a Map of key-value elements.
     */
-  def map[F[_], K, V](tx: Transaction[F])
+  def map[F[_], K, V](tx: AsyncTransaction[F])
                      (implicit ev: T <:< (K, V)): F[RT.AsyncR[Map[K, V]]] =
     RT.async(
       tx.collectAs(query, params, mapper.map(ev), factory = Map.mapFactory[K, V])
@@ -426,64 +427,64 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
     * val result: S[F, Person] =
     *   "MATCH (p: Person) RETURN p"
     *     .query(ResultMapper[Person])
-    *     .stream(streamingDriver)
+    *     .stream(streamDriver)
     * }}}
     *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The stream documentation</a>.
     *
     * @param driver neotypes driver.
     * @param config neotypes transaction config.
     * @param chunkSize number of elements to pull each time from the database; by default 256.
     * @tparam S stream type.
-    * @tparam F effect type.
-    * @return An effectual Stream of T elements.
+    * @tparam F async type.
+    * @return An stream of T elements.
     */
   def stream[S[_], F[_]](
-    driver: StreamingDriver[S, F], config: TransactionConfig = TransactionConfig.default, chunkSize: Int = 256
+    driver: StreamDriver[S, F], config: TransactionConfig = TransactionConfig.default, chunkSize: Int = 256
   ): S[RT.StreamR[T]] =
-    driver.streamingTransact(config)(tx => stream(tx, chunkSize))
+    driver.streamTransact(config)(tx => stream(tx, chunkSize))
 
   /** Executes the query and returns a Stream of values.
     *
     * @example
     * {{{
-    * val result: S[F, Person] = streamingDriver.streamingTransact { tx =>
+    * val result: S[F, Person] = streamDriver.streamTransact { tx =>
     *   "MATCH (p: Person) RETURN p"
     *     .query(ResultMapper[Person])
     *     .stream(tx)
     * }
     * }}}
     *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The stream documentation</a>.
     *
     * @param tx neotypes transaction.
     * @tparam S stream type.
-    * @tparam F effect type.
-    * @return An effectual Stream of T elements.
+    * @tparam F async type.
+    * @return An stream of T elements.
     */
-  def stream[S[_], F[_]](tx: StreamingTransaction[S, F]): S[RT.StreamR[T]] =
+  def stream[S[_], F[_]](tx: StreamTransaction[S, F]): S[RT.StreamR[T]] =
     stream(tx, chunkSize = 256)
 
   /** Executes the query and returns a Stream of values.
     *
     * @example
     * {{{
-    * val result: S[F, Person] = streamingDriver.streamingTransact { tx =>
+    * val result: S[F, Person] = streamDriver.streamTransact { tx =>
     *   "MATCH (p: Person) RETURN p"
     *     .query(ResultMapper[Person])
     *     .stream(tx)
     * }
     * }}}
     *
-    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The streaming documentation</a>.
+    * @see <a href="https://neotypes.github.io/neotypes/docs/streams.html">The stream documentation</a>.
     *
     * @param tx neotypes transaction.
     * @param chunkSize number of elements to pull each time from the database; by default 256.
     * @tparam S stream type.
-    * @tparam F effect type.
-    * @return An effectual Stream of T elements.
+    * @tparam F async type.
+    * @return An stream of T elements.
     */
-  def stream[S[_], F[_]](tx: StreamingTransaction[S, F], chunkSize: Int): S[RT.StreamR[T]] =
+  def stream[S[_], F[_]](tx: StreamTransaction[S, F], chunkSize: Int): S[RT.StreamR[T]] =
     RT.stream(tx.stream(query, params, mapper, chunkSize))(tx.S)
 }
 

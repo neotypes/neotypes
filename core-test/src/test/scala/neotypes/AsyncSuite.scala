@@ -6,8 +6,8 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete effect. */
-abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
-  final val effectName: String = ct.runtimeClass.getCanonicalName
+abstract class AsyncTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
+  final val asyncName: String = ct.runtimeClass.getCanonicalName
 
   trait Behaviour {
     def fToFuture[A](fa: F[A]): Future[A]
@@ -20,9 +20,9 @@ abstract class EffectTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
 }
 
 /** Base class for writing effect specs. */
-abstract class BaseEffectSpec[F[_]](effectTestkit: EffectTestkit[F]) extends AsyncTestSuite {
-  protected final val effectName: String =
-    effectTestkit.effectName
+abstract class BaseAsyncSpec[F[_]](effectTestkit: AsyncTestkit[F]) extends AsyncTestSuite {
+  protected final val asyncName: String =
+    effectTestkit.asyncName
 
   private final val behaviour: effectTestkit.Behaviour =
     effectTestkit.createBehaviour(this.executionContext)
@@ -41,15 +41,15 @@ abstract class BaseEffectSpec[F[_]](effectTestkit: EffectTestkit[F]) extends Asy
 }
 
 /** Provides an Driver[F] instance for asynchronous tests. */
-abstract class AsyncDriverProvider[F[_]](testkit: EffectTestkit[F]) extends BaseEffectSpec[F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
-  override final type DriverType = Driver[F]
+abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F]) extends BaseAsyncSpec[F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
+  override final type DriverType = AsyncDriver[F]
 
   override protected final lazy val driver: DriverType =
-    Driver[F](self.neoDriver)
+    AsyncDriver[F](self.neoDriver)
 }
 
 /** Group all the effect specs into one big suite, which can be called for each effect. */
-abstract class EffectSuite[F[_]](testkit: EffectTestkit[F]) extends Suites(
+abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F]) extends Suites(
   new AsyncDriverSpec(testkit),
   new AsyncGuaranteeSpec(testkit),
   new AsyncAlgorithmSpec(testkit)

@@ -1,6 +1,6 @@
 package neotypes.cats.effect
 
-import neotypes.{AsyncDriverProvider, BaseIntegrationSpec, Driver}
+import neotypes.{AsyncDriverProvider, BaseIntegrationSpec, AsyncDriver}
 import neotypes.cats.effect.implicits._
 import neotypes.implicits.syntax.all._
 import neotypes.mappers.ResultMapper
@@ -15,8 +15,8 @@ final class CatsImplicitsSpec extends AsyncDriverProvider(IOTestkit) with BaseIn
     def test1[F[_] : Applicative]: F[Unit] = Applicative[F].unit
     def test2[F[_] : Monad]: F[Unit] = ().pure[F]
 
-    def makeDriver[F[_] : Async]: Resource[F, Driver[F]] =
-      Resource.make(Async[F].delay(Driver[F](this.neoDriver)))(_.close)
+    def makeDriver[F[_] : Async]: Resource[F, AsyncDriver[F]] =
+      Resource.make(Async[F].delay(AsyncDriver[F](this.neoDriver)))(_.close)
 
     def useDriver[F[_] : Async]: F[String] = makeDriver[F].use { d =>
       (test1[F] *> test2[F]).flatMap { _ =>

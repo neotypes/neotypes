@@ -23,5 +23,5 @@ object Fs2Testkit extends StreamTestkit[Fs2IoStream, IO](IOTestkit) {
     }
 }
 
-/** Execute all the stream specs using fs2. */
+/** Execute all the Stream specs using fs2. */
 final class Fs2Suite extends StreamSuite(Fs2Testkit)

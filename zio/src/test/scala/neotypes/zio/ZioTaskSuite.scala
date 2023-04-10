@@ -1,14 +1,14 @@
 package neotypes.zio
 
-import neotypes.{Async, EffectSuite, EffectTestkit}
+import neotypes.{Async, AsyncSuite, AsyncTestkit}
 import neotypes.zio.implicits._
 
 import zio.{Executor, Runtime, Task, Unsafe}
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Implementation of the Effect Testkit for zio Task. */
-object ZioTaskTestkit extends EffectTestkit[Task] {
+/** Implementation of the Async Testkit for ZIO Task. */
+object ZioTaskTestkit extends AsyncTestkit[Task] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       val runtime =
@@ -36,5 +36,5 @@ object ZioTaskTestkit extends EffectTestkit[Task] {
     }
 }
 
-/** Execute all the effect specs using ZIO Task. */
-final class ZioTaskSuite extends EffectSuite(ZioTaskTestkit)
+/** Execute all the Async specs using ZIO Task. */
+final class ZioTaskSuite extends AsyncSuite(ZioTaskTestkit)

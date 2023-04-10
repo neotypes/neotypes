@@ -20,7 +20,7 @@ trait AkkaStreams {
   /** neotypes support for Akka Streams
     *
     * @param mat implicit akka.stream.Materializer that will be passed down to all Akka Streams operations
-    * @return neotype AkkaStream with effect type as the scala.concurrent Future
+    * @return [[neotypes.Stream]] for [[AkkaStream]] using [[Future]].
     */
   implicit final def akkaStream(implicit mat: Materializer): neotypes.Stream.Aux[AkkaStream, Future] =
     new neotypes.Stream[AkkaStream] {

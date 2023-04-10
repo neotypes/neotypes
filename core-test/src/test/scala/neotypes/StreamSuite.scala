@@ -6,7 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete stream. */
-abstract class StreamTestkit[S[_], F[_]](val effectTestkit: EffectTestkit[F])
+abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])
                                         (implicit ctS: ClassTag[S[_]]) {
   final val streamName: String = ctS.runtimeClass.getCanonicalName
 
@@ -20,7 +20,7 @@ abstract class StreamTestkit[S[_], F[_]](val effectTestkit: EffectTestkit[F])
 }
 
 /** Base class for writing stream specs. */
-abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) extends BaseEffectSpec[F](streamTestkit.effectTestkit) {
+abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) extends BaseAsyncSpec[F](streamTestkit.asyncTestkit) {
   protected final val streamName: String =
     streamTestkit.streamName
 
@@ -37,12 +37,12 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
     behaviour.streamConcurrently(stream1, stream2)
 }
 
-/** Provides an StreamingDriver[S, F] instance for streaming tests. */
-abstract class StreamingDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
-  override final type DriverType = StreamingDriver[S, F]
+/** Provides an StreamDriver[S, F] instance for stream tests. */
+abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
+  override final type DriverType = StreamDriver[S, F]
 
   override protected final lazy val driver: DriverType =
-    Driver[S, F](self.neoDriver)
+    AsyncDriver[S, F](self.neoDriver)
 
   protected final def executeAsFutureList[A](work: DriverType => S[A]): Future[List[A]] =
     executeAsFuture(work andThen streamToFList)
@@ -50,7 +50,7 @@ abstract class StreamingDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
 
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
-  new StreamingDriverSpec(testkit),
+  new StreamDriverSpec(testkit),
   new StreamGuaranteeSpec(testkit),
-  new StreamingAlgorithmSpec(testkit)
+  new StreamAlgorithmSpec(testkit)
 )

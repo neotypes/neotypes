@@ -8,7 +8,7 @@ import zio.Task
 
 import scala.concurrent.ExecutionContext
 
-/** Implementation of the Stream Testkit for zio ZStreams. */
+/** Implementation of the Stream Testkit for ZIO ZStreams. */
 object ZioZStreamsTestkit extends StreamTestkit[ZioStream, Task](ZioTaskTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
@@ -23,5 +23,5 @@ object ZioZStreamsTestkit extends StreamTestkit[ZioStream, Task](ZioTaskTestkit)
     }
 }
 
-/** Execute all the stream specs using zio ZStreams. */
+/** Execute all the Stream specs using ZIO ZStreams. */
 final class ZioZStreamsSuite extends StreamSuite(ZioZStreamsTestkit)

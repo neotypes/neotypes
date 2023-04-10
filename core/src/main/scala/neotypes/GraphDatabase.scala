@@ -6,17 +6,17 @@ import org.neo4j.driver.{AuthToken, AuthTokens, Config, Driver => NDriver, Graph
 
 /** Factory of Drivers. */
 object GraphDatabase {
-  def driver[F[_]]: DriverPartiallyApplied[F] =
-    new DriverPartiallyApplied(dummy = true)
+  def asyncDriver[F[_]]: AsyncDriverPartiallyApplied[F] =
+    new AsyncDriverPartiallyApplied(dummy = true)
 
-  private[neotypes] final class DriverPartiallyApplied[F[_]](private val dummy: Boolean) extends AnyVal {
+  private[neotypes] final class AsyncDriverPartiallyApplied[F[_]](private val dummy: Boolean) extends AnyVal {
     /** Creates a new Driver using the provided uri,
       * without authentication and with the default configuration.
       *
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[R[_]](uri: String)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, AuthTokens.none(), Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri & authentication token,
@@ -25,7 +25,7 @@ object GraphDatabase {
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[R[_]](uri: String, authToken: AuthToken)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, authToken, Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri & config,
@@ -34,7 +34,7 @@ object GraphDatabase {
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[R[_]](uri: String, config: Config)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, AuthTokens.none(), config)
 
 
@@ -43,51 +43,51 @@ object GraphDatabase {
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[R[_]](uri: String, authToken: AuthToken, config: Config)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       create(NFactory.driver(URI.create(uri), authToken, config))
 
     /** Creates a new Driver using the provided uri,
       * without authentication and with the default configuration.
       */
     def apply[R[_]](uri: URI)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, AuthTokens.none(), Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri & authentication token,
       * and with the default configuration.
       */
     def apply[R[_]](uri: URI, authToken: AuthToken)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, authToken, Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri,
       * and without authentication.
       */
     def apply[R[_]](uri: URI, config: Config)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, AuthTokens.none(), config)
 
     /** Creates a new Driver using the provided uri, authentication token & configuration. */
     def apply[R[_]](uri: URI, authToken: AuthToken, config: Config)
-                   (implicit F: Async.Aux[F, R]): R[Driver[F]] =
+                   (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       create(NFactory.driver(uri, authToken, config))
 
     private def create[R[_]](neoDriver: => NDriver)
-                            (implicit F: Async.Aux[F, R]): R[Driver[F]] =
-      F.resource(Driver[F](neoDriver))(_.close)
+                            (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
+      F.resource(AsyncDriver[F](neoDriver))(_.close)
   }
 
-  def streamingDriver[F[_]]: StreamingDriverPartiallyApplied[F] =
-    new StreamingDriverPartiallyApplied(dummy = true)
+  def streamDriver[F[_]]: StreamDriverPartiallyApplied[F] =
+    new StreamDriverPartiallyApplied(dummy = true)
 
-  private[neotypes] final class StreamingDriverPartiallyApplied[S[_]](private val dummy: Boolean) extends AnyVal {
+  private[neotypes] final class StreamDriverPartiallyApplied[S[_]](private val dummy: Boolean) extends AnyVal {
     /** Creates a new Driver using the provided uri,
       * without authentication and with the default configuration.
       *
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[F[_], R[_]](uri: String)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       apply(uri, AuthTokens.none(), Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri & authentication token,
@@ -96,7 +96,7 @@ object GraphDatabase {
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[F[_], R[_]](uri: String, authToken: AuthToken)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       apply(uri, authToken, Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri & config,
@@ -105,7 +105,7 @@ object GraphDatabase {
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[F[_], R[_]](uri: String, config: Config)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       apply(uri, AuthTokens.none(), config)
 
 
@@ -114,37 +114,37 @@ object GraphDatabase {
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[F[_], R[_]](uri: String, authToken: AuthToken, config: Config)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       create(NFactory.driver(URI.create(uri), authToken, config))
 
     /** Creates a new Driver using the provided uri,
       * without authentication and with the default configuration.
       */
     def apply[F[_], R[_]](uri: URI)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       apply(uri, AuthTokens.none(), Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri & authentication token,
       * and with the default configuration.
       */
     def apply[F[_], R[_]](uri: URI, authToken: AuthToken)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       apply(uri, authToken, Config.defaultConfig())
 
     /** Creates a new Driver using the provided uri,
       * and without authentication.
       */
     def apply[F[_], R[_]](uri: URI, config: Config)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       apply(uri, AuthTokens.none(), config)
 
     /** Creates a new Driver using the provided uri, authentication token & configuration. */
     def apply[F[_], R[_]](uri: URI, authToken: AuthToken, config: Config)
-                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
+                         (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
       create(NFactory.driver(uri, authToken, config))
 
     private def create[F[_], R[_]](neoDriver: => NDriver)
-                                  (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamingDriver[S, F]] =
-      F.resource(Driver[S, F](neoDriver))(_.close)
+                                  (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
+      F.resource(AsyncDriver[S, F](neoDriver))(_.close)
   }
 }

@@ -1,6 +1,6 @@
 package neotypes.cats.effect
 
-import neotypes.{Async, EffectSuite, EffectTestkit}
+import neotypes.{Async, AsyncSuite, AsyncTestkit}
 import neotypes.cats.effect.implicits._
 import cats.effect.IO
 import cats.effect.unsafe.implicits.global
@@ -8,8 +8,8 @@ import cats.syntax.parallel._
 
 import scala.concurrent.{ExecutionContext, Future}
 
-/** Implementation of the Effect Testkit for cats-effect IO. */
-object IOTestkit extends EffectTestkit[IO] {
+/** Implementation of the Async Testkit for cats-effect IO. */
+object IOTestkit extends AsyncTestkit[IO] {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       override final def fToFuture[A](io: IO[A]): Future[A] =
@@ -26,5 +26,5 @@ object IOTestkit extends EffectTestkit[IO] {
     }
 }
 
-/** Execute all the effect specs using cats-effect IO. */
-final class IOSuite extends EffectSuite(IOTestkit)
+/** Execute all the Async specs using cats-effect IO. */
+final class IOSuite extends AsyncSuite(IOTestkit)

@@ -5,7 +5,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.jdk.FutureConverters._
 import scala.util.{Failure, Success}
 
-@annotation.implicitNotFound("The effect type ${F} is not supported by neotypes")
+@annotation.implicitNotFound("The async type ${F} is not supported by neotypes")
 trait Async[F[_]] {
   private[neotypes] type R[A]
 

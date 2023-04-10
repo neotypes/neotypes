@@ -15,7 +15,7 @@ import java.util.UUID
 import java.time.{LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
 import scala.collection.immutable.{ArraySeq, BitSet, SortedMap}
 
-trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with Inside with LoneElement with OptionValues { self: DriverProvider[F] with BaseEffectSpec[F] =>
+trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with Inside with LoneElement with OptionValues { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   import BaseDriverSpec._
   import ResultMapper._
 
@@ -736,15 +736,15 @@ object BaseDriverSpec {
 }
 
 final class AsyncDriverSpec[F[_]](
-  testkit: EffectTestkit[F]
+  testkit: AsyncTestkit[F]
 ) extends AsyncDriverProvider(testkit) with BaseDriverSpec[F] {
-  behavior of s"Driver[${effectName}]"
+  behavior of s"Driver[${asyncName}]"
 }
 
-final class StreamingDriverSpec[S[_], F[_]](
+final class StreamDriverSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamingDriverProvider(testkit) with BaseDriverSpec[F] {
-  behavior of s"StreamingDriver[${streamName}, ${effectName}]"
+) extends StreamDriverProvider(testkit) with BaseDriverSpec[F] {
+  behavior of s"StreamDriver[${streamName}, ${asyncName}]"
 
   it should "support stream the records" in {
     executeAsFutureList { driver =>

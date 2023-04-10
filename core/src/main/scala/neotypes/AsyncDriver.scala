@@ -11,6 +11,7 @@ import org.neo4j.driver.reactive.ReactiveSession
 import scala.util.Try
 import scala.jdk.CollectionConverters._
 
+import neotypes.StreamTransaction
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
   * {{{
@@ -19,17 +20,17 @@ import scala.jdk.CollectionConverters._
   *
   * @tparam F effect type for driver
   */
-sealed trait Driver[F[_]] {
+sealed trait AsyncDriver[F[_]] {
   def metrics: F[List[ConnectionPoolMetrics]]
 
-  def transaction(config: TransactionConfig): F[Transaction[F]]
+  def transaction(config: TransactionConfig): F[AsyncTransaction[F]]
 
-  final def transaction: F[Transaction[F]] =
+  final def transaction: F[AsyncTransaction[F]] =
     transaction(config = TransactionConfig.default)
 
-  def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T]
+  def transact[T](config: TransactionConfig)(txF: AsyncTransaction[F] => F[T]): F[T]
 
-  final def transact[T](txF: Transaction[F] => F[T]): F[T] =
+  final def transact[T](txF: AsyncTransaction[F] => F[T]): F[T] =
     transact(config = TransactionConfig.default)(txF)
 
   /** Close the resources assigned to the neo4j driver.
@@ -39,70 +40,70 @@ sealed trait Driver[F[_]] {
   def close: F[Unit]
 }
 
-sealed trait StreamingDriver[S[_], F[_]] extends Driver[F] {
-  def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]]
+sealed trait StreamDriver[S[_], F[_]] extends AsyncDriver[F] {
+  def streamTransaction(config: TransactionConfig): S[StreamTransaction[S, F]]
 
-  final def streamingTransaction: S[StreamingTransaction[S, F]] =
-    streamingTransaction(config = TransactionConfig.default)
+  final def streamTransaction: S[StreamTransaction[S, F]] =
+    streamTransaction(config = TransactionConfig.default)
 
-  def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T]
+  def streamTransact[T](config: TransactionConfig)(txF: StreamTransaction[S, F] => S[T]): S[T]
 
-  final def streamingTransact[T](txF: StreamingTransaction[S, F] => S[T]): S[T] =
-    streamingTransact(config = TransactionConfig.default)(txF)
+  final def streamTransact[T](txF: StreamTransaction[S, F] => S[T]): S[T] =
+    streamTransact(config = TransactionConfig.default)(txF)
 }
 
-object Driver {
-  private def txFinalizer[F[_]]: (Transaction[F], Option[Throwable]) => F[Unit] = {
+object AsyncDriver {
+  private def txFinalizer[F[_]]: (AsyncTransaction[F], Option[Throwable]) => F[Unit] = {
     case (tx, None)    => tx.commit
     case (tx, Some(_)) => tx.rollback
   }
 
-  private class DriverImpl[F[_]](
+  private class AsyncDriverImpl[F[_]](
       driver: NeoDriver
   ) (
       implicit F: Async[F]
-  ) extends Driver[F] {
+  ) extends AsyncDriver[F] {
     override final def metrics: F[List[ConnectionPoolMetrics]] =
       F.fromEither(
         Try(driver.metrics).map(_.connectionPoolMetrics.asScala.toList).toEither
       )
 
-    override final def transaction(config: TransactionConfig): F[Transaction[F]] =
+    override final def transaction(config: TransactionConfig): F[AsyncTransaction[F]] =
       F.delay(config.getConfigs).flatMap {
         case (sessionConfig, transactionConfig) =>
           F.delay(driver.session(classOf[AsyncSession], sessionConfig)).flatMap { s =>
             F.fromCompletionStage(s.beginTransactionAsync(transactionConfig)).map { tx =>
-              Transaction[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
+              AsyncTransaction[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
             }
           }
       }
 
-    override final def transact[T](config: TransactionConfig)(txF: Transaction[F] => F[T]): F[T] =
+    override final def transact[T](config: TransactionConfig)(txF: AsyncTransaction[F] => F[T]): F[T] =
       transaction(config).guarantee(txF)(txFinalizer)
 
     override final def close: F[Unit] =
       F.fromCompletionStage(driver.closeAsync()).void
   }
 
-  private final class StreamingDriverImpl[S[_], F[_]](
+  private final class StreamDriverImpl[S[_], F[_]](
       driver: NeoDriver
   ) (
       implicit S: Stream.Aux[S, F], F: Async[F]
-  ) extends DriverImpl[F](driver) with StreamingDriver[S, F] {
-    override final def streamingTransaction(config: TransactionConfig): S[StreamingTransaction[S, F]] = {
+  ) extends AsyncDriverImpl[F](driver) with StreamDriver[S, F] {
+    override final def streamTransaction(config: TransactionConfig): S[StreamTransaction[S, F]] = {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
       val session = F.delay(driver.session(classOf[ReactiveSession], sessionConfig))
 
       S.fromF(session).flatMapS { s =>
         S.fromPublisher(s.beginTransaction(transactionConfig)).mapS { tx =>
-          Transaction[S, F](tx, () => S.fromPublisher(s.close()).voidS)
+          AsyncTransaction[S, F](tx, () => S.fromPublisher(s.close()).voidS)
         }
       }
     }
 
-    override final def streamingTransact[T](config: TransactionConfig)(txF: StreamingTransaction[S, F] => S[T]): S[T] = {
-      val tx = streamingTransaction(config).single[F].flatMap { opt =>
+    override final def streamTransact[T](config: TransactionConfig)(txF: StreamTransaction[S, F] => S[T]): S[T] = {
+      val tx = streamTransaction(config).single[F].flatMap { opt =>
         F.fromEither(opt.toRight(left = TransactionWasNotCreatedException))
       }
 
@@ -111,10 +112,10 @@ object Driver {
   }
 
   private[neotypes] def apply[F[_]](driver: NeoDriver)
-                                   (implicit F: Async[F]): Driver[F] =
-    new DriverImpl(driver)
+                                   (implicit F: Async[F]): AsyncDriver[F] =
+    new AsyncDriverImpl(driver)
 
   private[neotypes] def apply[S[_], F[_]](driver: NeoDriver)
-                                         (implicit S: Stream.Aux[S, F], F: Async[F]): StreamingDriver[S, F] =
-    new StreamingDriverImpl(driver)
+                                         (implicit S: Stream.Aux[S, F], F: Async[F]): StreamDriver[S, F] =
+    new StreamDriverImpl(driver)
 }
