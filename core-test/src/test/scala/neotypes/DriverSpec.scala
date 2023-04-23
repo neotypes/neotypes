@@ -185,6 +185,30 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     }
   }
 
+  it should "support querying either values" in executeAsFuture { driver =>
+    val queryLeft = "RETURN 5"
+    val queryRight = """RETURN "Luis""""
+
+    def run(mapper: ResultMapper[Either[Int, String]]) =
+      for {
+        left <- queryLeft.query(mapper).single(driver)
+        right <- queryRight.query(mapper).single(driver)
+      } yield {
+        left shouldBe Left(5)
+        right shouldBe Right("Luis")
+      }
+
+    // Explicit.
+    locally {
+      run(mapper = either(int, string))
+    }
+
+    // Implicit.
+    locally {
+      run(mapper = ResultMapper.apply)
+    }
+  }
+
   it should "support querying any collection of supported types" in executeAsFuture { driver =>
     val multipleRecordQuery = "UNWIND [1, 2, 3] AS x RETURN x"
     val singleRecordQuery = "RETURN [1, 2, 3]"
