@@ -86,7 +86,9 @@ lazy val noPublishSettings = Seq(
 lazy val root = (project in file("."))
   .aggregate(
     core,
+    coreTest,
     generic,
+    genericTest,
     catsEffect,
     monix,
     zio,
