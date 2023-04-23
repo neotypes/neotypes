@@ -18,7 +18,7 @@ object Boilerplate {
 
   private def generateBoilerplateResultMappers(): List[String] = {
     def generateAnd(n: Int, parameters: List[Char], typeParameters: String): List[String] =
-      "/** Combines the given [[ResultMapper]s into a single tupled one, merges errors. */" ::
+      "/** Combines the given [[ResultMapper]]s into a single tupled one, merges errors. */" ::
       s"final def and[${typeParameters}](" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
@@ -29,7 +29,7 @@ object Boilerplate {
       Nil
 
     def generateCombine(n: Int, parameters: List[Char], typeParameters: String): List[String] =
-      "/** Combines the given [[ResultMapper]s into a single one using the provided function, merges errors. */" ::
+      "/** Combines the given [[ResultMapper]]s into a single one using the provided function, merges errors. */" ::
       s"final def combine[A, ${typeParameters}](" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s")(fun: (${typeParameters}) => A): ResultMapper[A] =" ::
@@ -66,7 +66,7 @@ object Boilerplate {
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       "): ResultMapper[A] =" ::
       "neoObject.emap { obj =>" ::
-      s"(${parameters.map(l => s"obj.getAs(key = n${l})(${l})").mkString(" and ")}).map {" ::
+      s"(${parameters.map(l => s"obj.getAs(key = n${l}, mapper = ${l})").mkString(" and ")}).map {" ::
       s"case ${"(" * n}${parameters.mkString("), ")}) =>" ::
       parameters.mkString("fun(", ",", ")") ::
       "}" ::
@@ -75,7 +75,7 @@ object Boilerplate {
 
     def generateTuple(n: Int, parameters: List[Char], typeParameters: String): List[String] =
       "/** Creates a tuple [[ResultMapper]], based on a heterogenous list. */" ::
-      s"implicit final def tuple[${typeParameters}](implicit" ::
+      s"implicit final def tuple[${typeParameters}](" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
       s"take(${n}).emap {" ::
@@ -95,7 +95,7 @@ object Boilerplate {
       parameters.map(l => s"${l}: (String, ResultMapper[${l.toUpper}])").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
       "neoObject.emap { obj =>" ::
-      s"(${parameters.map(l => s"obj.getAs(key = ${l}._1)(${l}._2)").mkString(" and ")}).map {" ::
+      s"(${parameters.map(l => s"obj.getAs(key = ${l}._1, mapper = ${l}._2)").mkString(" and ")}).map {" ::
       s"case ${"(" * n}${parameters.mkString("), ")}) =>" ::
       parameters.mkString("(", ",", ")") ::
       "}" ::

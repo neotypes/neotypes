@@ -343,8 +343,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     locally {
       val mapper = neoObject.emap { obj =>
         for {
-          name <- obj.getAs(key = "name")(string) // Explicit field decoder.
-          age <- obj.getAs[Int](key = "age") // Implicit field decoder.
+          name <- obj.getAs(key = "name", mapper = string)
+          age <- obj.getAs(key = "age", mapper = int)
         } yield User(name, age)
       }
 
@@ -529,7 +529,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   it should "support splitting a single field into multiple values" in executeAsFuture { driver =>
     val mapper = productNamed(
       "id" -> int,
-      "data" -> tuple[String, Int]
+      "data" -> tuple(string, int)
     ) {
       case (id, (dataStr, dataInt)) =>
         Divided(id, dataStr, dataInt)

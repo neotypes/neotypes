@@ -33,7 +33,7 @@ object ReprDerivedProductMap {
   ): ReprDerivedProductMap[FieldType[K, H] :!: T] =
     new ReprDerivedProductMap[FieldType[K, H] :!: T] {
       override def map(obj: NeoObject): Either[ResultMapperException, FieldType[K, H] :!: T] =
-        obj.getAs(key = key.value.name)(head).and(tail.map(obj)).map {
+        obj.getAs(key = key.value.name, mapper = head).and(tail.map(obj)).map {
           case (h, t) =>
             tag[K](h) :: t
         }

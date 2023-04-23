@@ -48,7 +48,7 @@ object types {
     final def get(key: String): NeoType =
       properties.getOrElse(key, default = Value.NullValue)
 
-    final def getAs[A](key: String)(implicit mapper: ResultMapper[A]): Either[exceptions.ResultMapperException, A] =
+    final def getAs[A](key: String, mapper: ResultMapper[A]): Either[exceptions.ResultMapperException, A] =
       properties.get(key) match {
         case Some(value) =>
           mapper.decode(value)
