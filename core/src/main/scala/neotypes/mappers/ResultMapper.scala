@@ -484,11 +484,11 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
 
   /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[KeyMapper]] & [[ResultMapper]] to decode the key-values. */
   def neoMap[K, V](keyMapper: KeyMapper[K], valueMapper: ResultMapper[V]): ResultMapper[Map[K, V]] =
-    neoMap(Map, keyMapper, valueMapper)
+    collectAsNeoMap(Map, keyMapper, valueMapper)
 
   /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
   def neoMap[V](valueMapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
-    neoMap(Map, KeyMapper.StringKeyMapper, valueMapper)
+    collectAsNeoMap(Map, KeyMapper.StringKeyMapper, valueMapper)
 
   /** Creates a [[ResultMapper]] that will try to decode
     * the given field of an object,
@@ -609,7 +609,7 @@ private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultM
     * @param keyMapper the [[KeyMapper]] used to decode the keys,
     * by default uses the no-op decoder.
     */
-  implicit final def neoMap[K, V, M[_, _]](
+  implicit final def collectAsNeoMap[K, V, M[_, _]](
     implicit
     mapFactory: Factory[(K, V), M[K, V]],
     keyMapper: KeyMapper[K],

@@ -628,7 +628,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Custom map (explicit).
     locally {
-      val mapper = neoMap(
+      val mapper = collectAsNeoMap(
         mapFactory = SortedMap.sortedMapFactory[CustomKey, Int],
         valueMapper = int,
         keyMapper = customKeyMapper
