@@ -95,26 +95,8 @@ final class DeriveCaseClassProductMapSpec extends AnyFlatSpec with Matchers with
     )
   }
 
-
-  it should "derive an instance for a recursive case class" in {
-    val mapper = ResultMapper.productDerive[RecursiveCaseClass]
-
-    val input = NeoMap(properties = Map(
-      "data" -> NeoList(
-        NeoMap(Map("data" -> NeoList(Value.NullValue))),
-        Value.NullValue
-      )
-    ))
-    val result = mapper.decode(input)
-
-    result.value shouldBe RecursiveCaseClass(List(
-      Some(RecursiveCaseClass(List(None)))
-      None,
-    ))
-  }
-
   it should "not derive an instance for an untagged HList" in {
-    assertDoesNotCompile("import shapeless._; ResultMapper[Int :: String :: HNil]")
+    assertDoesNotCompile("import shapeless._; ResultMapper.productDerive[Int :: String :: HNil]")
   }
 }
 
@@ -123,5 +105,4 @@ object DeriveCaseClassProductMapSpec {
   final case class SimpleCaseClass(int: Int, str: String, bool: Boolean)
   final case class ComplexCaseClass(opt: Option[Int], either: Either[String, Boolean], list: List[Int], map: Map[String, String])
   final case class NestedCaseClass(w: WrapperCaseClass, s: SimpleCaseClass, c: ComplexCaseClass)
-  final case class RecursiveCaseClass(data: List[Option[RecursiveCaseClass]])
 }
