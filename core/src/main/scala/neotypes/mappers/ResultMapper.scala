@@ -20,7 +20,7 @@ import scala.util.Try
 /** Allows decoding a [[NeoType]] into a value of type [[A]]. */
 @annotation.implicitNotFound(
 """
-Could not find the ResultMapper for ${A}".
+Could not find the ResultMapper for "${A}".
 
 Make sure ${A} is a supported type: https://neotypes.github.io/neotypes/types.html
 If ${A} is a case class or a sealed trait,
@@ -573,20 +573,20 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
   /** Allows deriving a [[ResultMapper]] for the product type (case class) A. */
   @annotation.implicitNotFound(
 """
-Could not derive a ResultMapper for ${A}".
+Could not derive a ResultMapper for "${P}".
 
-Make sure ${A} is a case class composed of supported types: https://neotypes.github.io/neotypes/types.html,
+Make sure ${P} is a case class composed of supported types: https://neotypes.github.io/neotypes/types.html,
 and that you imported `neotypes.generic.implicits._`
 """
   )
-  trait DerivedProductMap[A] {
-    def map(obj: NeoObject): Either[ResultMapperException, A]
+  trait DerivedProductMap[P <: Product] {
+    def map(obj: NeoObject): Either[ResultMapperException, P]
   }
 
   /** Allows deriving a [[ResultMapper]] for the coproduct type (sealed trait) A. */
   @annotation.implicitNotFound(
 """
-Could not derive a ResultMapper for ${A}".
+Could not derive a ResultMapper for "${A}".
 
 Make sure ${A} is a sealed trait composed of supported types: https://neotypes.github.io/neotypes/types.html,
 and that you imported `neotypes.generic.implicits._`
@@ -677,10 +677,10 @@ private[mappers] sealed abstract class ResultMappersLowPriority3 { self: ResultM
     * @note if you need customization of the decoding logic,
     * please refer to the [[product]] and [[productNamed]] factories.
     */
-  implicit final def productDerive[A <: Product](
+  implicit final def productDerive[P <: Product](
     implicit
-    ev: DerivedProductMap[A]
-  ): ResultMapper[A] =
+    ev: DerivedProductMap[P]
+  ): ResultMapper[P] =
     neoObject.emap(ev.map)
 
   /** Derives an opinionated [[ResultMapper]] for a given `sealed trait`.
@@ -692,10 +692,10 @@ private[mappers] sealed abstract class ResultMappersLowPriority3 { self: ResultM
     * @note if you need customization of the decoding logic,
     * please refer to the [[coproduct]] factory.
     */
-  implicit final def coproductDerive[A](
+  implicit final def coproductDerive[C](
     implicit
-    instances: DerivedCoproductInstances[A]
-  ): ResultMapper[A] =
+    instances: DerivedCoproductInstances[C]
+  ): ResultMapper[C] =
     coproduct(
       strategy = CoproductDiscriminatorStrategy.Field(name = "type", mapper = string),
     ) (
