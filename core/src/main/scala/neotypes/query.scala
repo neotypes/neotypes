@@ -11,7 +11,6 @@ import org.neo4j.driver.summary.ResultSummary
 import scala.collection.Factory
 import scala.collection.mutable.StringBuilder
 
-import neotypes.StreamTransaction
 sealed trait BaseQuery {
   /** The query statement that will be executed. */
   def query: String

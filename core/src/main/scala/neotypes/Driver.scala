@@ -11,7 +11,6 @@ import org.neo4j.driver.reactive.ReactiveSession
 import scala.util.Try
 import scala.jdk.CollectionConverters._
 
-import neotypes.StreamTransaction
 /** A neotypes driver for accessing the neo4j graph database
   * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
   * {{{
