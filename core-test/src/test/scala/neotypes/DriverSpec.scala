@@ -4,7 +4,7 @@ import neotypes.generic.implicits._
 import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.{KeyMapper, ResultMapper}
-import neotypes.model.exceptions.{IncoercibleException, KeyMapperException}
+import neotypes.model.exceptions.{IncoercibleException, KeyMapperException, MissingRecordException}
 import neotypes.model.types._
 
 import org.neo4j.driver.summary.ResultSummary
@@ -703,6 +703,16 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         result <- query.query(mapper).single(driver)
       } yield {
         result shouldBe expectedResult
+      }
+    }
+  }
+
+  it should "support catch exceptions during a query" in {
+    recoverToSucceededIf[MissingRecordException.type] {
+      executeAsFuture { driver =>
+        "bad query"
+          .execute
+          .void(driver)
       }
     }
   }
