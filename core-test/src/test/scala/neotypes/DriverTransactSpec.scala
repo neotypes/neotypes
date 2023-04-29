@@ -42,7 +42,7 @@ trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] with Match
     }
 
   it should "automatically rollback if any query fails inside a transact" in
-    ensureRollbackedTransaction[MissingRecordException.type] { tx =>
+    ensureRollbackedTransaction[MissingRecordException] { tx =>
       for {
         _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(tx)
         _ <- "bad query".execute.void(tx)

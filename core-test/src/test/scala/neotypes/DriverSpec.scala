@@ -709,7 +709,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "support catch exceptions during a query" in {
-    recoverToSucceededIf[MissingRecordException.type] {
+    recoverToSucceededIf[MissingRecordException] {
       executeAsFuture { driver =>
         "bad query"
           .execute

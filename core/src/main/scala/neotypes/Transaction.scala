@@ -69,10 +69,12 @@ object Transaction {
       private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoAsyncResult] =
         F.fromCompletionStage(
           transaction.runAsync(query, QueryParam.toJavaMap(params))
-        ).mapError(_ => MissingRecordException)
+        ).mapError(ex => MissingRecordException(cause = ex))
 
       private def resultSummary(result: NeoAsyncResult): F[ResultSummary] =
-        F.fromCompletionStage(result.consumeAsync()).mapError(_ => MissingRecordException)
+        F.fromCompletionStage(
+          result.consumeAsync()
+        ).mapError(ex => MissingRecordException(cause = ex))
 
       override final def execute(
         query: String,
@@ -87,7 +89,9 @@ object Transaction {
       ): F[(T, ResultSummary)] =
         for {
           result <- runQuery(query, params)
-          record <- F.fromCompletionStage(result.singleAsync()).mapError(_ => MissingRecordException)
+          record <- F.fromCompletionStage(
+            result.singleAsync()
+          ).mapError(ex => MissingRecordException(cause = ex))
           t <- F.fromEither(Parser.decodeRecord(record, mapper))
           rs <- resultSummary(result)
         } yield t -> rs
@@ -126,16 +130,16 @@ object Transaction {
 
       private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoReactiveResult] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap { result =>
-          F.fromEither(result.toRight(left = MissingRecordException))
-        }.mapError(_ => MissingRecordException)
+          F.fromEither(result.toRight(
+            left = MissingRecordException(cause = new NoSuchElementException("NeoReactiveTransaction.NeoReactiveResult"))
+          ))
+        }.mapError(ex => MissingRecordException(cause = ex))
 
       private def resultSummary(result: NeoReactiveResult): F[ResultSummary] =
-        S.fromPublisher(result.consume()).single[F].flatMap {
-          case Some(rs) =>
-            F.delay(rs)
-
-          case None =>
-            F.fromEither(Left(MissingRecordException))
+        S.fromPublisher(result.consume()).single[F].flatMap { rs =>
+          F.fromEither(rs.toRight(
+            left = MissingRecordException(cause = new NoSuchElementException("NeoReactiveResult.ResultSummary"))
+          ))
         }
 
       override final def execute(
@@ -156,7 +160,9 @@ object Transaction {
         for {
           result <- runQuery(query, params)
           recordOpt <- S.fromPublisher(result.records()).single[F]
-          record <- F.fromEither(recordOpt.toRight(left = MissingRecordException))
+          record <- F.fromEither(recordOpt.toRight(
+            left = MissingRecordException(cause = new NoSuchElementException("NeoReactiveResult.Record"))
+          ))
           t <- F.fromEither(Parser.decodeRecord(record, mapper))
           rs <- resultSummary(result)
         } yield t -> rs
