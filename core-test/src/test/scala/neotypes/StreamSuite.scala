@@ -45,6 +45,9 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) ex
   override protected final lazy val driver: DriverType =
     Driver.stream(self.neoDriver)
 
+  override protected final def transaction[T](driver: DriverType): F[TransactionType] =
+    F.map(S.single(driver.streamTransaction))(_.get)
+
   override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
     F.map(streamToFList(driver.streamTransact(txF andThen S.fromF)))(_.head)
 
@@ -56,6 +59,7 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) ex
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
   new StreamGuaranteeSpec(testkit),
   new StreamDriverSpec(testkit),
+  new StreamTransactionSpec(testkit),
   new StreamDriverTransactSpec(testkit),
   new StreamAlgorithmSpec(testkit)
 )

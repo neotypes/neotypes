@@ -20,6 +20,8 @@ trait DriverProvider[F[_]] extends { self: BaseIntegrationSpec[F] =>
 
   protected def driver: DriverType
 
+  protected def transaction[T](driver: DriverType): F[TransactionType]
+
   protected def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T]
 }
 
