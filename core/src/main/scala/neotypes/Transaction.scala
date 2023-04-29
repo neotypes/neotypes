@@ -50,8 +50,8 @@ sealed trait StreamTransaction[S[_], F[_]] extends AsyncTransaction[F] {
   ): S[Either[T, ResultSummary]]
 }
 
-object AsyncTransaction {
-  private[neotypes] def apply[F[_]](
+object Transaction {
+  private[neotypes] def async[F[_]](
       transaction: NeoAsyncTransaction,
       close: () => F[Unit]
   ) (
@@ -108,7 +108,7 @@ object AsyncTransaction {
         } yield col -> rs
     }
 
-  private[neotypes] def apply[S[_], F[_]](
+  private[neotypes] def stream[S[_], F[_]](
       transaction: NeoReactiveTransaction,
       close: () => F[Unit]
   ) (

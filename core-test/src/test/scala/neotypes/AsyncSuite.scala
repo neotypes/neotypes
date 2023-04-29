@@ -46,7 +46,7 @@ abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F]) extends BaseA
   override protected final type TransactionType = AsyncTransaction[F]
 
   override protected final lazy val driver: DriverType =
-    AsyncDriver[F](self.neoDriver)
+    Driver.async(self.neoDriver)
 
   override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
     driver.transact(txF)

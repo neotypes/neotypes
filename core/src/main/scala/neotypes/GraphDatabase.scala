@@ -74,7 +74,7 @@ object GraphDatabase {
 
     private def create[R[_]](neoDriver: => NDriver)
                             (implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
-      F.resource(AsyncDriver[F](neoDriver))(_.close)
+      F.resource(Driver.async[F](neoDriver))(_.close)
   }
 
   def streamDriver[F[_]]: StreamDriverPartiallyApplied[F] =
@@ -145,6 +145,6 @@ object GraphDatabase {
 
     private def create[F[_], R[_]](neoDriver: => NDriver)
                                   (implicit S: Stream.Aux[S, F], F: Async.Aux[F, R]): R[StreamDriver[S, F]] =
-      F.resource(AsyncDriver[S, F](neoDriver))(_.close)
+      F.resource(Driver.stream[S, F](neoDriver))(_.close)
   }
 }

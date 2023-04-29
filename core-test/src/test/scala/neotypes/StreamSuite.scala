@@ -43,7 +43,7 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) ex
   override protected final type TransactionType = StreamTransaction[S, F]
 
   override protected final lazy val driver: DriverType =
-    AsyncDriver[S, F](self.neoDriver)
+    Driver.stream(self.neoDriver)
 
   override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
     F.map(streamToFList(driver.streamTransact(txF andThen S.fromF)))(_.head)

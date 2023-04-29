@@ -51,7 +51,7 @@ sealed trait StreamDriver[S[_], F[_]] extends AsyncDriver[F] {
     streamTransact(config = TransactionConfig.default)(txF)
 }
 
-object AsyncDriver {
+object Driver {
   private def txFinalizer[F[_]]: (AsyncTransaction[F], Option[Throwable]) => F[Unit] = {
     case (tx, None)    => tx.commit
     case (tx, Some(_)) => tx.rollback
@@ -72,7 +72,7 @@ object AsyncDriver {
         case (sessionConfig, transactionConfig) =>
           F.delay(driver.session(classOf[AsyncSession], sessionConfig)).flatMap { s =>
             F.fromCompletionStage(s.beginTransactionAsync(transactionConfig)).map { tx =>
-              AsyncTransaction[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
+              Transaction.async[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
             }
           }
       }
@@ -96,7 +96,7 @@ object AsyncDriver {
 
       S.fromF(session).flatMapS { s =>
         S.fromPublisher(s.beginTransaction(transactionConfig)).mapS { tx =>
-          AsyncTransaction[S, F](tx, () => S.fromPublisher(s.close()).voidS)
+          Transaction.stream[S, F](tx, () => S.fromPublisher(s.close()).voidS)
         }
       }
     }
@@ -110,11 +110,11 @@ object AsyncDriver {
     }
   }
 
-  private[neotypes] def apply[F[_]](driver: NeoDriver)
+  private[neotypes] def async[F[_]](driver: NeoDriver)
                                    (implicit F: Async[F]): AsyncDriver[F] =
     new AsyncDriverImpl(driver)
 
-  private[neotypes] def apply[S[_], F[_]](driver: NeoDriver)
+  private[neotypes] def stream[S[_], F[_]](driver: NeoDriver)
                                          (implicit S: Stream.Aux[S, F], F: Async[F]): StreamDriver[S, F] =
     new StreamDriverImpl(driver)
 }
