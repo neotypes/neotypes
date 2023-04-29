@@ -127,7 +127,7 @@ object Transaction {
       private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoReactiveResult] =
         S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap { result =>
           F.fromEither(result.toRight(left = MissingRecordException))
-        }
+        }.mapError(_ => MissingRecordException)
 
       private def resultSummary(result: NeoReactiveResult): F[ResultSummary] =
         S.fromPublisher(result.consume()).single[F].flatMap {
