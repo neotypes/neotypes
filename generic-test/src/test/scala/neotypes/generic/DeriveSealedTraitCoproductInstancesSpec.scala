@@ -8,6 +8,7 @@ import org.scalatest.EitherValues
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+/** Base class for testing the derivation of a ResultMapper instance for sealed traits. */
 final class DeriveSealedTraitCoproductInstancesSpec extends AnyFlatSpec with Matchers with EitherValues {
   import DeriveSealedTraitCoproductInstancesSpec._
 

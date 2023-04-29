@@ -11,6 +11,7 @@ import org.scalatest.matchers.should.Matchers
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
+/** Base class for testing the basic behaviour of using managed transactions. */
 trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   import BaseDriverTransactSpec._
 

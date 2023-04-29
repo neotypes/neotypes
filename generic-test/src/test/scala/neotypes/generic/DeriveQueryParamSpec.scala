@@ -7,6 +7,7 @@ import neotypes.generic.implicits.deriveCaseClassQueryParams
 import org.scalatest.flatspec.AnyFlatSpec
 import org.scalatest.matchers.should.Matchers
 
+/** Base class for testing the derivation of a QueryArgMapper instance for case classes. */
 final class DeriveCaseClassQueryParamSpec extends AnyFlatSpec with Matchers {
   import DeriveCaseClassQueryParamSpec._
 

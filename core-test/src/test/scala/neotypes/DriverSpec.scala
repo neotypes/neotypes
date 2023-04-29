@@ -15,6 +15,7 @@ import java.util.UUID
 import java.time.{LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
 import scala.collection.immutable.{ArraySeq, BitSet, SortedMap}
 
+/** Base class for testing the basic behaviour of running queries. */
 trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with Inside with LoneElement with OptionValues { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   import BaseDriverSpec._
   import ResultMapper._
