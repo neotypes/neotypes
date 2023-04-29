@@ -66,13 +66,13 @@ object BaseDriverTransactSpec {
 final class AsyncDriverTransactSpec[F[_]](
   testkit: AsyncTestkit[F]
 ) extends AsyncDriverProvider(testkit) with BaseDriverTransactSpec[F] {
-  behavior of s"Driver[${asyncName}].transact"
+  behavior of s"AsyncDriver[${asyncName}].transact"
 }
 
 final class StreamDriverTransactSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit) with BaseDriverTransactSpec[F] {
-  behavior of s"StreamDriver[${streamName}, ${asyncName}].streamingTransact"
+  behavior of s"StreamDriver[${streamName}, ${asyncName}].streamTransact"
 
   it should "support stream the records" in {
     executeAsFutureList { driver =>

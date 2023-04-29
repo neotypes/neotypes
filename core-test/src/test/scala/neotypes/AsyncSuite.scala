@@ -54,8 +54,8 @@ abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F]) extends BaseA
 
 /** Group all the effect specs into one big suite, which can be called for each effect. */
 abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F]) extends Suites(
+  new AsyncGuaranteeSpec(testkit),
   new AsyncDriverSpec(testkit),
   new AsyncDriverTransactSpec(testkit),
-  new AsyncGuaranteeSpec(testkit),
   new AsyncAlgorithmSpec(testkit)
 )

@@ -54,8 +54,8 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) ex
 
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
+  new StreamGuaranteeSpec(testkit),
   new StreamDriverSpec(testkit),
   new StreamDriverTransactSpec(testkit),
-  new StreamGuaranteeSpec(testkit),
   new StreamAlgorithmSpec(testkit)
 )

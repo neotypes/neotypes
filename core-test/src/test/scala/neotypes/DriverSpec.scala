@@ -773,7 +773,7 @@ object BaseDriverSpec {
 final class AsyncDriverSpec[F[_]](
   testkit: AsyncTestkit[F]
 ) extends AsyncDriverProvider(testkit) with BaseDriverSpec[F] {
-  behavior of s"Driver[${asyncName}]"
+  behavior of s"AsyncDriver[${asyncName}]"
 }
 
 final class StreamDriverSpec[S[_], F[_]](
