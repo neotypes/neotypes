@@ -39,10 +39,14 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
 
 /** Provides an StreamDriver[S, F] instance for stream tests. */
 abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
-  override final type DriverType = StreamDriver[S, F]
+  override protected final type DriverType = StreamDriver[S, F]
+  override protected final type TransactionType = StreamTransaction[S, F]
 
   override protected final lazy val driver: DriverType =
     AsyncDriver[S, F](self.neoDriver)
+
+  override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
+    F.map(streamToFList(driver.streamTransact(txF andThen S.fromF)))(_.head)
 
   protected final def executeAsFutureList[A](work: DriverType => S[A]): Future[List[A]] =
     executeAsFuture(work andThen streamToFList)
@@ -51,6 +55,7 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) ex
 /** Group all the stream specs into one big suite, which can be called for each stream. */
 abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
   new StreamDriverSpec(testkit),
+  new StreamDriverTransactSpec(testkit),
   new StreamGuaranteeSpec(testkit),
   new StreamAlgorithmSpec(testkit)
 )

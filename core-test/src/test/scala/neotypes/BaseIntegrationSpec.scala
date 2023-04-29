@@ -15,8 +15,12 @@ import scala.jdk.DurationConverters._
 
 /** Marker trait to signal that the test needs a driver. */
 trait DriverProvider[F[_]] extends { self: BaseIntegrationSpec[F] =>
-  type DriverType <: AsyncDriver[F]
+  protected type DriverType <: AsyncDriver[F]
+  protected type TransactionType <: AsyncTransaction[F]
+
   protected def driver: DriverType
+
+  protected def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T]
 }
 
 /** Base class for writing integration specs. */

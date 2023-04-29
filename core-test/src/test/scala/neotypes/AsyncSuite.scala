@@ -42,15 +42,20 @@ abstract class BaseAsyncSpec[F[_]](effectTestkit: AsyncTestkit[F]) extends Async
 
 /** Provides an Driver[F] instance for asynchronous tests. */
 abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F]) extends BaseAsyncSpec[F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
-  override final type DriverType = AsyncDriver[F]
+  override protected final type DriverType = AsyncDriver[F]
+  override protected final type TransactionType = AsyncTransaction[F]
 
   override protected final lazy val driver: DriverType =
     AsyncDriver[F](self.neoDriver)
+
+  override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
+    driver.transact(txF)
 }
 
 /** Group all the effect specs into one big suite, which can be called for each effect. */
 abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F]) extends Suites(
   new AsyncDriverSpec(testkit),
+  new AsyncDriverTransactSpec(testkit),
   new AsyncGuaranteeSpec(testkit),
   new AsyncAlgorithmSpec(testkit)
 )
