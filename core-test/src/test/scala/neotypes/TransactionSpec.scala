@@ -9,6 +9,8 @@ import org.scalatest.matchers.should.Matchers
 
 /** Base class for testing the basic behaviour of transactions. */
 trait BaseTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: DriverProvider[F] with BaseAsyncSpec[F] =>
+  behavior of transactionName
+
   it should "support explicit commit" in executeAsFuture { d =>
     for {
       tx <- transaction(d)
@@ -36,15 +38,11 @@ trait BaseTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers
 
 final class AsyncTransactionSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseTransactionSpec[F] {
-  behavior of s"AsyncTransaction[${asyncName}]"
-}
+) extends AsyncDriverProvider(testkit) with BaseTransactionSpec[F]
 
 final class StreamTransactionSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit) with BaseTransactionSpec[F] {
-  behavior of s"StreamTransaction[${streamName}, ${asyncName}]"
-
   it should "support stream the records" in {
     executeAsFutureList { driver =>
       driver.streamTransaction.flatMapS { tx =>

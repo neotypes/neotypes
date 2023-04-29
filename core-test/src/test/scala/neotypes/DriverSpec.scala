@@ -20,6 +20,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   import BaseDriverSpec._
   import ResultMapper._
 
+  behavior of driverName
+
   it should "support querying primitive values" in executeAsFuture { driver =>
     // Value types.
     locally {
@@ -782,15 +784,11 @@ object BaseDriverSpec {
 
 final class AsyncDriverSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseDriverSpec[F] {
-  behavior of s"AsyncDriver[${asyncName}]"
-}
+) extends AsyncDriverProvider(testkit) with BaseDriverSpec[F]
 
 final class StreamDriverSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit) with BaseDriverSpec[F] {
-  behavior of s"StreamDriver[${streamName}, ${asyncName}]"
-
   it should "support stream the records" in {
     executeAsFutureList { driver =>
       "UNWIND [1, 2, 3] AS x RETURN x".query(ResultMapper.int).stream(driver)

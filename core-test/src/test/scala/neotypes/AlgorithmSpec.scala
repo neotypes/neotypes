@@ -11,6 +11,8 @@ import org.scalatest.matchers.should.Matchers
 trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   import BaseAlgorithmSpec._
 
+  behavior of s"The Neo4j graph-data-science plugin used with: ${driverName}"
+
   it should "execute the article rank centrality algorithm" in executeAsFuture { d =>
     for {
       _ <- articleRankingData.execute.void(d)
@@ -272,12 +274,8 @@ object BaseAlgorithmSpec {
 
 final class AsyncAlgorithmSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseAlgorithmSpec[F] {
-  behavior of s"The Neo4j graph-data-science plugin used with: AsyncDriver[${asyncName}]"
-}
+) extends AsyncDriverProvider(testkit) with BaseAlgorithmSpec[F]
 
 final class StreamAlgorithmSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseAlgorithmSpec[F] {
-  behavior of s"The Neo4j graph-data-science plugin used with: StreamDriver[${streamName}, ${asyncName}]"
-}
+) extends StreamDriverProvider(testkit) with BaseAlgorithmSpec[F]

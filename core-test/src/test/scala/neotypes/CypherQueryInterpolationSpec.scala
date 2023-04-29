@@ -9,6 +9,8 @@ import org.scalatest.flatspec.AnyFlatSpec
 final class CypherQueryInterpolationSpec extends AnyFlatSpec {
   import CypherQueryInterpolationSpec._
 
+  behavior of s"Neotypes Cypher String interpolator"
+
   it should "interpolate no parameters" in {
     val (query, params, _) = c"""CREATE (a: Test { name: "John" })""".build()
 

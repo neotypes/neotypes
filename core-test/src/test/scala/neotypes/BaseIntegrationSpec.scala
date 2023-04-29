@@ -18,6 +18,9 @@ trait DriverProvider[F[_]] extends { self: BaseIntegrationSpec[F] =>
   protected type DriverType <: AsyncDriver[F]
   protected type TransactionType <: AsyncTransaction[F]
 
+  protected def driverName: String
+  protected def transactionName: String
+
   protected def driver: DriverType
 
   protected def transaction[T](driver: DriverType): F[TransactionType]

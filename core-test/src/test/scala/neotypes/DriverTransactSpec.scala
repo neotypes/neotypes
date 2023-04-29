@@ -15,6 +15,8 @@ import scala.reflect.ClassTag
 trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   import BaseDriverTransactSpec._
 
+  behavior of s"${driverName} managed transaction ${transactionName}"
+
   private final def ensureCommittedTransaction[T](expectedResult: T)
                                                  (txF: TransactionType => F[T]): Future[Assertion] =
     executeAsFuture(d => transact(d)(txF)).map { result =>
@@ -65,15 +67,11 @@ object BaseDriverTransactSpec {
 
 final class AsyncDriverTransactSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseDriverTransactSpec[F] {
-  behavior of s"AsyncDriver[${asyncName}].transact"
-}
+) extends AsyncDriverProvider(testkit) with BaseDriverTransactSpec[F]
 
 final class StreamDriverTransactSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit) with BaseDriverTransactSpec[F] {
-  behavior of s"StreamDriver[${streamName}, ${asyncName}].streamTransact"
-
   it should "support stream the records" in {
     executeAsFutureList { driver =>
       driver.streamTransact { tx =>
