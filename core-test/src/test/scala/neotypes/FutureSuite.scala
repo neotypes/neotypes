@@ -1,5 +1,7 @@
 package neotypes
 
+import org.scalatest.Assertions
+
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the Async Testkit for Scala Future. */
@@ -13,7 +15,7 @@ object FutureTestkit extends AsyncTestkit[Future] {
         for (_ <- a; _ <- b) yield () // Because Futures are eager, they are already running concurrently.
 
       override final def cancel[A](fa: Future[A]): Future[Unit] =
-        Future.successful(()) //Not Supported
+        Future(Assertions.cancel(message = "Futures don't support cancellation"))
 
       override final val asyncInstance: Async[Future] =
         implicitly

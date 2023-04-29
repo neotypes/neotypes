@@ -717,6 +717,16 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
     }
   }
+
+  it should "support rollback on cancellation" in executeAsFuture { driver =>
+    for {
+      _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(driver)
+      _ <- cancel("""CREATE (p: PERSON { name: "Dmitry" })""".execute.void(driver))
+      people <- "MATCH (p: PERSON) RETURN p.name".query(string).set(driver)
+    } yield {
+      people.loneElement shouldBe "Luis"
+    }
+  }
 }
 
 object BaseDriverSpec {
