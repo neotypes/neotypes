@@ -676,6 +676,94 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     }
   }
 
+  it should "support querying objects as lists" in executeAsFuture { driver =>
+    val query = "RETURN { foo: 1, bar: 3, baz: 5 }"
+    val mapper = list(int)
+
+    for {
+      values <- query.query(mapper).single(driver)
+    } yield {
+      values should contain theSameElementsAs List(1, 3, 5)
+    }
+  }
+
+  it should "support querying heterogeneous data" in executeAsFuture { driver =>
+    val query = """RETURN { foo: 1, bar: "Luis", baz: true }"""
+
+    // Heterogeneous List.
+    locally {
+      val mapper = values
+
+      for {
+        values <- query.query(mapper).single(driver)
+      } yield {
+        inside(values) {
+          case Value.Integer(i) :: Value.Str(s) :: Value.Bool(b) :: Nil =>
+            i shouldBe 1
+            s shouldBe "Luis"
+            b shouldBe true
+        }
+      }
+    }
+
+    // Heterogeneous Map.
+    locally {
+      val mapper = neoObject
+
+      for {
+        values <- query.query(mapper).single(driver)
+      } yield {
+        inside(values.get(key = "foo")) {
+          case Value.Integer(i) =>
+            i shouldBe 1
+        }
+
+        inside(values.get(key = "bar")) {
+          case Value.Str(s) =>
+            s shouldBe "Luis"
+        }
+
+        inside(values.get(key = "baz")) {
+          case Value.Bool(b) =>
+            b shouldBe true
+        }
+      }
+    }
+  }
+
+  it should "support querying nested types" in executeAsFuture { driver =>
+    // List inside List.
+    locally {
+      val query = "RETURN [[1, 2], [3, 4]]"
+      val mapper = list(list(int))
+
+      for {
+        values <- query.query(mapper).single(driver)
+      } yield {
+        values shouldBe List(
+          List(1, 2),
+          List(3, 4)
+        )
+      }
+    }
+
+    // Map inside Map.
+    locally {
+      val query = """RETURN { foo: { bar: 1, baz: 3 }, quax: { haux: 5 }, faux: { } }"""
+      val mapper = neoMap(neoMap(int))
+
+      for {
+        values <- query.query(mapper).single(driver)
+      } yield {
+        values shouldBe Map(
+          "foo" -> Map("bar" -> 1, "baz" -> 3),
+          "quax" -> Map("haux" -> 5),
+          "faux" -> Map.empty
+        )
+      }
+    }
+  }
+
   it should "support treating missing fields as nulls" in executeAsFuture { driver =>
     val expectedResult = MissingFields(a = 1, b = None)
 
