@@ -508,7 +508,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         """RETURN -1 AS id, "foo" AS data""".query(recordMapper).single(driver)
       }
     } map { ex =>
-      ex.getMessage shouldBe "-1 is not a valid ID because is negative"
+      ex.getMessage shouldBe "-1 is not a valid ID because is negative for field 'id'"
     }
   }
 
@@ -815,6 +815,19 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       people <- "MATCH (p: PERSON) RETURN p.name".query(string).set(driver)
     } yield {
       people.loneElement shouldBe "Luis"
+    }
+  }
+
+  it should "construct an IncoercibleException message with a field name and value" in {
+    val query = """RETURN { name: "Charlize Theron" }"""
+    val mapper = field(key = "name", mapper = int)
+
+    recoverToExceptionIf[IncoercibleException] {
+      executeAsFuture { driver =>
+        query.query(mapper).single(driver)
+      }
+    } map { ex =>
+      ex.getMessage shouldBe "Couldn't decode Str(Charlize Theron) into a int for field 'name'"
     }
   }
 }

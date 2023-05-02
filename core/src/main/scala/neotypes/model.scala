@@ -51,7 +51,13 @@ object types {
     final def getAs[A](key: String, mapper: ResultMapper[A]): Either[exceptions.ResultMapperException, A] =
       properties.get(key) match {
         case Some(value) =>
-          mapper.decode(value)
+          mapper.decode(value).left.map {
+            case ex: exceptions.IncoercibleException =>
+              ex.forField(key)
+
+            case ex =>
+              ex
+          }
 
         case None =>
           mapper.decode(Value.NullValue).left.map { ex =>
@@ -211,7 +217,13 @@ object exceptions {
       new PropertyNotFoundException(key)
   }
 
-  final class IncoercibleException(message: String, cause: Option[Throwable]) extends ResultMapperException(message, cause)
+  final class IncoercibleException(message: String, cause: Option[Throwable]) extends ResultMapperException(message, cause) {
+    def forField(key: String): IncoercibleException =
+      IncoercibleException(
+        s"${message} for field '${key}'",
+        cause
+      )
+  }
   object IncoercibleException {
     def apply(message: String, cause: Option[Throwable] = None): IncoercibleException =
       new IncoercibleException(message, cause)
