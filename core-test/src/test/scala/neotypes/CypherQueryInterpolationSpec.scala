@@ -12,9 +12,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
   behavior of s"Neotypes Cypher String interpolator"
 
   it should "interpolate no parameters" in {
-    val (query, params, _) = c"""CREATE (a: Test { name: "John" })""".build()
+    val (query, params, _) = c"CREATE (a: Test { name: 'John' })".build()
 
-    assert(query == """CREATE (a: Test { name: "John" })""")
+    assert(query == "CREATE (a: Test { name: 'John' })")
     assert(params == Map.empty)
   }
 
@@ -72,9 +72,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
     val name = "John"
     val born = 1980
 
-    val (query1, params1, _) = (c"""CREATE (a: Test { name: ${name},""" + c"born: ${born} })").build()
-    val (query2, params2, _) = (c"""CREATE (a: Test { name: "John",""" + c"born: ${born} })").build()
-    val (query3, params3, _) = (c"""CREATE (a: Test { name: ${name},""" + c"born: 1980 })").build()
+    val (query1, params1, _) = (c"CREATE (a: Test { name: ${name}," + c"born: ${born} })").build()
+    val (query2, params2, _) = (c"CREATE (a: Test { name: 'John'," + c"born: ${born} })").build()
+    val (query3, params3, _) = (c"CREATE (a: Test { name: ${name}," + c"born: 1980 })").build()
 
     assert(query1 == "CREATE (a: Test { name: $p1, born: $p2 })")
     assert(params1 == Map(
@@ -82,10 +82,10 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
       "p2" -> QueryParam(born)
     ))
 
-    assert(query2 == """CREATE (a: Test { name: "John", born: $p1 })""")
+    assert(query2 == "CREATE (a: Test { name: 'John', born: $p1 })")
     assert(params2 == Map("p1" -> QueryParam(born)))
 
-    assert(query3 == """CREATE (a: Test { name: $p1, born: 1980 })""")
+    assert(query3 == "CREATE (a: Test { name: $p1, born: 1980 })")
     assert(params3 == Map("p1" -> QueryParam(name)))
   }
 
@@ -94,7 +94,7 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val (query, params, _) = (c"CREATE (a: Test { name: ${name}," + "born: 1980 })").build()
 
-    assert(query == """CREATE (a: Test { name: $p1, born: 1980 })""")
+    assert(query == "CREATE (a: Test { name: $p1, born: 1980 })")
     assert(params == Map("p1" -> QueryParam(name)))
   }
 
@@ -107,13 +107,13 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
       c"CREATE (a: Test {" +
       c"firstName: ${firstName}," +
       c"lastName: ${lastName}," +
-      """city: "Filadelfia",""" +
+      "city: 'Filadelfia'," +
       c"born: ${born}" +
       " })"
 
     val (query, params, _) = deferredQuery.build()
 
-    assert(query == """CREATE (a: Test { firstName: $p1, lastName: $p2, city: "Filadelfia", born: $p3 })""")
+    assert(query == "CREATE (a: Test { firstName: $p1, lastName: $p2, city: 'Filadelfia', born: $p3 })")
     assert(params == Map(
       "p1" -> QueryParam("John"),
       "p2" -> QueryParam("Smith"),
@@ -124,9 +124,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
   it should "interpolate a single plain value using #$" in {
     val label = "Test"
 
-    val (query, params, _) = c"""CREATE (a: #${label} { name: "John" })""".build()
+    val (query, params, _) = c"CREATE (a: #${label} { name: 'John' })".build()
 
-    assert(query == """CREATE (a: Test { name: "John" })""")
+    assert(query == "CREATE (a: Test { name: 'John' })")
     assert(params == Map.empty)
   }
 
@@ -134,9 +134,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
     val label = "Test"
     val property = "name"
 
-    val (query, params, _) = c"""CREATE (a: #${label} { #${property}: "John" })""".build()
+    val (query, params, _) = c"CREATE (a: #${label} { #${property}: 'John' })".build()
 
-    assert(query == """CREATE (a: Test { name : "John" })""")
+    assert(query == "CREATE (a: Test { name : 'John' })")
     assert(params == Map.empty)
   }
 
@@ -147,18 +147,18 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
 
     val (query, params, _) = c"CREATE (a: #${label} { #${property}: ${name} })".build()
 
-    assert(query == """CREATE (a: Test { name : $p1 })""")
+    assert(query == "CREATE (a: Test { name : $p1 })")
     assert(params == Map("p1" -> QueryParam(name)))
   }
 
   it should "interpolate DeferredQuery instances" in {
     // Single subquery.
     locally {
-      val subQuery = c"""user.id = "1""""
+      val subQuery = c"user.id = 1"
 
       val (query, params, _) = c"MATCH (user: User) WHERE $subQuery RETURN user".build()
 
-      assert(query == """MATCH (user: User) WHERE user.id = "1" RETURN user""")
+      assert(query == "MATCH (user: User) WHERE user.id = 1 RETURN user")
       assert(params == Map.empty)
     }
 
@@ -242,9 +242,9 @@ final class CypherQueryInterpolationSpec extends AnyFlatSpec {
     val testClass = TestClass("name", 33)
     val bName = "b-name"
 
-    val (query, params, _) = (c"CREATE (a: Test { $testClass })," + c"""(b: B { const: "Const", name: $bName })""").build()
+    val (query, params, _) = (c"CREATE (a: Test { $testClass })," + c"(b: B { const: 'Const', name: $bName })").build()
 
-    assert(query == """CREATE (a: Test { name: $p1, age: $p2 }), (b: B { const: "Const", name: $p3 })""")
+    assert(query == "CREATE (a: Test { name: $p1, age: $p2 }), (b: B { const: 'Const', name: $p3 })")
     assert(params == Map(
       "p1" -> QueryParam(testClass.name),
       "p2" -> QueryParam(testClass.age),

@@ -37,8 +37,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         bi <- "RETURN 3".query(bigInt).single(driver)
         bd <- "RETURN 3.0".query(bigDecimal).single(driver)
         b <- "RETURN true".query(boolean).single(driver)
-        str <- """RETURN "foo"""".query(string).single(driver)
-        id <- """RETURN "d18e9810-87ad-444c-871e-7e41e0e4623c"""".query(uuid).single(driver)
+        str <- "RETURN 'foo'".query(string).single(driver)
+        id <- "RETURN 'd18e9810-87ad-444c-871e-7e41e0e4623c'".query(uuid).single(driver)
         bytes <- c"RETURN ${expectedBytes}".query(bytes).single(driver)
         point <- "RETURN point({x: 1, y: 3, z: 5})".query(neoPoint).single(driver)
         dur <- "RETURN duration({seconds: 10})".query(javaDuration).single(driver)
@@ -140,14 +140,16 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "support querying tuples of supported types" in executeAsFuture { driver =>
+    val expectedTuple = (25, "Luis")
+
     // Unnamed.
     locally {
       val mapper = tuple(int, string)
 
       for {
-        tuple <- """RETURN 3, "foo"""".query(mapper).single(driver)
+        tuple <- "RETURN 25, 'Luis'".query(mapper).single(driver)
       } yield {
-        tuple shouldBe (3, "foo")
+        tuple shouldBe expectedTuple
       }
     }
 
@@ -159,9 +161,9 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       )
 
       for {
-        tuple <- """RETURN 3 AS age, "foo" AS name""".query(mapper).single(driver)
+        tuple <- "RETURN 25 AS age, 'Luis' AS name".query(mapper).single(driver)
       } yield {
-        tuple shouldBe (3, "foo")
+        tuple shouldBe expectedTuple
       }
     }
   }
@@ -190,7 +192,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
   it should "support querying either values" in executeAsFuture { driver =>
     val queryLeft = "RETURN 5"
-    val queryRight = """RETURN "Luis""""
+    val queryRight = "RETURN 'Luis'"
 
     def run(mapper: ResultMapper[Either[Int, String]]) =
       for {
@@ -273,8 +275,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "support querying any map of supported types" in executeAsFuture { driver =>
-    val multipleTupleRecordQuery = """UNWIND [[1, "a"], [2, "b"], [3, "c"]] AS x RETURN x"""
-    val singleTupleRecordQuery = """RETURN [[1, "a"], [2, "b"], [3, "c"]]"""
+    val multipleTupleRecordQuery = "UNWIND [[1, 'a'], [2, 'b'], [3, 'c']] AS x RETURN x"
+    val singleTupleRecordQuery = "RETURN [[1, 'a'], [2, 'b'], [3, 'c']]"
 
     // Multiples records of single key-value pairs (map).
     locally {
@@ -338,8 +340,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "support querying user defined case classes whose fields are supported types" in executeAsFuture { driver =>
-    val namedQuery = """RETURN "Luis" AS name, 25 AS age"""
-    val unnamedQuery = """RETURN "Luis", 25"""
+    val namedQuery = "RETURN 'Luis' AS name, 25 AS age"
+    val unnamedQuery = "RETURN 'Luis', 25"
     val expectedUser = User(name = "Luis", age = 25)
 
     // Full manual definition.
@@ -435,7 +437,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
 
       for {
-        problem <- """CREATE (n: Node: Error { msg: "foo" }) RETURN n""".query(mapper).single(driver)
+        problem <- "CREATE (n: Node: Error { msg: 'foo' }) RETURN n".query(mapper).single(driver)
       } yield {
         problem shouldBe Problem.Error(msg = "foo")
       }
@@ -450,7 +452,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       )
 
       for {
-        problem <- """CREATE ()-[r: WARNING { msg: "bar" }]->() RETURN r""".query(mapper).single(driver)
+        problem <- "CREATE ()-[r: WARNING { msg: 'bar' }]->() RETURN r".query(mapper).single(driver)
       } yield {
         problem shouldBe Problem.Warning(msg = "bar")
       }
@@ -461,7 +463,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       val mapper = coproductDerive[Problem]
 
       for {
-        problem <- """RETURN { type: "Unknown", data: 10 }""".query(mapper).single(driver)
+        problem <- "RETURN { type: 'Unknown', data: 10 }".query(mapper).single(driver)
       } yield {
         problem shouldBe Problem.Unknown
       }
@@ -475,9 +477,9 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     )(User.apply)
 
     for {
-      r <- """RETURN "Balmung" AS personName, 135 AS personAge""".query(mapper).single(driver)
+      r <- "RETURN 'Luis' AS personName, 25 AS personAge".query(mapper).single(driver)
     } yield {
-      r shouldBe User(name = "Balmung", age = 135)
+      r shouldBe User(name = "Luis", age = 25)
     }
   }
 
@@ -496,7 +498,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     // Successful validation.
     executeAsFuture { driver =>
       for {
-        record <- """RETURN 1 AS id, "foo" AS data""".query(recordMapper).single(driver)
+        record <- "RETURN 1 AS id, 'foo' AS data".query(recordMapper).single(driver)
       } yield {
         record shouldBe Record(id = Id(1), data = "foo")
       }
@@ -505,7 +507,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     // Failed validation.
     recoverToExceptionIf[IncoercibleException] {
       executeAsFuture { driver =>
-        """RETURN -1 AS id, "foo" AS data""".query(recordMapper).single(driver)
+        "RETURN -1 AS id, 'foo' AS data".query(recordMapper).single(driver)
       }
     } map { ex =>
       ex.getMessage shouldBe "-1 is not a valid ID because is negative for field 'id'"
@@ -523,7 +525,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     }
 
     for {
-      r <- """RETURN 1 AS id, "foo" AS dataStr, 5 AS dataInt""".query(mapper).single(driver)
+      r <- "RETURN 1 AS id, 'foo' AS dataStr, 5 AS dataInt".query(mapper).single(driver)
     } yield {
       r shouldBe Combined(id = 1, data = ("foo", 5))
     }
@@ -539,7 +541,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     }
 
     for {
-      r <- """RETURN 1 AS id, ["foo", 5] AS data""".query(mapper).single(driver)
+      r <- "RETURN 1 AS id, ['foo', 5] AS data".query(mapper).single(driver)
     } yield {
       r shouldBe Divided(id = 1, dataStr = "foo", dataInt = 5)
     }
@@ -574,7 +576,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     )(Nested.apply)
 
     for {
-      r <- """RETURN 3 AS a, "foo" AS b, 5 AS c, "bar" AS d""".query(mapper).single(driver)
+      r <- "RETURN 3 AS a, 'foo' AS b, 5 AS c, 'bar' AS d".query(mapper).single(driver)
     } yield {
       r shouldBe Nested(
         foo = Foo(
@@ -688,7 +690,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "support querying heterogeneous data" in executeAsFuture { driver =>
-    val query = """RETURN { foo: 1, bar: "Luis", baz: true }"""
+    val query = "RETURN { foo: 1, bar: 'balmung', baz: true }"
 
     // Heterogeneous List.
     locally {
@@ -700,7 +702,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
         inside(values) {
           case Value.Integer(i) :: Value.Str(s) :: Value.Bool(b) :: Nil =>
             i shouldBe 1
-            s shouldBe "Luis"
+            s shouldBe "balmung"
             b shouldBe true
         }
       }
@@ -720,7 +722,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
         inside(values.get(key = "bar")) {
           case Value.Str(s) =>
-            s shouldBe "Luis"
+            s shouldBe "balmung"
         }
 
         inside(values.get(key = "baz")) {
@@ -749,7 +751,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Map inside Map.
     locally {
-      val query = """RETURN { foo: { bar: 1, baz: 3 }, quax: { haux: 5 }, faux: { } }"""
+      val query = "RETURN { foo: { bar: 1, baz: 3 }, quax: { haux: 5 }, faux: { } }"
       val mapper = neoMap(neoMap(int))
 
       for {
@@ -810,8 +812,8 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
   it should "support rollback on cancellation" in executeAsFuture { driver =>
     for {
-      _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(driver)
-      _ <- cancel("""CREATE (p: PERSON { name: "Dmitry" })""".execute.void(driver))
+      _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(driver)
+      _ <- cancel("CREATE (p: PERSON { name: 'Dmitry' })".execute.void(driver))
       people <- "MATCH (p: PERSON) RETURN p.name".query(string).set(driver)
     } yield {
       people.loneElement shouldBe "Luis"
@@ -819,7 +821,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
   }
 
   it should "construct an IncoercibleException message with a field name and value" in {
-    val query = """RETURN { name: "Charlize Theron" }"""
+    val query = "RETURN { name: 'Charlize Theron' }"
     val mapper = field(key = "name", mapper = int)
 
     recoverToExceptionIf[IncoercibleException] {

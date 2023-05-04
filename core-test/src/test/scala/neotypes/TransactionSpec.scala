@@ -14,8 +14,8 @@ trait BaseTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers
   it should "support explicit commit" in executeAsFuture { d =>
     for {
       tx <- transaction(d)
-      _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(tx)
-      _ <- """CREATE (p: PERSON { name: "Dmitry" })""".execute.void(tx)
+      _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
+      _ <- "CREATE (p: PERSON { name: 'Dmitry' })".execute.void(tx)
       _ <- tx.commit
       people <- "MATCH (p: PERSON) RETURN p.name".query(ResultMapper.string).set(d)
     } yield  {
@@ -26,8 +26,8 @@ trait BaseTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers
   it should "support explicit rollback" in executeAsFuture { d =>
     for {
       tx <- transaction(d)
-      _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(tx)
-      _ <- """CREATE (p: PERSON { name: "Dmitry" })""".execute.void(tx)
+      _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
+      _ <- "CREATE (p: PERSON { name: 'Dmitry' })".execute.void(tx)
       _ <- tx.rollback
       people <- "MATCH (p: PERSON) RETURN p.name".query(ResultMapper.string).list(d)
     } yield {

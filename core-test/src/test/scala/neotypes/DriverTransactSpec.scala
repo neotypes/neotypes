@@ -37,8 +37,8 @@ trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] with Match
   it should "execute & commit multiple queries inside the same transact" in
     ensureCommittedTransaction(expectedResult = Set("Luis", "Dmitry")) { tx =>
       for {
-        _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(tx)
-        _ <- """CREATE (p: PERSON { name: "Dmitry" })""".execute.void(tx)
+        _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
+        _ <- "CREATE (p: PERSON { name: 'Dmitry' })".execute.void(tx)
         r <- "MATCH (p: PERSON) RETURN p.name".query(ResultMapper.string).set(tx)
       } yield r
     }
@@ -46,7 +46,7 @@ trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] with Match
   it should "automatically rollback if any query fails inside a transact" in
     ensureRollbackedTransaction[MissingRecordException] { tx =>
       for {
-        _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(tx)
+        _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
         _ <- "bad query".execute.void(tx)
       } yield ()
     }
@@ -54,9 +54,9 @@ trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] with Match
   it should "automatically rollback if there is an error inside the transact" in
     ensureRollbackedTransaction[CustomException.type] { tx =>
       for {
-        _ <- """CREATE (p: PERSON { name: "Luis" })""".execute.void(tx)
+        _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
         _ <- F.fromEither[Unit](Left(CustomException))
-        _ <- """CREATE (p: PERSON { name: "Dmitry" })""".execute.void(tx)
+        _ <- "CREATE (p: PERSON { name: 'Dmitry' })".execute.void(tx)
       } yield ()
     }
 }
