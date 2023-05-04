@@ -170,10 +170,11 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
 
   /** Passthrough [[ResultMapper]], does not apply any decoding logic. */
   implicit final val identity: ResultMapper[NeoType] =
-    fromMatch {
-      case value: NeoType =>
-        value
-    }
+    instance(value => Right(value))
+
+  /** Passthrough [[ResultMapper]], ignores the input. */
+  implicit final val ignore: ResultMapper[Unit] =
+    instance(_ => Right(()))
 
   /** [[ResultMapper]] that will decode any numeric value into an [[Int]], may lose precision. */
   implicit final val int: ResultMapper[Int] = fromNumeric {

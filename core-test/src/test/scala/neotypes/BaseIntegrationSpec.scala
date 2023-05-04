@@ -116,5 +116,5 @@ trait CleaningIntegrationSpec[F[_]] extends BaseIntegrationSpec[F] { self: Drive
     }
   }
 
-  override final val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
+  override protected final val initQuery: String = BaseIntegrationSpec.EMPTY_INIT_QUERY
 }

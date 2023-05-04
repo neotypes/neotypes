@@ -64,5 +64,6 @@ abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F]) extends Suites(
   new AsyncDriverSpec(testkit),
   new AsyncTransactionSpec(testkit),
   new AsyncDriverTransactSpec(testkit),
+  new AsyncDriverConcurrentUsageSpec(testkit),
   new AsyncAlgorithmSpec(testkit)
 )
