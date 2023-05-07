@@ -65,5 +65,6 @@ abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Sui
   new StreamTransactionSpec(testkit),
   new StreamDriverTransactSpec(testkit),
   new StreamDriverConcurrentUsageSpec(testkit),
+  new StreamParameterSpec(testkit),
   new StreamAlgorithmSpec(testkit)
 )
