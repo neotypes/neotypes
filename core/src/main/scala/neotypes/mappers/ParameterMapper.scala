@@ -139,7 +139,7 @@ object ParameterMapper {
 
   private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
     ParameterMapper.fromCast { col =>
-      col.iterator.map(v => mapper.toQueryParam(v)).asJava
+      col.iterator.map(mapper.toQueryParam).asJava
     }
 
   implicit final def collectionParameterMapper[T, C[_]](
