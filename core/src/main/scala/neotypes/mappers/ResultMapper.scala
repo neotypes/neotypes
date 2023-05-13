@@ -500,7 +500,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
 
   /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
   def neoMap[V](valueMapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
-    collectAsNeoMap(Map, KeyMapper.StringKeyMapper, valueMapper)
+    collectAsNeoMap(Map, KeyMapper.string, valueMapper)
 
   /** Creates a [[ResultMapper]] that will try to decode
     * the given field of an object,

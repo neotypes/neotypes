@@ -621,7 +621,7 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
     val query = "RETURN { foo: 3, bar: 5 }"
 
     implicit val customKeyMapper =
-      KeyMapper.StringKeyMapper.imap[CustomKey](_.name) { name =>
+      KeyMapper.string.imap[CustomKey](_.name) { name =>
         CustomKey.from(name).toRight(
           left = KeyMapperException(
             key = name,

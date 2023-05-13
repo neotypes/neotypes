@@ -51,7 +51,7 @@ object KeyMapper {
     */
   def apply[A](implicit mapper: KeyMapper[A]): KeyMapper[A] = mapper
 
-  implicit final val StringKeyMapper: KeyMapper[String] = new KeyMapper[String] {
+  implicit final val string: KeyMapper[String] = new KeyMapper[String] {
     override def encodeKey(key: String): String =
       key
 
