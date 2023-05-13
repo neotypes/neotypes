@@ -326,11 +326,22 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
 
   /** [[ResultMapper]] that will decode the input as a [[JDuration]]. */
   implicit final val javaDuration: ResultMapper[JDuration] =
-    neoDuration.map(JDuration.from)
+    neoDuration.map { isoDuration =>
+      JDuration
+        .ZERO
+        .plusDays(isoDuration.days)
+        .plusSeconds(isoDuration.seconds)
+        .plusNanos(isoDuration.nanoseconds.toLong)
+    }
 
   /** [[ResultMapper]] that will decode the input as a [[JPeriod]]. */
   implicit final val javaPeriod: ResultMapper[JPeriod] =
-    neoDuration.map(JPeriod.from)
+    neoDuration.map { isoDuration =>
+      JPeriod
+        .ZERO
+        .plusMonths(isoDuration.months)
+        .plusDays(isoDuration.days)
+    }
 
   /** [[ResultMapper]] that will decode the input as a [[SDuration]]. */
   implicit final val scalaDuration: ResultMapper[SDuration] =
