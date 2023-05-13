@@ -1,9 +1,9 @@
 package neotypes
 
 import neotypes.generic.implicits._
-import neotypes.implicits.syntax.string._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.ResultMapper._
+import neotypes.syntax.string._
 
 import org.scalatest.matchers.should.Matchers
 

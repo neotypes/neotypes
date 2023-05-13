@@ -1,11 +1,11 @@
 package neotypes
 
 import neotypes.generic.implicits._
-import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.{KeyMapper, ResultMapper}
 import neotypes.model.exceptions.{IncoercibleException, KeyMapperException, MissingRecordException}
 import neotypes.model.types._
+import neotypes.syntax.all._
 
 import org.neo4j.driver.summary.ResultSummary
 import org.scalatest.{Inside, LoneElement, OptionValues}

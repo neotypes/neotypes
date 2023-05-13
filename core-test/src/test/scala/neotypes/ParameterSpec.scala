@@ -1,8 +1,9 @@
 package neotypes
 
-import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.ResultMapper
+import neotypes.syntax.all._
+
 import org.neo4j.driver.Values
 import org.neo4j.driver.types.{IsoDuration, Point}
 import org.scalatest.EitherValues
@@ -15,7 +16,6 @@ import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
 /** Base class for testing the mapping of inserted parameters. */
 trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with EitherValues { self: DriverProvider[F] with BaseAsyncSpec[F] =>
   behavior of s"Inserting parameters using ${driverName}"
-
 
   it should "convert parameters" in executeAsFuture { driver =>
     val string: String = "test"

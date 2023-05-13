@@ -1,8 +1,8 @@
 package neotypes
 
 import neotypes.generic.implicits._
-import neotypes.implicits.syntax.cypher._
 import neotypes.model.query.QueryParam
+import neotypes.syntax.cypher._
 
 import org.scalatest.flatspec.AnyFlatSpec
 

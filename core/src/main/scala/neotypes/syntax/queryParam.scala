@@ -1,5 +1,5 @@
 package neotypes
-package implicits.syntax
+package syntax
 
 import mappers.ParameterMapper
 import model.query.QueryParam

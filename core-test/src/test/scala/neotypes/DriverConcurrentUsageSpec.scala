@@ -1,9 +1,9 @@
 package neotypes
 
-import neotypes.implicits.syntax.all._
 import neotypes.internal.syntax.async._
 import neotypes.mappers.ResultMapper
 import neotypes.query.DeferredQueryBuilder
+import neotypes.syntax.all._
 
 import org.scalatest.matchers.should.Matchers
 

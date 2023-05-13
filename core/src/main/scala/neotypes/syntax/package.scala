@@ -1,4 +1,4 @@
-package neotypes.implicits
+package neotypes
 
 package object syntax {
   final object all extends AllSyntax
