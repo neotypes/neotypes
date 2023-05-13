@@ -293,6 +293,21 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
       }
     }
 
+    // Multiples records of single key-value pairs (collectAs).
+    locally {
+      val mapper = tuple(int, string)
+
+      for {
+        nums <- multipleTupleRecordQuery.query(mapper).collectAs(SortedMap, driver)
+      } yield {
+        nums shouldBe SortedMap(
+          1 -> "a",
+          2 -> "b",
+          3 -> "c"
+        )
+      }
+    }
+
     // Single record of multiple key-value pairs (map).
     locally {
       val mapper = map(int, string)
@@ -310,12 +325,12 @@ trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] with Matchers with
 
     // Single record of multiple key-value pairs (collectAs).
     locally {
-      val mapper = collectAs(Map.mapFactory[Int, String], tuple(int, string))
+      val mapper = collectAs(SortedMap.sortedMapFactory[Int, String], tuple(int, string))
 
       for {
         nums <- singleTupleRecordQuery.query(mapper).single(driver)
       } yield {
-        nums shouldBe Map(
+        nums shouldBe SortedMap(
           1 -> "a",
           2 -> "b",
           3 -> "c"
