@@ -1,10 +1,10 @@
 package neotypes.cats.data
 
 import neotypes.{AsyncDriverProvider, CleaningIntegrationSpec, FutureTestkit}
-import neotypes.cats.data.implicits._
-import neotypes.exceptions.IncoercibleException
-import neotypes.generic.auto._
-import neotypes.implicits.syntax.all._
+import neotypes.cats.data.mappers._
+import neotypes.mappers.ResultMapper
+import neotypes.model.exceptions.IncoercibleException
+import neotypes.syntax.all._
 
 import cats.data.{
   Chain,
@@ -15,167 +15,157 @@ import cats.data.{
   NonEmptySet,
   NonEmptyVector
 }
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.Future
 
-final class CatsDataSpec extends AsyncDriverProvider(FutureTestkit) with CleaningIntegrationSpec[Future] {
+final class CatsDataSpec extends AsyncDriverProvider[Future](FutureTestkit) with CleaningIntegrationSpec[Future] with Matchers {
   import CatsDataSpec._
+  import ResultMapper._
 
-  it should "work with Chain" in executeAsFuture { d =>
-    val messages: Messages = Chain("a", "b")
+  behavior of s"${driverName} with cats.data types"
+
+  it should "work with Const" in executeAsFuture { driver =>
+    val name: Name = Const("Balmung")
+    val mapper: ResultMapper[Name] = const(string)
 
     for {
-      _ <- c"CREATE (chat: Chat { user1: 'Balmung', user2: 'Luis', messages: ${messages} })".query[Unit].execute(d)
-      r1 <- "MATCH (chat: Chat) RETURN chat.messages".query[Messages].single(d)
-      r2 <- "MATCH (chat: Chat) RETURN chat".query[Chat].single(d)
+      _ <- c"CREATE (: User { name: ${name} })".execute.void(driver)
+      r <- "MATCH (user: User) RETURN user.name".query(mapper).single(driver)
     } yield {
-      assert(r1 == messages)
-      assert(r2 == Chat("Balmung", "Luis", messages))
+      r shouldBe name
     }
   }
 
-  it should "work with Const" in executeAsFuture { d =>
-    val name: Name = Const("Balmung")
+  it should "work with Chain" in executeAsFuture { d =>
+    val messages: Messages = Chain("a", "b")
+    val mapper: ResultMapper[Messages] = chain(string)
 
     for {
-      _ <- c"CREATE (user: User { name: ${name} })".query[Unit].execute(d)
-      r1 <- "MATCH (user: User) RETURN user.name".query[Name].single(d)
-      r2 <- "MATCH (user: User) RETURN user".query[User].single(d)
+      _ <- c"CREATE (: Chat { user1: 'Balmung', user2: 'Luis', messages: ${messages} })".execute.void(d)
+      r <- "MATCH (chat: Chat) RETURN chat.messages".query(mapper).single(d)
     } yield {
-      assert(r1 == name)
-      assert(r2 == User(name))
+      r shouldBe messages
     }
   }
 
   it should "work with NonEmptyChain" in executeAsFuture { d =>
     val errors: Errors = NonEmptyChain("a", "b")
+    val mapper: ResultMapper[Errors] = nonEmptyChain(string)
 
+    // Success.
     for {
-      _ <- c"CREATE (stackTrace: StackTrace { line: 1, errors: ${errors} })".query[Unit].execute(d)
-      r1 <- "MATCH (stackTrace: StackTrace) RETURN stackTrace.errors".query[Errors].single(d)
-      r2 <- "MATCH (stackTrace: StackTrace) RETURN stackTrace".query[StackTrace].single(d)
+      _ <- c"CREATE (: StackTrace { line: 1, errors: ${errors} })".execute.void(d)
+      r <- "MATCH (stackTrace: StackTrace) RETURN stackTrace.errors".query(mapper).single(d)
     } yield {
-      assert(r1 == errors)
-      assert(r2 == StackTrace(1, errors))
+      r shouldBe errors
     }
-  }
 
-  it should "fail if retrieving an empty list as a NonEmptyChain" in executeAsFuture { d =>
+    // Fail if empty.
     recoverToSucceededIf[IncoercibleException] {
-      for {
-        _ <- "CREATE (stackTrace: StackTrace { line: 1, errors: [] })".query[Unit].execute(d)
-        stackTrace <- "MATCH (stackTrace: StackTrace) RETURN stackTrace".query[StackTrace].single(d)
-      } yield stackTrace
+      "RETURN []".query(mapper).single(d)
     }
   }
 
-  it should "work with NonEmptyList" in executeAsFuture { d =>
+  it should "work with NonEmptyList" in executeAsFuture { driver =>
     val items: Items = NonEmptyList.of("a", "b")
+    val mapper: ResultMapper[Items] = nonEmptyList(string)
 
+    // Success.
     for {
-      _ <- c"CREATE (player: Player { name: 'Luis', items: ${items} })".query[Unit].execute(d)
-      r1 <- "MATCH (player: Player) RETURN player.items".query[Items].single(d)
-      r2 <- "MATCH (player: Player) RETURN player".query[Player].single(d)
+      _ <- c"CREATE (: Player { name: 'Luis', items: ${items} })".execute.void(driver)
+      r <- "MATCH (player: Player) RETURN player.items".query(mapper).single(driver)
     } yield {
-      assert(r1 == items)
-      assert(r2 == Player("Luis", items))
+      r shouldBe items
     }
-  }
 
-  it should "fail if retrieving an empty list as a NonEmptyList" in executeAsFuture { d =>
+    // Fail if empty.
     recoverToSucceededIf[IncoercibleException] {
-      for {
-        _ <- "CREATE (player: Player { name: 'Luis', items: [] })".query[Unit].execute(d)
-        player <- "MATCH (player: Player) RETURN player".query[Player].single(d)
-      } yield player
+      "RETURN []".query(mapper).single(driver)
     }
   }
 
-  it should "work with NonEmptyMap" in executeAsFuture { d =>
-    val properties: Properties = NonEmptyMap.of("a" -> true, "b" -> false)
-
-    for {
-      _ <- c"CREATE (config: Config ${properties})".query[Unit].execute(d)
-      r1 <- "MATCH (config: Config) RETURN config { .* }".query[Properties].single(d)
-      r2 <- "MATCH (config: Config) RETURN 'dev' AS env, config { .* } AS properties".query[Config].single(d)
-    } yield {
-      assert(r1 == properties)
-      assert(r2 == Config("dev", properties))
-    }
-  }
-
-  it should "fail if retrieving an empty map as a NonEmptyMap" in executeAsFuture { d =>
-    recoverToSucceededIf[IncoercibleException] {
-      for {
-        properties <- "RETURN {}".query[Properties].single(d)
-      } yield properties
-    }
-  }
-
-  it should "work with NonEmptySet" in executeAsFuture { d =>
-    val numbers: Numbers = NonEmptySet.of(1, 3, 5)
-
-    for {
-      _ <- c"CREATE (set: Set { name: 'favorites', numbers: ${numbers} })".query[Unit].execute(d)
-      r1 <- "MATCH (set: Set) RETURN set.numbers".query[Numbers].single(d)
-      r2 <- "MATCH (set: Set) RETURN set".query[MySet].single(d)
-    } yield {
-      assert(r1 == numbers)
-      assert(r2 == MySet("favorites", numbers))
-    }
-  }
-
-  it should "fail if retrieving an empty list as a NonEmptySet" in executeAsFuture { d =>
-    recoverToSucceededIf[IncoercibleException] {
-      for {
-        _ <- "CREATE (set: Set { name: 'favorites', numbers: [] })".query[Unit].execute(d)
-        set <- "MATCH (set: Set) RETURN set".query[MySet].single(d)
-      } yield set
-    }
-  }
-
-  it should "work with NonEmptyVector" in executeAsFuture { d =>
+  it should "work with NonEmptyVector" in executeAsFuture { driver =>
     val groceries: Groceries = NonEmptyVector.of("a", "b")
+    val mapper: ResultMapper[Groceries] = nonEmptyVector(string)
 
+    // Success.
     for {
-      _ <- c"CREATE (purchase: Purchase { total: 12.5, groceries: ${groceries} })".query[Unit].execute(d)
-      r1 <- "MATCH (purchase: Purchase) RETURN purchase.groceries".query[Groceries].single(d)
-      r2 <- "MATCH (purchase: Purchase) RETURN purchase".query[Purchase].single(d)
+      _ <- c"CREATE (: Purchase { total: 12.5, groceries: ${groceries} })".execute.void(driver)
+      r <- "MATCH (purchase: Purchase) RETURN purchase.groceries".query(mapper).single(driver)
     } yield {
-      assert(r1 == groceries)
-      assert(r2 == Purchase(12.5d, groceries))
+      r shouldBe groceries
+    }
+
+    // Fail if empty.
+    recoverToSucceededIf[IncoercibleException] {
+      "RETURN []".query(mapper).single(driver)
     }
   }
 
-  it should "fail if retrieving an empty list as a NonEmptyVector" in executeAsFuture { d =>
+  it should "work with NonEmptySet" in executeAsFuture { driver =>
+    val numbers: Numbers = NonEmptySet.of(1, 3, 5)
+    val mapper: ResultMapper[Numbers] = nonEmptySet(mapper = int, order = implicitly)
+
+    // Success.
+    for {
+      _ <- c"CREATE (: Set { name: 'favorites', numbers: ${numbers} })".execute.void(driver)
+      r <- "MATCH (set: Set) RETURN set.numbers".query(mapper).single(driver)
+    } yield {
+      r shouldBe numbers
+    }
+
+    // Fail if empty.
     recoverToSucceededIf[IncoercibleException] {
-      for {
-        _ <- "CREATE (purchase: Purchase { total: 12.5, groceries: [] })".query[Unit].execute(d)
-        purchase <- "MATCH (purchase: Purchase) RETURN purchase".query[Purchase].single(d)
-      } yield purchase
+      "RETURN []".query(mapper).single(driver)
+    }
+  }
+
+  it should "work with NonEmptyMap" in executeAsFuture { driver =>
+    val properties: Properties = NonEmptyMap.of("a" -> true, "b" -> false)
+    val mapper: ResultMapper[Properties] = nonEmptyMap(
+      keyMapper = string, valueMapper = boolean, keyOrder = implicitly
+    )
+
+    // Success.
+    for {
+      _ <- c"CREATE (: Config ${properties})".execute.void(driver)
+      r <- "MATCH (config: Config) RETURN config".query(mapper).single(driver)
+    } yield {
+      r shouldBe properties
+    }
+
+    // Fail if empty.
+    recoverToSucceededIf[IncoercibleException] {
+      "RETURN {}".query(mapper).single(driver)
+    }
+  }
+
+  it should "work with NonEmptyNeoMap" in executeAsFuture { driver =>
+    val properties: Properties = NonEmptyMap.of("a" -> true, "b" -> false)
+    val mapper: ResultMapper[Properties] = nonEmptyNeoMap
+
+    // Success.
+    for {
+      _ <- c"CREATE (: Config ${properties})".execute.void(driver)
+      r <- "MATCH (config: Config) RETURN config".query(mapper).single(driver)
+    } yield {
+      r shouldBe properties
+    }
+
+    // Fail if empty.
+    recoverToSucceededIf[IncoercibleException] {
+      "RETURN {}".query(mapper).single(driver)
     }
   }
 }
 
 object CatsDataSpec {
-  type Messages = Chain[String]
-  final case class Chat(user1: String, user2: String, messages: Messages)
-
   type Name = Const[String, Int]
-  final case class User(name: Name)
-
+  type Messages = Chain[String]
   type Errors = NonEmptyChain[String]
-  final case class StackTrace(line: Int, errors: Errors)
-
   type Items = NonEmptyList[String]
-  final case class Player(name: String, items: Items)
-
-  type Properties = NonEmptyMap[String, Boolean]
-  final case class Config(env: String, properties: Properties)
-
-  type Numbers = NonEmptySet[Int]
-  final case class MySet(name: String, numbers: Numbers)
-
   type Groceries = NonEmptyVector[String]
-  final case class Purchase(total: Double, groceries: Groceries)
+  type Numbers = NonEmptySet[Int]
+  type Properties = NonEmptyMap[String, Boolean]
 }
