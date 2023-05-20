@@ -26,10 +26,6 @@ trait AkkaStreams {
     new neotypes.Stream[AkkaStream] {
       implicit val ec = mat.executionContext
 
-      /** Define effect type to be the scala Future
-        *
-        * @tparam T parametric type for scala Future
-        */
       override final type F[A] = Future[A]
 
       override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): AkkaStream[A] =

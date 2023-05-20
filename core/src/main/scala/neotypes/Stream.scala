@@ -3,7 +3,7 @@ package neotypes
 import java.util.concurrent.Flow.Publisher
 import scala.collection.Factory
 
-@annotation.implicitNotFound("The stream type ${S} is not supported by neotypes")
+@annotation.implicitNotFound("The Stream type ${S} is not supported by neotypes")
 trait Stream[S[_]] {
   type F[T]
 

@@ -11,13 +11,13 @@ import org.neo4j.driver.reactive.ReactiveSession
 import scala.util.Try
 import scala.jdk.CollectionConverters._
 
-/** A neotypes driver for accessing the neo4j graph database
-  * A driver wrapped in the resource type can be created using the neotypes GraphDatabase
+/** A neotypes async driver for accessing the neo4j graph database.
+  * A driver wrapped in the resource type can be created using the neotypes GraphDatabase:
   * {{{
   *    val driver = GraphDatabase.driver[F]("bolt://localhost:7687")
   * }}}
   *
-  * @tparam F effect type for driver
+  * @tparam F Async type for driver
   */
 sealed trait AsyncDriver[F[_]] {
   def metrics: F[List[ConnectionPoolMetrics]]
@@ -32,13 +32,19 @@ sealed trait AsyncDriver[F[_]] {
   final def transact[T](txF: AsyncTransaction[F] => F[T]): F[T] =
     transact(config = TransactionConfig.default)(txF)
 
-  /** Close the resources assigned to the neo4j driver.
-    *
-    *  @return an effect F of Unit.
-    */
+  /** Close the resources assigned to the neo4j driver. */
   def close: F[Unit]
 }
 
+/** A neotypes stream driver for accessing the neo4j graph database.
+  * A driver wrapped in the resource type can be created using the neotypes GraphDatabase:
+  * {{{
+  *    val driver = GraphDatabase.streamDriver[S, F]("bolt://localhost:7687")
+  * }}}
+  *
+  * @tparam S Stream type for driver
+  * @tparam F Async type for driver
+  */
 sealed trait StreamDriver[S[_], F[_]] extends AsyncDriver[F] {
   def streamTransaction(config: TransactionConfig): S[StreamTransaction[S, F]]
 
