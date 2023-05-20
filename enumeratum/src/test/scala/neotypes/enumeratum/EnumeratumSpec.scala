@@ -1,104 +1,107 @@
 package neotypes.enumeratum
 
 import neotypes.{AsyncDriverProvider, CleaningIntegrationSpec, FutureTestkit}
-import neotypes.exceptions.IncoercibleException
-import neotypes.generic.semiauto.deriveProductResultMapper
-import neotypes.implicits.syntax.all._
+import neotypes.mappers.ResultMapper
+import neotypes.model.exceptions.{IncoercibleException, KeyMapperException}
+import neotypes.syntax.all._
 
 import enumeratum.{Enum, EnumEntry}
 import enumeratum.values.{IntEnum, IntEnumEntry, StringEnum, StringEnumEntry}
-
 import org.scalatest.Inspectors
+import org.scalatest.matchers.should.Matchers
+
 import scala.concurrent.Future
 
-final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with CleaningIntegrationSpec[Future] with Inspectors {
+final class EnumeratumSpec extends AsyncDriverProvider(FutureTestkit) with CleaningIntegrationSpec[Future] with Matchers with Inspectors {
   import EnumeratumSpec._
 
-  it should "work with a simple Enums" in {
+  behavior of s"${driverName} with Enumeratum enums"
+
+  it should "work with a simple Enums" in executeAsFuture { driver =>
+    val mapper = SimpleEnum.resultMapper
+
+    // Success.
     forAll(SimpleEnum.values) { enumValue =>
-      executeAsFuture { d =>
-        for {
-          _ <- c"CREATE (: Data { name: ${enumValue.entryName}, value: ${enumValue} })".query[Unit].execute(d)
-          r1 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query[String].single(d)
-          r2 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query[SimpleEnum].single(d)
-          r3 <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data".query[DataWithSimpleEnum].single(d)
-        } yield {
-          assert(r1 == enumValue.entryName)
-          assert(r2 == enumValue)
-          assert(r3 == DataWithSimpleEnum(name = enumValue.entryName, value = enumValue))
-        }
+      for {
+        _ <- c"CREATE (: Data { name: ${enumValue.entryName}, value: ${enumValue} })".execute.void(driver)
+        r <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query(mapper).single(driver)
+      } yield {
+        r shouldBe enumValue
       }
     }
-  }
 
-  it should "fail if retrieving a non-valid value as simple Enum" in executeAsFuture { d =>
-    recoverToSucceededIf[IncoercibleException] {
-      "RETURN 'Quax'".query[SimpleEnum].single(d)
+    // Fail if retrieving a non-valid value.
+    recoverToSucceededIf[KeyMapperException] {
+      "RETURN 'Quax'".query(mapper).single(driver)
     }
   }
 
-  it should "work with a value Enums" in {
+  it should "work with a value Enums (int)" in executeAsFuture { driver =>
+    val mapper = ValueEnum.resultMapper
+
+    // Success.
     forAll(ValueEnum.values) { enumValue =>
-      executeAsFuture { d =>
-        for {
-          _ <- c"CREATE (: Data { name: ${enumValue.name}, value: ${enumValue} })".query[Unit].execute(d)
-          r1 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query[Int].single(d)
-          r2 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query[ValueEnum].single(d)
-          r3 <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data".query[DataWithValueEnum].single(d)
-        } yield {
-          assert(r1 == enumValue.value)
-          assert(r2 == enumValue)
-          assert(r3 == DataWithValueEnum(name = enumValue.name, value = enumValue))
-        }
+      for {
+        _ <- c"CREATE (: Data { name: ${enumValue.name}, value: ${enumValue} })".execute.void(driver)
+        r <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query(mapper).single(driver)
+      } yield {
+        r shouldBe enumValue
       }
     }
-  }
 
-  it should "fail if retrieving a non-valid value as value Enum" in executeAsFuture { d =>
+    // Fail if retrieving a non-valid value.
     recoverToSucceededIf[IncoercibleException] {
-      "RETURN 10".query[ValueEnum].single(d)
+      "RETURN 10".query(mapper).single(driver)
     }
   }
 
-  it should "use a key Enum as keys of the properties of a node" in executeAsFuture { d =>
+  it should "work with key Enums" in executeAsFuture { driver =>
     val data = Map(
       KeyEnum.Key1 -> 0,
       KeyEnum.Key2 -> 10,
       KeyEnum.Key3 -> 100
     )
+    val mapper = ResultMapper.neoMap(
+      keyMapper = KeyEnum.keyMapper,
+      valueMapper = ResultMapper.int
+    )
 
+    // Success.
     for {
-      _ <- c"CREATE (: Data ${data})".query[Unit].execute(d)
-      r <- "MATCH (data: Data) RETURN data".query[Map[KeyEnum, Int]].single(d)
+      _ <- c"CREATE (: Data ${data})".execute.void(driver)
+      r <- "MATCH (data: Data) RETURN data".query(mapper).single(driver)
     } yield {
-      assert(r == data)
+      r shouldBe data
+    }
+
+    // Fail if retrieving a non-valid value.
+    recoverToSucceededIf[KeyMapperException] {
+      "RETURN { quax : 7 }".query(mapper).single(driver)
     }
   }
 
-  it should "fail if retrieving a non-valid value as a key Enum" in executeAsFuture { d =>
-    recoverToSucceededIf[IncoercibleException] {
-      "RETURN { quax : 7 }".query[Map[KeyEnum, Int]].single(d)
-    }
-  }
-
-  it should "use a string Enum as keys of the properties of a node" in executeAsFuture { d =>
+  it should "work with value Enums (string) as keys" in executeAsFuture { driver =>
     val data = Map(
       KeyStringEnum.KeyA -> 0,
       KeyStringEnum.KeyB -> 10,
       KeyStringEnum.KeyC -> 100
     )
+    val mapper = ResultMapper.neoMap(
+      keyMapper = KeyStringEnum.keyMapper,
+      valueMapper = ResultMapper.int
+    )
 
+    // Success.
     for {
-      _ <- c"CREATE (: Data ${data})".query[Unit].execute(d)
-      r <- "MATCH (data: Data) RETURN data".query[Map[KeyStringEnum, Int]].single(d)
+      _ <- c"CREATE (: Data ${data})".execute.void(driver)
+      r <- "MATCH (data: Data) RETURN data".query(mapper).single(driver)
     } yield {
-      assert(r == data)
+      r shouldBe data
     }
-  }
 
-  it should "fail if retrieving a non-valid value as key string Enum" in executeAsFuture { d =>
-    recoverToSucceededIf[IncoercibleException] {
-      "RETURN { quax : 7 }".query[Map[KeyStringEnum, Int]].single(d)
+    // Fail if retrieving a non-valid value.
+    recoverToSucceededIf[KeyMapperException] {
+      "RETURN { quax : 7 }".query(mapper).single(driver)
     }
   }
 }
@@ -113,9 +116,6 @@ object EnumeratumSpec {
     val values = findValues
   }
 
-  final case class DataWithSimpleEnum(name: String, value: SimpleEnum)
-  implicit final val DataWithSimpleEnumMapper: neotypes.mappers.ResultMapper[DataWithSimpleEnum] = deriveProductResultMapper
-
   sealed abstract class ValueEnum (val value: Int, val name: String) extends IntEnumEntry with Product with Serializable
   object ValueEnum extends IntEnum[ValueEnum] with NeotypesIntEnum[ValueEnum] {
     final case object A extends ValueEnum(value = 1, name = "A")
@@ -124,9 +124,6 @@ object EnumeratumSpec {
 
     val values = findValues
   }
-
-  final case class DataWithValueEnum(name: String, value: ValueEnum)
-  implicit final val DataWithValueEnumMapper: neotypes.mappers.ResultMapper[DataWithValueEnum] = deriveProductResultMapper
 
   sealed trait KeyEnum extends EnumEntry with Product with Serializable
   object KeyEnum extends Enum[KeyEnum] with NeotypesKeyEnum[KeyEnum] {
