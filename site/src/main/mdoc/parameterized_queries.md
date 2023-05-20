@@ -103,3 +103,30 @@ val subSubQueryParam = 1
 val subSubQuery = c"user.id = ${subSubQueryParam}"
 val subQuery = c"""${subSubQuery} OR user.name = "Luis""""
 ```
+
+You may also interpolate heterogeneous `Lists` and `Maps` _(of supported types)_:
+
+```scala mdoc:reset
+import neotypes.implicits.syntax.cypher._ // Adds the `c` interpolator into the scope.
+import neotypes.types.QueryParam
+
+val hlist = List(
+  QueryParam(1),
+  QueryParam("Luis"),
+  QueryParam(true)
+)
+
+val hmap = Map(
+  "foo" -> QueryParam(3),
+  "bar" -> QueryParam("Balmung"),
+  "baz" -> QueryParam(false)
+)
+
+// Unwind the list to create many nodes.
+val query1 = c"UNWIND ${hlist} AS x CREATE (: Node { data: x } )"
+query1.query[Unit]
+
+// Use the map as the properties of a Node.
+val query2 = c"CREATE (: Node ${hmap} )"
+query2.query[Unit]
+```

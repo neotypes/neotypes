@@ -4,7 +4,6 @@ import neotypes.model.exceptions.CancellationException
 
 import cats.effect.{Async, Resource}
 import fs2.Stream
-import org.reactivestreams.FlowAdapters.toPublisher
 
 import java.util.concurrent.Flow.Publisher
 import scala.collection.Factory
@@ -15,8 +14,8 @@ trait Fs2Streams {
       override final type F[A] = _F[A]
 
       override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): Stream[F, A] =
-        Stream.eval(F.delay(toPublisher(publisher))).flatMap { p =>
-          fs2.interop.reactivestreams.fromPublisher(p, chunkSize)
+        Stream.eval(F.delay(publisher)).flatMap { p =>
+          fs2.interop.flow.fromPublisher(p, chunkSize)
         }
 
       override final def append[A, B >: A](sa: Stream[F, A], sb: Stream[F, B]): Stream[F, B] =

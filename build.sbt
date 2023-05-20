@@ -2,8 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "5.3.1"
-val scalaCollectionCompatVersion = "2.9.0"
+val neo4jDriverVersion = "5.8.0"
 val shapelessVersion = "2.3.10"
 val testcontainersNeo4jVersion = "1.17.6"
 val testcontainersScalaVersion = "0.40.11"
@@ -11,13 +10,13 @@ val scalaTestVersion = "3.2.14"
 val logbackVersion = "1.4.4"
 val catsVersion = "2.9.0"
 val catsEffect2Version = "2.5.5"
-val catsEffect3Version = "3.4.4"
+val catsEffect3Version = "3.5.0"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
-val fs2Version = "3.4.0"
-val zio2Version = "2.0.5"
-val zioInteropReactiveStreamsVersion = "2.0.0"
-val refinedVersion = "0.10.1"
+val fs2Version = "3.7.0"
+val zio2Version = "2.0.13"
+val zioInteropReactiveStreamsVersion = "2.0.2"
+val refinedVersion = "0.10.3"
 val enumeratumVersion = "1.7.2"
 
 // Fix scmInfo in Github Actions.
@@ -63,9 +62,16 @@ val commonSettings = Seq(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
 
-  // Implicit resolution debug flags
+  // Implicit resolution debug flags.
   scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
 
+  // Make all warnings verbose.
+  scalacOptions += "-Wconf:any:warning-verbose",
+
+  // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
+  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
+
+  // Testing.
   Test / parallelExecution := false,
   Test / fork := true,
 
@@ -76,6 +82,7 @@ val commonSettings = Seq(
   publishMavenStyle := true,
   releaseCrossBuild := true,
 
+  // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
 

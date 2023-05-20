@@ -556,7 +556,9 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
         case Param(param) :: xs =>
           val paramName = s"${PARAMETER_NAME_PREFIX}${nextParamIdx}"
           val paramLocation = queryBuilder.size
-          queryBuilder.append("$").append(paramName)
+          queryBuilder.append("$")
+          queryBuilder.append(paramName)
+
           loop(
             remaining = xs,
             accParams + (paramName -> param),
