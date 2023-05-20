@@ -1,8 +1,8 @@
 package neotypes
 package enumeratum
 
-import exceptions.IncoercibleException
-import mappers.{KeyMapper, ParameterMapper, ValueMapper}
+import mappers.{KeyMapper, ParameterMapper, ResultMapper}
+import model.exceptions.{IncoercibleException, KeyMapperException}
 
 import _root_.enumeratum.{Enum, EnumEntry}
 import _root_.enumeratum.values._
@@ -10,25 +10,21 @@ import _root_.enumeratum.values._
 private[enumeratum] object Impl {
   private def getEnumEntryByName[EntryType <: EnumEntry](
     _enum: Enum[EntryType], name: String
-  ): Either[IncoercibleException, EntryType] =
+  ): Either[KeyMapperException, EntryType] =
     _enum.withNameEither(name).left.map { ex =>
-      IncoercibleException(
-        message = ex.getMessage,
-        cause = Some(ex)
-      )
+      KeyMapperException(key = name, cause = ex)
     }
 
   def parameterMapper[EntryType <: EnumEntry]: ParameterMapper[EntryType] =
-    ParameterMapper[String].contramap[EntryType](_.entryName)
+    ParameterMapper.StringParameterMapper.contramap(_.entryName)
 
-  def valueMapper[EntryType <: EnumEntry](_enum: Enum[EntryType]): ValueMapper[EntryType] =
-    ValueMapper.instance {
-      case (fieldName, value) =>
-        ValueMapper[String].to(fieldName, value).flatMap(getEnumEntryByName(_enum, _))
+  def resultMapper[EntryType <: EnumEntry](_enum: Enum[EntryType]): ResultMapper[EntryType] =
+    ResultMapper.string.emap { name =>
+      getEnumEntryByName(_enum, name)
     }
 
   def keyMapper[EntryType <: EnumEntry](_enum: Enum[EntryType]): KeyMapper[EntryType] =
-    KeyMapper[String].imap[EntryType](_.entryName)(getEnumEntryByName(_enum, _))
+    KeyMapper.string.imap[EntryType](_.entryName)(getEnumEntryByName(_enum, _))
 
   object values {
     private def getEnumEntryByValue[ValueType, EntryType <: ValueEnumEntry[ValueType]](
@@ -36,29 +32,31 @@ private[enumeratum] object Impl {
     ): Either[IncoercibleException, EntryType] =
       _enum.withValueEither(value).left.map { ex =>
         IncoercibleException(
-          message = ex.getMessage,
+          message = s"Couldn't decode ${value} as ${_enum}",
           cause = Some(ex)
         )
       }
 
     def parameterMapper[ValueType, EntryType <: ValueEnumEntry[ValueType]](
-      implicit mapper: ParameterMapper[ValueType]
+      mapper: ParameterMapper[ValueType]
     ): ParameterMapper[EntryType] =
-      mapper.contramap[EntryType](_.value)
+      mapper.contramap(_.value)
 
-    def valueMapper[ValueType, EntryType <: ValueEnumEntry[ValueType]](
-      _enum: ValueEnum[ValueType, EntryType]
-    )(
-      implicit mapper: ValueMapper[ValueType]
-    ): ValueMapper[EntryType] =
-      ValueMapper.instance {
-        case (fieldName, value) =>
-          mapper.to(fieldName, value).flatMap(getEnumEntryByValue(_enum, _))
+    def resultMapper[ValueType, EntryType <: ValueEnumEntry[ValueType]](
+      _enum: ValueEnum[ValueType, EntryType],
+      mapper: ResultMapper[ValueType]
+    ): ResultMapper[EntryType] =
+      mapper.emap { value =>
+        getEnumEntryByValue(_enum, value)
       }
 
     def keyMapper[EntryType <: ValueEnumEntry[String]](
       _enum: ValueEnum[String, EntryType]
     ): KeyMapper[EntryType] =
-      KeyMapper[String].imap[EntryType](_.value)(getEnumEntryByValue(_enum, _))
+      KeyMapper.string.imap[EntryType](_.value) { name =>
+        getEnumEntryByValue(_enum, name).left.map { ex =>
+          KeyMapperException(key = name, cause = ex)
+        }
+      }
   }
 }
