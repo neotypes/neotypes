@@ -176,4 +176,12 @@ object ParameterMapper {
       override def toQueryParam(optional: Option[T]): QueryParam =
         optional.fold(ifEmpty = QueryParam.NullValue)(mapper.toQueryParam)
     }
+
+  implicit final def tupleParameterMapper[A, B](
+    implicit aMapper: ParameterMapper[A], bMapper: ParameterMapper[B]
+  ): ParameterMapper[(A, B)] =
+    ParameterMapper[List[QueryParam]].contramap {
+      case (a, b) =>
+        aMapper.toQueryParam(a) :: bMapper.toQueryParam(b) :: Nil
+    }
 }

@@ -104,7 +104,7 @@ object mappers extends LowPriorityMappers {
       )
     }
 
-  implicit final def nonEmptyMapParameterMapper[K, V](
+  implicit final def nonEmptyNeoMapParameterMapper[K, V](
     implicit mapper: ParameterMapper[SortedMap[K, V]]
   ): ParameterMapper[NonEmptyMap[K, V]] =
     mapper.contramap(_.toSortedMap)
@@ -119,4 +119,9 @@ private[data] sealed abstract class LowPriorityMappers {
         left = IncoercibleException(message = "NonEmptyMap from an empty Map")
       )
     }
+
+  implicit final def nonEmptyMapParameterMapper[K, V](
+    implicit mapper: ParameterMapper[(K, V)]
+  ): ParameterMapper[NonEmptyMap[K, V]] =
+    ParameterMapper[Iterable[(K, V)]].contramap(_.toSortedMap)
 }
