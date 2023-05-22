@@ -5,7 +5,7 @@ import neotypes.akkastreams.implicits._
 import neotypes.future.FutureTestkit
 
 import akka.actor.ActorSystem
-import akka.stream.scaladsl.{Merge, Sink, Source}
+import akka.stream.scaladsl.{Merge, Source}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -15,9 +15,6 @@ object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestki
     new Behaviour {
       implicit val system =
         ActorSystem(name = "QuickStart")
-
-      override def streamToFList[A](stream: AkkaStream[A]): Future[List[A]] =
-        stream.runWith(Sink.seq[A]).map(_.toList)
 
       override final val streamInstance: Stream.Aux[AkkaStream, Future] =
         implicitly

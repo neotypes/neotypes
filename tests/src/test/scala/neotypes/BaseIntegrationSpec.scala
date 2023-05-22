@@ -84,10 +84,10 @@ trait BaseIntegrationSpec[F[_]] extends BaseAsyncSpec[F] with ForAllTestContaine
   }
 
   protected final def executeAsFuture[A](work: DriverType => F[A]): Future[A] =
-    fToFuture(work(driver))
+    fToFuture(work(self.driver))
 
   protected final def debugMetrics(): F[Unit] =
-    F.map(driver.metrics) { metrics =>
+    F.map(self.driver.metrics) { metrics =>
       println(s"METRICS: ${metrics}")
     }
 }

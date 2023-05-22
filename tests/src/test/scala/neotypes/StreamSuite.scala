@@ -10,7 +10,6 @@ abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])(impl
   final val streamName: String = ctS.runtimeClass.getCanonicalName
 
   trait Behaviour {
-    def streamToFList[A](stream: S[A]): F[List[A]]
     def streamInstance: Stream.Aux[S, F]
     def streamConcurrently(stream1: S[Unit], stream2: S[Unit]): S[Unit]
   }
@@ -27,14 +26,14 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F])
   private final val behaviour: streamTestkit.Behaviour =
     streamTestkit.createBehaviour(this.executionContext)
 
-  protected final def streamToFList[A](stream: S[A]): F[List[A]] =
-    behaviour.streamToFList(stream)
-
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance
 
   protected final def streamConcurrently[A](stream1: S[Unit], stream2: S[Unit]): S[Unit] =
     behaviour.streamConcurrently(stream1, stream2)
+
+  protected final def streamToFList[A](stream: S[A]): F[List[A]] =
+    S.collectAs(stream)(List)
 }
 
 /** Provides an StreamDriver[S, F] instance for Stream tests. */
