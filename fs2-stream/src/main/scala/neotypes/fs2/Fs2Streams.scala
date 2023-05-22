@@ -18,7 +18,7 @@ trait Fs2Streams {
           fs2.interop.flow.fromPublisher(p, chunkSize)
         }
 
-      override final def append[A, B >: A](sa: Stream[F, A], sb: Stream[F, B]): Stream[F, B] =
+      override final def append[A, B >: A](sa: Stream[F, A], sb: => Stream[F, B]): Stream[F, B] =
         sa ++ sb
 
       override final def fromF[A](fa: F[A]): Stream[F, A] =

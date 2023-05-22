@@ -211,7 +211,7 @@ object Transaction {
             F.fromEither(Parser.decodeRecord(record, mapper))
           }
 
-          val summary = S.fromPublisher(result.consume())
+          lazy val summary = S.fromPublisher(result.consume())
 
           records andThen summary
         }

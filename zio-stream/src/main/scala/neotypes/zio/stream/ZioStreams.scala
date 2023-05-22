@@ -18,7 +18,7 @@ trait ZioStreams {
       override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): ZioStream[A] =
         Adapters.publisherToStream(toPublisher(publisher), chunkSize)
 
-      override final def append[A, B >: A](sa: ZioStream[A], sb: ZioStream[B]): ZioStream[B] =
+      override final def append[A, B >: A](sa: ZioStream[A], sb: => ZioStream[B]): ZioStream[B] =
         sa ++ sb
 
       override final def fromF[A](task: Task[A]): ZioStream[A] =

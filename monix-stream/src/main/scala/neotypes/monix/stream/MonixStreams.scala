@@ -20,7 +20,7 @@ trait MonixStreams {
           Observable.fromReactivePublisher(p, chunkSize)
         }
 
-      override final def append[A, B >: A](oa: Observable[A], ob: Observable[B]): Observable[B] =
+      override final def append[A, B >: A](oa: Observable[A], ob: => Observable[B]): Observable[B] =
         oa ++ ob
 
       override final def fromF[A](task: Task[A]): Observable[A] =

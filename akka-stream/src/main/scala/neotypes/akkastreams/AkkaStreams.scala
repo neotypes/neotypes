@@ -37,8 +37,8 @@ trait AkkaStreams {
       override final def fromF[A](future: Future[A]): AkkaStream[A] =
         Source.future(future)
 
-      override final def append[A, B >: A](sa: AkkaStream[A], sb: AkkaStream[B]): AkkaStream[B] =
-        sa ++ sb
+      override final def append[A, B >: A](sa: AkkaStream[A], sb: => AkkaStream[B]): AkkaStream[B] =
+        sa.concatLazy(Source.lazySource(() => sb))
 
       override final def guarantee[A, B](
         r: Future[A]
@@ -64,7 +64,7 @@ trait AkkaStreams {
         sa.collect(pf)
 
       override final def collectAs[A, C](sa: AkkaStream[A])(factory: Factory[A, C]): Future[C] =
-        sa.runWith(Sink.fold(factory.newBuilder)(_ += _)).map(_.result())
+        sa.runWith(Sink.collection(factory.asInstanceOf[Factory[A, C with collection.immutable.Iterable[A]]]))
 
       override final def single[A](sa: AkkaStream[A]): Future[Option[A]] =
         sa.take(1).runWith(Sink.lastOption)
