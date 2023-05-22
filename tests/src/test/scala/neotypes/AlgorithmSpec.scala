@@ -46,7 +46,7 @@ sealed trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
   }
 
   it should "execute the triangle count community detection algorithm" in executeAsFuture { d =>
-    for{
+    for {
       _ <- triangleCountData.execute.void(d)
       _ <- """CALL gds.graph.project(
                 'peopleGraph',
@@ -89,7 +89,7 @@ sealed trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
   }
 
   it should "execute the adamic adar link prediction algorithm" in executeAsFuture { d =>
-    for{
+    for {
       _ <- linkPredictionData.execute.void(d)
       result <- """MATCH (p1: Person { name: 'Michael' })
                    MATCH (p2: Person { name: 'Karin' })
@@ -101,7 +101,7 @@ sealed trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
   }
 
   it should "execute the shortest path algorithm" in executeAsFuture { d =>
-    for{
+    for {
       _ <- shortestPathData.execute.void(d)
       _ <- """CALL gds.graph.project(
                 'locationsGraph',
@@ -133,7 +133,7 @@ sealed trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
   }
 
   it should "execute the Jaccard similarity algorithm" in executeAsFuture { d =>
-    for{
+    for {
       _ <- similarityData.execute.void(d)
       result <- """MATCH (p1: Person { name: 'Karin' })-[: LIKES]->(cuisine1)
                    WITH p1, collect(id(cuisine1)) AS p1Cuisine
@@ -148,8 +148,8 @@ sealed trait BaseAlgorithmSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
 }
 
 object BaseAlgorithmSpec {
-  final case class ScoredPaper(paper:  String, score:  Int)
-  final case class PersonTriangleCount(person:  String, triangleCount:  Int, coefficient:  Int)
+  final case class ScoredPaper(paper: String, score: Int)
+  final case class PersonTriangleCount(person: String, triangleCount: Int, coefficient: Int)
   final case class ShortestPath(nodeNames: List[String], totalCost: Int)
 
   val articleRankingData =
@@ -272,8 +272,10 @@ object BaseAlgorithmSpec {
 
 final class AsyncAlgorithmSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseAlgorithmSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseAlgorithmSpec[F]
 
 final class StreamAlgorithmSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseAlgorithmSpec[F]
+) extends StreamDriverProvider(testkit)
+    with BaseAlgorithmSpec[F]

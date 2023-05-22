@@ -2,10 +2,13 @@ package neotypes.zio
 
 import neotypes.model.exceptions.CancellationException
 
-import zio.{Exit, Task, ZIO}
+import zio.{Exit, Scope, Task, ZIO}
+
 import java.util.concurrent.CompletionStage
 
 trait Zio {
+  private[neotypes] final type ZioResource[A] = ZIO[Scope, Throwable, A]
+
   implicit final val instance: neotypes.Async.Aux[Task, ZioResource] =
     new neotypes.Async[Task] {
       override final type R[A] = ZioResource[A]
@@ -22,11 +25,16 @@ trait Zio {
       override final def fromEither[A](e: => Either[Throwable, A]): Task[A] =
         ZIO.fromEither(e)
 
-      override def guarantee[A, B](task: zio.Task[A])
-                                  (f: A => zio.Task[B])
-                                  (finalizer: (A, Option[Throwable]) => zio.Task[Unit]): Task[B] =
-          ZIO.scoped {
-            ZIO.acquireReleaseExit(task) {
+      override def guarantee[A, B](
+        task: zio.Task[A]
+      )(
+        f: A => zio.Task[B]
+      )(
+        finalizer: (A, Option[Throwable]) => zio.Task[Unit]
+      ): Task[B] =
+        ZIO.scoped {
+          ZIO
+            .acquireReleaseExit(task) {
               case (a, Exit.Failure(cause)) =>
                 cause.failureOrCause match {
                   case Left(ex: Throwable) =>
@@ -41,8 +49,9 @@ trait Zio {
 
               case (a, _) =>
                 finalizer(a, None).orDie
-            }.flatMap(f)
-          }
+            }
+            .flatMap(f)
+        }
 
       override final def map[A, B](task: Task[A])(f: A => B): Task[B] =
         task.map(f)

@@ -24,19 +24,25 @@ trait Fs2Streams {
       override final def fromF[A](fa: F[A]): Stream[F, A] =
         Stream.eval(fa)
 
-      override final def guarantee[A, B](r: F[A])
-                                        (f: A => Stream[F, B])
-                                        (finalizer: (A, Option[Throwable]) => F[Unit]): Stream[F, B] =
-        Stream.bracketCase(acquire = r) {
-          case (a, Resource.ExitCase.Succeeded) =>
-            finalizer(a, None)
+      override final def guarantee[A, B](
+        r: F[A]
+      )(
+        f: A => Stream[F, B]
+      )(
+        finalizer: (A, Option[Throwable]) => F[Unit]
+      ): Stream[F, B] =
+        Stream
+          .bracketCase(acquire = r) {
+            case (a, Resource.ExitCase.Succeeded) =>
+              finalizer(a, None)
 
-          case (a, Resource.ExitCase.Canceled) =>
-            finalizer(a, Some(CancellationException))
+            case (a, Resource.ExitCase.Canceled) =>
+              finalizer(a, Some(CancellationException))
 
-          case (a, Resource.ExitCase.Errored(ex)) =>
-            finalizer(a, Some(ex))
-        }.flatMap(f)
+            case (a, Resource.ExitCase.Errored(ex)) =>
+              finalizer(a, Some(ex))
+          }
+          .flatMap(f)
 
       override final def map[A, B](sa: Stream[F, A])(f: A => B): Stream[F, B] =
         sa.map(f)

@@ -26,14 +26,20 @@ trait MonixStreams {
       override final def fromF[A](task: Task[A]): Observable[A] =
         Observable.fromTask(task)
 
-      override final def guarantee[A, B](r: Task[A])
-                                        (f: A => Observable[B])
-                                        (finalizer: (A, Option[Throwable]) => Task[Unit]): Observable[B] =
-        Observable.resourceCase(acquire = r) {
-          case (a, ExitCase.Completed) => finalizer(a, None)
-          case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
-          case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
-        }.flatMap(f)
+      override final def guarantee[A, B](
+        r: Task[A]
+      )(
+        f: A => Observable[B]
+      )(
+        finalizer: (A, Option[Throwable]) => Task[Unit]
+      ): Observable[B] =
+        Observable
+          .resourceCase(acquire = r) {
+            case (a, ExitCase.Completed) => finalizer(a, None)
+            case (a, ExitCase.Canceled)  => finalizer(a, Some(CancellationException))
+            case (a, ExitCase.Error(ex)) => finalizer(a, Some(ex))
+          }
+          .flatMap(f)
 
       override final def map[A, B](oa: Observable[A])(f: A => B): Observable[B] =
         oa.map(f)

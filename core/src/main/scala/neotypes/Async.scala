@@ -17,9 +17,7 @@ trait Async[F[_]] {
 
   private[neotypes] def fromEither[A](e: => Either[Throwable, A]): F[A]
 
-  private[neotypes] def guarantee[A, B](fa: F[A])
-                                       (f: A => F[B])
-                                       (finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
+  private[neotypes] def guarantee[A, B](fa: F[A])(f: A => F[B])(finalizer: (A, Option[Throwable]) => F[Unit]): F[B]
 
   private[neotypes] def map[A, B](fa: F[A])(f: A => B): F[B]
 
@@ -45,12 +43,16 @@ object Async {
       override final def flatMap[A, B](fa: Future[A])(f: A => Future[B]): Future[B] =
         fa.flatMap(f)
 
-      override final def fromEither[A](e: => Either[Throwable,A]): Future[A] =
+      override final def fromEither[A](e: => Either[Throwable, A]): Future[A] =
         Future.fromTry(e.toTry)
 
-      override final def guarantee[A, B](fa: Future[A])
-                                        (f: A => Future[B])
-                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): Future[B] =
+      override final def guarantee[A, B](
+        fa: Future[A]
+      )(
+        f: A => Future[B]
+      )(
+        finalizer: (A, Option[Throwable]) => Future[Unit]
+      ): Future[B] =
         fa.flatMap { a =>
           f(a).transformWith {
             case Success(b)  => finalizer(a, None).map(_ => b)

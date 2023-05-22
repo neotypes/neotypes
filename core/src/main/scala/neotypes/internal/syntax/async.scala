@@ -16,8 +16,8 @@ private[neotypes] object async {
       F.guarantee(fa)(f)(finalizer)
 
     def guarantee(finalizer: Option[Throwable] => F[Unit])(implicit F: Async[F]): F[A] =
-      F.guarantee(F.delay(()))(_ => fa) {
-        case (_, ex) => finalizer(ex)
+      F.guarantee(F.delay(()))(_ => fa) { case (_, ex) =>
+        finalizer(ex)
       }
 
     def void(implicit F: Async[F]): F[Unit] =

@@ -5,29 +5,42 @@ import model.query.QueryParam
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
-import java.time.{Duration => JDuration, LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, Period => JPeriod, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
+import java.time.{
+  Duration => JDuration,
+  LocalDate => JDate,
+  LocalDateTime => JDateTime,
+  LocalTime => JTime,
+  Period => JPeriod,
+  OffsetTime => JZTime,
+  ZonedDateTime => JZDateTime
+}
 import java.util.UUID
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 
 @annotation.implicitNotFound("Could not find the ParameterMapper for ${A}")
 sealed trait ParameterMapper[A] { self =>
-  /**
-    * Casts a Scala value of type A into a valid Neo4j parameter.
+
+  /** Casts a Scala value of type A into a valid Neo4j parameter.
     *
-    * @param scalaValue The value to cast.
-    * @tparam A The type of the scalaValue.
-    * @return The same value casted as a valid Neo4j parameter.
+    * @param scalaValue
+    *   The value to cast.
+    * @tparam A
+    *   The type of the scalaValue.
+    * @return
+    *   The same value casted as a valid Neo4j parameter.
     */
   def toQueryParam(scalaValue: A): QueryParam
 
-  /**
-    * Creates a new [[ParameterMapper]] by applying a function
-    * to a Scala value of type B before casting it using this mapper.
+  /** Creates a new [[ParameterMapper]] by applying a function to a Scala value of type B before casting it using this
+    * mapper.
     *
-    * @param f The function to apply before the cast.
-    * @tparam B The input type of the supplied function.
-    * @return A new [[ParameterMapper]] for values of type B.
+    * @param f
+    *   The function to apply before the cast.
+    * @tparam B
+    *   The input type of the supplied function.
+    * @return
+    *   A new [[ParameterMapper]] for values of type B.
     */
   final def contramap[B](f: B => A): ParameterMapper[B] = new ParameterMapper[B] {
     override def toQueryParam(scalaValue: B): QueryParam =
@@ -36,55 +49,63 @@ sealed trait ParameterMapper[A] { self =>
 }
 
 object ParameterMapper {
-  /**
-    * Summons an implicit [[ParameterMapper]] already in scope by result type.
+
+  /** Summons an implicit [[ParameterMapper]] already in scope by result type.
     *
-    * @param mapper A [[ParameterMapper]] in scope of the desired type.
-    * @tparam A The input type of the mapper.
-    * @return A [[ParameterMapper]] for the given type currently in implicit scope.
+    * @param mapper
+    *   A [[ParameterMapper]] in scope of the desired type.
+    * @tparam A
+    *   The input type of the mapper.
+    * @return
+    *   A [[ParameterMapper]] for the given type currently in implicit scope.
     */
   def apply[A](implicit mapper: ParameterMapper[A]): ParameterMapper[A] = mapper
 
-  /**
-    * Constructs a [[ParameterMapper]] that always returns a constant value.
+  /** Constructs a [[ParameterMapper]] that always returns a constant value.
     *
-    * @param v The value to always return.
-    * @tparam A The type of the input value.
-    * @return A [[ParameterMapper]] that always returns the supplied value.
+    * @param v
+    *   The value to always return.
+    * @tparam A
+    *   The type of the input value.
+    * @return
+    *   A [[ParameterMapper]] that always returns the supplied value.
     */
   def const[A](v: AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
     override def toQueryParam(scalaValue: A): QueryParam =
       QueryParam.tag[AnyRef](v)
   }
 
-  /**
-    * Constructs a [[ParameterMapper]] from a cast function.
+  /** Constructs a [[ParameterMapper]] from a cast function.
     *
-    * @param f The cast function.
-    * @tparam A The input type of the cast function.
-    * @return a [[ParameterMapper]] that will cast its inputs using the provided function.
+    * @param f
+    *   The cast function.
+    * @tparam A
+    *   The input type of the cast function.
+    * @return
+    *   a [[ParameterMapper]] that will cast its inputs using the provided function.
     */
   private[neotypes] def fromCast[A](f: A => AnyRef): ParameterMapper[A] = new ParameterMapper[A] {
     override def toQueryParam(scalaValue: A): QueryParam =
       QueryParam.tag[AnyRef](f(scalaValue))
   }
 
-  /**
-    * Constructs a [[ParameterMapper]] that works like an identity function.
+  /** Constructs a [[ParameterMapper]] that works like an identity function.
     *
-    * Many values do not require any mapping to be used as parameters.
-    * For those cases, this private helper is useful to reduce boilerplate.
+    * Many values do not require any mapping to be used as parameters. For those cases, this private helper is useful to
+    * reduce boilerplate.
     *
-    * @tparam A The type of the input value (must be a subtype of [[AnyRef]]).
-    * @return A [[ParameterMapper]] that always returns its input unchanged.
+    * @tparam A
+    *   The type of the input value (must be a subtype of [[AnyRef]]).
+    * @return
+    *   A [[ParameterMapper]] that always returns its input unchanged.
     */
   private[neotypes] def identity[A <: AnyRef] = new ParameterMapper[A] {
     override def toQueryParam(scalaValue: A): QueryParam =
       QueryParam.tag[A](scalaValue)
   }
 
-  /** A QueryParam is already encoded so all we need to do is return the same value.
-    * This instance is useful to pass heterogeneous Lists and Maps.
+  /** A QueryParam is already encoded so all we need to do is return the same value. This instance is useful to pass
+    * heterogeneous Lists and Maps.
     */
   implicit final val PassthroughParameterMapper: ParameterMapper[QueryParam] =
     new ParameterMapper[QueryParam] {
@@ -151,23 +172,36 @@ object ParameterMapper {
       col.iterator.map(mapper.toQueryParam).asJava
     }
 
-  implicit final def collectionParameterMapper[T, C[_]](
-    implicit mapper: ParameterMapper[T], ev: C[T] <:< Iterable[T]
+  implicit final def iterableParameterMapper[T, C](implicit
+    ev: C <:< Iterable[T],
+    mapper: ParameterMapper[T]
+  ): ParameterMapper[C] =
+    iterableParameterMapperImpl(mapper).contramap(ev)
+
+  implicit final def collectionParameterMapper[T, C[_]](implicit
+    mapper: ParameterMapper[T],
+    ev: C[T] <:< Iterable[T]
   ): ParameterMapper[C[T]] =
     iterableParameterMapper(mapper).contramap(ev)
 
-  private final def iterableMapParameterMapper[K, V](
-    keyMapper: KeyMapper[K], valueMapper: ParameterMapper[V]
+  private final def iterableMapParameterMapperImpl[K, V](
+    keyMapper: KeyMapper[K],
+    valueMapper: ParameterMapper[V]
   ): ParameterMapper[Iterable[(K, V)]] =
     ParameterMapper.fromCast { col =>
-      col.iterator.map {
-        case (key, v) =>
+      col
+        .iterator
+        .map { case (key, v) =>
           keyMapper.encodeKey(key) -> valueMapper.toQueryParam(v)
-      }.toMap.asJava
+        }
+        .toMap
+        .asJava
     }
 
-  implicit final def mapParameterMapper[K, V, M[_, _]](
-    implicit keyMapper: KeyMapper[K], valueMapper: ParameterMapper[V], ev: M[K, V] <:< Iterable[(K, V)]
+  implicit final def mapParameterMapper[K, V, M[_, _]](implicit
+    ev: M[K, V] <:< Iterable[(K, V)],
+    keyMapper: KeyMapper[K],
+    valueMapper: ParameterMapper[V]
   ): ParameterMapper[M[K, V]] =
     iterableMapParameterMapper(keyMapper, valueMapper).contramap(ev)
 
@@ -177,11 +211,11 @@ object ParameterMapper {
         optional.fold(ifEmpty = QueryParam.NullValue)(mapper.toQueryParam)
     }
 
-  implicit final def tupleParameterMapper[A, B](
-    implicit aMapper: ParameterMapper[A], bMapper: ParameterMapper[B]
+  implicit final def tupleParameterMapper[A, B](implicit
+    aMapper: ParameterMapper[A],
+    bMapper: ParameterMapper[B]
   ): ParameterMapper[(A, B)] =
-    ParameterMapper[List[QueryParam]].contramap {
-      case (a, b) =>
-        aMapper.toQueryParam(a) :: bMapper.toQueryParam(b) :: Nil
+    ParameterMapper[List[QueryParam]].contramap { case (a, b) =>
+      aMapper.toQueryParam(a) :: bMapper.toQueryParam(b) :: Nil
     }
 }

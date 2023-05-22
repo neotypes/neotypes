@@ -10,17 +10,20 @@ import scala.collection.Factory
 import scala.concurrent.{ExecutionContext, Future}
 import scala.util.{Failure, Success}
 
-/**
-  * neotypes Akka Streams
-  * @see <a href = https://neotypes.github.io/neotypes/docs/streams.html#akka-streams-neotypes-akka-stream>AkkaStreams example</a>
+/** neotypes Akka Streams
+  * @see
+  *   <a href = https://neotypes.github.io/neotypes/docs/streams.html#akka-streams-neotypes-akka-stream>AkkaStreams
+  *   example</a>
   */
 trait AkkaStreams {
   import AkkaStreams.GuaranteeStage
 
   /** neotypes support for Akka Streams
     *
-    * @param mat implicit akka.stream.Materializer that will be passed down to all Akka Streams operations
-    * @return [[neotypes.Stream]] for [[AkkaStream]] using [[Future]].
+    * @param mat
+    *   implicit akka.stream.Materializer that will be passed down to all Akka Streams operations
+    * @return
+    *   [[neotypes.Stream]] for [[AkkaStream]] using [[Future]].
     */
   implicit final def akkaStream(implicit mat: Materializer): neotypes.Stream.Aux[AkkaStream, Future] =
     new neotypes.Stream[AkkaStream] {
@@ -37,12 +40,16 @@ trait AkkaStreams {
       override final def append[A, B >: A](sa: AkkaStream[A], sb: AkkaStream[B]): AkkaStream[B] =
         sa ++ sb
 
-      override final def guarantee[A, B](r: Future[A])
-                                        (f: A => AkkaStream[B])
-                                        (finalizer: (A, Option[Throwable]) => Future[Unit]): AkkaStream[B] =
-        Source.lazySource(
-          () => Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f)
-        ).mapMaterializedValue(_ => NotUsed)
+      override final def guarantee[A, B](
+        r: Future[A]
+      )(
+        f: A => AkkaStream[B]
+      )(
+        finalizer: (A, Option[Throwable]) => Future[Unit]
+      ): AkkaStream[B] =
+        Source
+          .lazySource(() => Source.fromGraph(new GuaranteeStage(r, finalizer)).flatMapConcat(f))
+          .mapMaterializedValue(_ => NotUsed)
 
       override final def map[A, B](sa: AkkaStream[A])(f: A => B): AkkaStream[B] =
         sa.map(f)
@@ -68,8 +75,12 @@ trait AkkaStreams {
 }
 
 object AkkaStreams {
-  private final class GuaranteeStage[A](factory: Future[A], finalizer: (A, Option[Throwable]) => Future[Unit])
-                                      (implicit ec: ExecutionContext) extends GraphStage[SourceShape[A]] {
+  private final class GuaranteeStage[A](
+    factory: Future[A],
+    finalizer: (A, Option[Throwable]) => Future[Unit]
+  )(implicit
+    ec: ExecutionContext
+  ) extends GraphStage[SourceShape[A]] {
     val out: Outlet[A] = Outlet("NeotypesGuaranteeSource")
     override val shape: SourceShape[A] = SourceShape(out)
 
@@ -77,36 +88,39 @@ object AkkaStreams {
       private var alreadyCreated = false
       private var resource: A = _
 
-      setHandler(out, new OutHandler {
-        override def onPull(): Unit = {
-          val failureCallback = getAsyncCallback[Throwable](t => fail(out, t))
+      setHandler(
+        out,
+        new OutHandler {
+          override def onPull(): Unit = {
+            val failureCallback = getAsyncCallback[Throwable](t => fail(out, t))
 
-          if (!alreadyCreated) {
-            val successCallback = getAsyncCallback[A] { a =>
-              alreadyCreated = true
-              resource = a
-              push(out, a)
-            }
+            if (!alreadyCreated) {
+              val successCallback = getAsyncCallback[A] { a =>
+                alreadyCreated = true
+                resource = a
+                push(out, a)
+              }
 
-            factory.onComplete {
-              case Success(v) => successCallback.invoke(v)
-              case Failure(e) => failureCallback.invoke(e)
-            }
-          } else {
-            val successCallback = getAsyncCallback[Unit](_ => complete(out))
+              factory.onComplete {
+                case Success(v) => successCallback.invoke(v)
+                case Failure(e) => failureCallback.invoke(e)
+              }
+            } else {
+              val successCallback = getAsyncCallback[Unit](_ => complete(out))
 
-            finalizer(resource, None).onComplete {
-              case Success(v) => successCallback.invoke(v)
-              case Failure(e) => failureCallback.invoke(e)
+              finalizer(resource, None).onComplete {
+                case Success(v) => successCallback.invoke(v)
+                case Failure(e) => failureCallback.invoke(e)
+              }
             }
           }
-        }
 
-        override def onDownstreamFinish(cause: Throwable): Unit = {
-          val callback = getAsyncCallback[Unit](_ => complete(out))
-          finalizer(resource, Option(cause)).foreach(callback.invoke)
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            val callback = getAsyncCallback[Unit](_ => complete(out))
+            finalizer(resource, Option(cause)).foreach(callback.invoke)
+          }
         }
-      })
+      )
     }
   }
 }

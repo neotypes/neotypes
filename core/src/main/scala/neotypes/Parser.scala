@@ -7,7 +7,13 @@ import model.exceptions.{ResultMapperException, IncoercibleException}
 import model.types._
 
 import org.neo4j.driver.{Record => NeoRecord, Value => NeoValue}
-import org.neo4j.driver.types.{MapAccessor => NeoEntity, Node => NeoNode, Path => NeoPath, Relationship => NeoRelationship, TypeSystem}
+import org.neo4j.driver.types.{
+  MapAccessor => NeoEntity,
+  Node => NeoNode,
+  Path => NeoPath,
+  Relationship => NeoRelationship,
+  TypeSystem
+}
 
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
@@ -35,7 +41,13 @@ object Parser {
     else if (value.hasType(Types.MAP))
       parseNeoMap(entity = value)
     else if (value.hasType(Types.LIST))
-      traverseAs(List.iterableFactory[NeoType])(value.values.asScala)(parseNeoType).map(NeoList.apply)
+      traverseAs(
+        List.iterableFactory[NeoType]
+      )(
+        value.values.asScala
+      )(
+        parseNeoType
+      ).map(NeoList.apply)
     else
       parseNeoValue(value)
 
@@ -69,12 +81,20 @@ object Parser {
       else if (value.hasType(Types.NULL))
         Right(Value.NullValue)
       else
-        Left(IncoercibleException(
-          message = s"Unknown type '${value.`type`}' for value: ${value}"
-        ))
+        Left(
+          IncoercibleException(
+            message = s"Unknown type '${value.`type`}' for value: ${value}"
+          )
+        )
 
     if (value.hasType(Types.LIST))
-      traverseAs(List.iterableFactory[Value.SimpleValue])(value.values.asScala)(parseSimpleValue).map(Value.ListValue.apply)
+      traverseAs(
+        List.iterableFactory[Value.SimpleValue]
+      )(
+        value.values.asScala
+      )(
+        parseSimpleValue
+      ).map(Value.ListValue.apply)
     else
       parseSimpleValue(value)
   }
@@ -82,7 +102,7 @@ object Parser {
   /** Attempts to parse the properties of a [[NeoEntity]]. */
   private def parseProperties[V <: NeoType](
     entity: NeoEntity
-  ) (
+  )(
     parseValue: NeoValue => Either[ResultMapperException, V]
   ): Either[ResultMapperException, Map[String, V]] =
     traverseAs(Map.mapFactory[String, V])(entity.keys.asScala) { key =>

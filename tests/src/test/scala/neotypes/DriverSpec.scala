@@ -9,7 +9,13 @@ import neotypes.syntax.all._
 import org.neo4j.driver.summary.ResultSummary
 
 import java.util.UUID
-import java.time.{LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
+import java.time.{
+  LocalDate => JDate,
+  LocalDateTime => JDateTime,
+  LocalTime => JTime,
+  OffsetTime => JZTime,
+  ZonedDateTime => JZDateTime
+}
 import scala.collection.immutable.{ArraySeq, BitSet, SortedMap}
 
 /** Base class for testing the basic behaviour of running queries. */
@@ -42,8 +48,8 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
       s shouldBe 3.toShort
       bit shouldBe 3.toByte
       l shouldBe 3L
-      f shouldBe 3.0F
-      d shouldBe 3.0D
+      f shouldBe 3.0f
+      d shouldBe 3.0d
       bi shouldBe BigInt("3")
       bd shouldBe BigDecimal("3.0")
       b shouldBe true
@@ -83,9 +89,15 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
 
   it should "support querying structural types" in executeAsFuture { driver =>
     for {
-      n <- "CREATE (n: Node { data: 0 }) RETURN n".query(node).single(driver)
-      r <- "CREATE ()-[r: RELATIONSHIP { data: 1 }]->() RETURN r".query(relationship).single(driver)
-      p <- "CREATE p=(: Node { data: 3 })-[r: RELATIONSHIP { data: 5 }]->(: Node { data: 10 }) RETURN p".query(path).single(driver)
+      n <- "CREATE (n: Node { data: 0 }) RETURN n"
+        .query(node)
+        .single(driver)
+      r <- "CREATE ()-[r: RELATIONSHIP { data: 1 }]->() RETURN r"
+        .query(relationship)
+        .single(driver)
+      p <- "CREATE p=(: Node { data: 3 })-[: RELATIONSHIP { data: 5 }]->(: Node { data: 10 }) RETURN p"
+        .query(path)
+        .single(driver)
     } yield {
       assert(n.hasLabel("node"))
       n.properties should contain theSameElementsAs Map("data" -> Value.Integer(0))
@@ -93,16 +105,15 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
       assert(r.hasType("relationship"))
       r.properties should contain theSameElementsAs Map("data" -> Value.Integer(1))
 
-      inside(p.segments.loneElement) {
-        case Path.Segment(start, relationship, end) =>
-          assert(start.hasLabel("node"))
-          start.properties should contain theSameElementsAs Map("data" -> Value.Integer(3))
+      inside(p.segments.loneElement) { case Path.Segment(start, relationship, end) =>
+        assert(start.hasLabel("node"))
+        start.properties should contain theSameElementsAs Map("data" -> Value.Integer(3))
 
-          assert(relationship.hasType("relationship"))
-          relationship.properties should contain theSameElementsAs Map("data" -> Value.Integer(5))
+        assert(relationship.hasType("relationship"))
+        relationship.properties should contain theSameElementsAs Map("data" -> Value.Integer(5))
 
-          assert(end.hasLabel("node"))
-          end.properties should contain theSameElementsAs Map("data" -> Value.Integer(10))
+        assert(end.hasLabel("node"))
+        end.properties should contain theSameElementsAs Map("data" -> Value.Integer(10))
       }
     }
   }
@@ -112,7 +123,7 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
       r <- "CREATE (: Node { id: 1})".execute.void(driver)
       id <- "MATCH (n: Node) RETURN n.id".query(int).single(driver)
     } yield {
-      r shouldBe a [Unit]
+      r shouldBe a[Unit]
       id shouldBe 1
     }
   }
@@ -123,7 +134,7 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
       rs <- query.execute.resultSummary(driver)
       id <- "MATCH (n: Node) RETURN n.id".query(int).single(driver)
     } yield {
-      rs shouldBe a [ResultSummary]
+      rs shouldBe a[ResultSummary]
       rs.counters.nodesCreated shouldBe 1
       rs.query.text shouldBe query
       id shouldBe 1
@@ -245,7 +256,6 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  val singleTupleRecordQuery =
   it should "support querying a Neo4j key-value list as Scala map" in executeAsFuture { driver =>
     val mapper = map(int, string)
 
@@ -274,7 +284,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined case classes whose fields are supported types (manual mapper)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined case classes whose fields are supported types (manual mapper)"
+  ) in executeAsFuture { driver =>
     val expectedUser = User(name = "Luis", age = 25)
     val mapper = neoObject.emap { obj =>
       for {
@@ -290,7 +302,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined case classes whose fields are supported types (product named)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined case classes whose fields are supported types (product named)"
+  ) in executeAsFuture { driver =>
     val expectedUser = User(name = "Luis", age = 25)
     val mapper = productNamed(
       "name" -> string,
@@ -304,7 +318,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined case classes whose fields are supported types (product unnamed)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined case classes whose fields are supported types (product unnamed)"
+  ) in executeAsFuture { driver =>
     val expectedUser = User(name = "Luis", age = 25)
     val mapper = product(
       string,
@@ -318,7 +334,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined case classes whose fields are supported types (fromFunction named)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined case classes whose fields are supported types (fromFunction named)"
+  ) in executeAsFuture { driver =>
     val expectedUser = User(name = "Luis", age = 25)
     val mapper = fromFunctionNamed("name", "age")(User.apply)
 
@@ -329,7 +347,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined case classes whose fields are supported types (fromFunction unnamed)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined case classes whose fields are supported types (fromFunction unnamed)"
+  ) in executeAsFuture { driver =>
     val expectedUser = User(name = "Luis", age = 25)
     val mapper = fromFunction(User.apply _)
 
@@ -340,7 +360,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined case classes whose fields are supported types (derivation)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined case classes whose fields are supported types (derivation)"
+  ) in executeAsFuture { driver =>
     val expectedUser = User(name = "Luis", age = 25)
     val mapper = productDerive[User]
 
@@ -351,7 +373,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined ADTs conformed of supported types (manual mapper)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined ADTs conformed of supported types (manual mapper)"
+  ) in executeAsFuture { driver =>
     val mapper = node.flatMap { node =>
       if (node.hasLabel("error")) Problem.Error.resultMapper.widen[Problem]
       else if (node.hasLabel("warning")) Problem.Warning.resultMapper.widen[Problem]
@@ -366,7 +390,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined ADTs conformed of supported types (coproduct factory)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined ADTs conformed of supported types (coproduct factory)"
+  ) in executeAsFuture { driver =>
     val mapper = coproduct(strategy = CoproductDiscriminatorStrategy.RelationshipType)(
       "error" -> Problem.Error.resultMapper,
       "warning" -> Problem.Warning.resultMapper,
@@ -380,7 +406,9 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying user defined ADTs conformed of supported types (derivation)" in executeAsFuture { driver =>
+  it should (
+    "support querying user defined ADTs conformed of supported types (derivation)"
+  ) in executeAsFuture { driver =>
     val mapper = coproductDerive[Problem]
 
     for {
@@ -405,9 +433,10 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
 
   it should "support application of custom validations / transformations to fields" in {
     val idMapper = int.emap { i =>
-      Id.from(i).toRight(
-        left = IncoercibleException(s"${i} is not a valid ID because is negative")
-      )
+      Id.from(i)
+        .toRight(
+          left = IncoercibleException(s"${i} is not a valid ID because is negative")
+        )
     }
 
     val recordMapper = productNamed(
@@ -439,9 +468,8 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
       "id" -> int,
       "dataStr" -> string,
       "dataInt" -> int
-    ) {
-      case (id, dataStr, dataInt) =>
-        Combined(id, data = (dataStr, dataInt))
+    ) { case (id, dataStr, dataInt) =>
+      Combined(id, data = (dataStr, dataInt))
     }
 
     for {
@@ -455,9 +483,8 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     val mapper = productNamed(
       "id" -> int,
       "data" -> tuple(string, int)
-    ) {
-      case (id, (dataStr, dataInt)) =>
-        Divided(id, dataStr, dataInt)
+    ) { case (id, (dataStr, dataInt)) =>
+      Divided(id, dataStr, dataInt)
     }
 
     for {
@@ -471,9 +498,8 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     val mapper = productNamed(
       "id" -> int,
       "data" -> option[String]
-    ) {
-      case (id, opt) =>
-        Optional(id, opt1 = opt)
+    ) { case (id, opt) =>
+      Optional(id, opt1 = opt)
     }
 
     for {
@@ -487,11 +513,11 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     val mapper = combine(
       productNamed(
         "a" -> int,
-        "b" -> string,
+        "b" -> string
       )(Foo.apply),
       productNamed(
         "c" -> int,
-        "d" -> string,
+        "d" -> string
       )(Bar.apply)
     )(Nested.apply)
 
@@ -514,11 +540,10 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
   it should "support querying and getting the result summary at the same time" in executeAsFuture { driver =>
     val query = "RETURN 3"
 
-    query.query(int).withResultSummary.single(driver).map {
-      case (i, rs) =>
-        i shouldBe 3
-        rs shouldBe a [ResultSummary]
-        rs.query.text shouldBe query
+    query.query(int).withResultSummary.single(driver).map { case (i, rs) =>
+      i shouldBe 3
+      rs shouldBe a[ResultSummary]
+      rs.query.text shouldBe query
     }
   }
 
@@ -569,11 +594,10 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     for {
       r <- "RETURN [1, 'balmung', true]".query(mapper).single(driver)
     } yield {
-      inside(r) {
-        case Value.Integer(i) :: Value.Str(s) :: Value.Bool(b) :: Nil =>
-          i shouldBe 1
-          s shouldBe "balmung"
-          b shouldBe true
+      inside(r) { case Value.Integer(i) :: Value.Str(s) :: Value.Bool(b) :: Nil =>
+        i shouldBe 1
+        s shouldBe "balmung"
+        b shouldBe true
       }
     }
   }
@@ -584,19 +608,16 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     for {
       r <- "RETURN { foo: 1, bar: 'balmung', baz: true }".query(mapper).single(driver)
     } yield {
-      inside(r.get(key = "foo")) {
-        case Value.Integer(i) =>
-          i shouldBe 1
+      inside(r.get(key = "foo")) { case Value.Integer(i) =>
+        i shouldBe 1
       }
 
-      inside(r.get(key = "bar")) {
-        case Value.Str(s) =>
-          s shouldBe "balmung"
+      inside(r.get(key = "bar")) { case Value.Str(s) =>
+        s shouldBe "balmung"
       }
 
-      inside(r.get(key = "baz")) {
-        case Value.Bool(b) =>
-          b shouldBe true
+      inside(r.get(key = "baz")) { case Value.Bool(b) =>
+        b shouldBe true
       }
     }
   }
@@ -659,9 +680,7 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
   it should "support catch exceptions during a query" in {
     recoverToSucceededIf[MissingRecordException] {
       executeAsFuture { driver =>
-        "bad query"
-          .execute
-          .void(driver)
+        "bad query".execute.void(driver)
       }
     }
   }
@@ -740,7 +759,7 @@ object BaseDriverSpec {
     def from(name: String): Option[CustomKey] = name.toUpperCase match {
       case "FOO" => Some(Foo)
       case "BAR" => Some(Bar)
-      case _ => None
+      case _     => None
     }
 
     implicit val ordering: Ordering[CustomKey] =
@@ -748,14 +767,16 @@ object BaseDriverSpec {
 
     implicit val keyMapper =
       KeyMapper.string.imap[CustomKey](_.name) { name =>
-        CustomKey.from(name).toRight(
-          left = KeyMapperException(
-            key = name,
-            cause = IncoercibleException(
-              message = s"${name} is not a valid CustomKey"
+        CustomKey
+          .from(name)
+          .toRight(
+            left = KeyMapperException(
+              key = name,
+              cause = IncoercibleException(
+                message = s"${name} is not a valid CustomKey"
+              )
             )
           )
-        )
       }
   }
 
@@ -764,11 +785,13 @@ object BaseDriverSpec {
 
 final class AsyncDriverSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseDriverSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseDriverSpec[F]
 
 final class StreamDriverSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseDriverSpec[F] {
+) extends StreamDriverProvider(testkit)
+    with BaseDriverSpec[F] {
   it should "support stream the records" in {
     executeAsFutureList { driver =>
       "UNWIND [1, 2, 3] AS x RETURN x".query(ResultMapper.int).stream(driver)

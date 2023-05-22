@@ -6,8 +6,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete Stream type. */
-abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])
-                                        (implicit ctS: ClassTag[S[_]]) {
+abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])(implicit ctS: ClassTag[S[_]]) {
   final val streamName: String = ctS.runtimeClass.getCanonicalName
 
   trait Behaviour {
@@ -20,7 +19,8 @@ abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])
 }
 
 /** Base class for writing Stream specs. */
-abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) extends BaseAsyncSpec[F](streamTestkit.asyncTestkit) {
+abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F])
+    extends BaseAsyncSpec[F](streamTestkit.asyncTestkit) {
   protected final val streamName: String =
     streamTestkit.streamName
 
@@ -38,7 +38,9 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F]) ex
 }
 
 /** Provides an StreamDriver[S, F] instance for Stream tests. */
-abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec[S, F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
+abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
+    extends BaseStreamSpec[S, F](testkit)
+    with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
   override protected final type DriverType = StreamDriver[S, F]
   override protected final type TransactionType = StreamTransaction[S, F]
 
@@ -59,15 +61,16 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F]) ex
 }
 
 /** Group all the Stream specs into one big suite, which can be called for each Stream type. */
-abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F]) extends Suites(
-  new StreamGuaranteeSpec(testkit),
-  new StreamDriverSpec(testkit),
-  new StreamTransactionSpec(testkit),
-  new StreamDriverTransactSpec(testkit),
-  new StreamDriverConcurrentUsageSpec(testkit),
-  new StreamParameterSpec(testkit),
-  new StreamAlgorithmSpec(testkit),
-  new cats.data.StreamCatsDataSpec(testkit),
-  new enumeratum.StreamEnumeratumSpec(testkit),
-  new refined.StreamRefinedSpec(testkit)
-)
+abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F])
+    extends Suites(
+      new StreamGuaranteeSpec(testkit),
+      new StreamDriverSpec(testkit),
+      new StreamTransactionSpec(testkit),
+      new StreamDriverTransactSpec(testkit),
+      new StreamDriverConcurrentUsageSpec(testkit),
+      new StreamParameterSpec(testkit),
+      new StreamAlgorithmSpec(testkit),
+      new cats.data.StreamCatsDataSpec(testkit),
+      new enumeratum.StreamEnumeratumSpec(testkit),
+      new refined.StreamRefinedSpec(testkit)
+    )

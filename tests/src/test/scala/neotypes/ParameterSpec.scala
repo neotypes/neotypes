@@ -8,7 +8,7 @@ import org.neo4j.driver.types.{IsoDuration, Point}
 
 import java.time.{Duration, LocalDate, LocalDateTime, LocalTime, Period, OffsetTime, ZonedDateTime}
 import java.util.UUID
-import scala.collection.immutable.{ArraySeq, SortedMap, SortedSet}
+import scala.collection.immutable.{ArraySeq, BitSet, SortedMap}
 
 /** Base class for testing the mapping of inserted parameters. */
 sealed trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: DriverProvider[F] =>
@@ -23,7 +23,7 @@ sealed trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
     val list: List[Int] = List(5, 10)
     val vector: Vector[Int] = Vector(333)
     val set: Set[Int] = Set(100)
-    val sortedSet: SortedSet[Int] = SortedSet(200, 404)
+    val bitSet: BitSet = BitSet(200, 404)
     val localDate: LocalDate = LocalDate.now()
     val localDateTime: LocalDateTime = LocalDateTime.now()
     val localTime: LocalTime = LocalTime.now()
@@ -33,7 +33,7 @@ sealed trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
     val period: Period = Period.of(0, 3, 0)
     val uuid: UUID = UUID.randomUUID()
     val isoDuration: IsoDuration = Values.isoDuration(1, 2, 3, 4).asIsoDuration()
-    val point: Point = Values.point(7203, 3.5D, 5.3D).asPoint() // 7203 = Cartesian code.
+    val point: Point = Values.point(7203, 3.5d, 5.3d).asPoint() // 7203 = Cartesian code.
 
     for {
       _ <- c"""CREATE (d: Data {
@@ -45,7 +45,7 @@ sealed trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
                  list: ${list},
                  vector: ${vector},
                  set: ${set},
-                 sortedSet: ${sortedSet},
+                 bitSet: ${bitSet},
                  localDate: ${localDate},
                  localDateTime: ${localDateTime},
                  localTime: ${localTime},
@@ -67,7 +67,7 @@ sealed trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
       node.getAs(key = "list", mapper = ResultMapper.list(ResultMapper.int)).value shouldBe list
       node.getAs(key = "vector", mapper = ResultMapper.vector(ResultMapper.int)).value shouldBe vector
       node.getAs(key = "set", mapper = ResultMapper.set(ResultMapper.int)).value shouldBe set
-      node.getAs(key = "sortedSet", mapper = ResultMapper.collectAs(SortedSet.evidenceIterableFactory[Int], ResultMapper.int)).value shouldBe sortedSet
+      node.getAs(key = "bitSet", mapper = ResultMapper.collectAs(BitSet, ResultMapper.int)).value shouldBe bitSet
       node.getAs(key = "localDate", mapper = ResultMapper.javaLocalDate).value shouldBe localDate
       node.getAs(key = "localDateTime", mapper = ResultMapper.javaLocalDateTime).value shouldBe localDateTime
       node.getAs(key = "localTime", mapper = ResultMapper.javaLocalTime).value shouldBe localTime
@@ -96,8 +96,10 @@ sealed trait BaseParameterSpec[F[_]] extends CleaningIntegrationSpec[F] { self: 
 
 final class AsyncParameterSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseParameterSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseParameterSpec[F]
 
 final class StreamParameterSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseParameterSpec[F]
+) extends StreamDriverProvider(testkit)
+    with BaseParameterSpec[F]

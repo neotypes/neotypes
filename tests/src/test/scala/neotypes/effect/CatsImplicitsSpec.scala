@@ -11,13 +11,13 @@ import neotypes.mappers.ResultMapper
 /** Ensures the neotypes implicits does not collide with the cats ones. */
 final class CatsImplicitsSpec extends AsyncDriverProvider(IOTestkit) with BaseIntegrationSpec[IO] { self =>
   it should "work with cats implicits and neotypes implicits" in {
-    def test1[F[_] : Applicative]: F[Unit] = Applicative[F].unit
-    def test2[F[_] : Monad]: F[Unit] = ().pure[F]
+    def test1[F[_]: Applicative]: F[Unit] = Applicative[F].unit
+    def test2[F[_]: Monad]: F[Unit] = ().pure[F]
 
-    def makeDriver[F[_] : Async]: Resource[F, AsyncDriver[F]] =
+    def makeDriver[F[_]: Async]: Resource[F, AsyncDriver[F]] =
       Resource.make(Async[F].delay(Driver.async[F](this.neoDriver)))(_.close)
 
-    def useDriver[F[_] : Async]: F[String] = makeDriver[F].use { d =>
+    def useDriver[F[_]: Async]: F[String] = makeDriver[F].use { d =>
       (test1[F] *> test2[F]).flatMap { _ =>
         "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
           .query(ResultMapper.string)

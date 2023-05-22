@@ -39,18 +39,20 @@ trait BaseIntegrationSpec[F[_]] extends BaseAsyncSpec[F] with ForAllTestContaine
 
   private def imagePullPolicy: ImagePullPolicy =
     util.Properties.envOrNone(name = "CI") match {
-      case Some("true") => PullPolicy.ageBased(1.day.toJava)
-      case _ => PullPolicy.defaultPolicy
+      case Some("true") =>
+        PullPolicy.ageBased(1.day.toJava)
+
+      case _ =>
+        PullPolicy.defaultPolicy
     }
 
   protected lazy final val neoDriver =
-    neo4j.GraphDatabase.driver(
-      container.boltUrl,
-      neo4j.Config.builder
-        .withLogging(neo4j.Logging.slf4j)
-        .withDriverMetrics
-        .build()
-    )
+    neo4j
+      .GraphDatabase
+      .driver(
+        container.boltUrl,
+        neo4j.Config.builder.withLogging(neo4j.Logging.slf4j).withDriverMetrics.build()
+      )
 
   private final def runQuery(query: String): Unit = {
     val s = neoDriver.session

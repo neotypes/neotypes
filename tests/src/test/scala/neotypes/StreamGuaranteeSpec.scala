@@ -12,7 +12,7 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
   import StreamGuaranteeSpec._
 
   final class StreamGuaranteeFixture {
-     var counter = 0
+    var counter = 0
 
     def assertFinalizerWasCalledOnlyOnce: Assertion = {
       withClue("Finalizer was not called -") {
@@ -34,19 +34,21 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
       inputEx: Option[Throwable] = None,
       finalizerEx: Option[Throwable] = None
     ): Future[List[T]] = {
-      fToFuture(streamToFList(
-        S.guarantee(
-          r = F.fromEither(inputEx.toLeft(right = ()))
-        ) (
-          _ => S.fromF(F.fromEither(result))
-        ) { (_, _) =>
-          F.delay {
-            counter += 1
-          } flatMap { _ =>
-            F.fromEither(finalizerEx.toLeft(right = ()))
+      fToFuture(
+        streamToFList(
+          S.guarantee(
+            r = F.fromEither(inputEx.toLeft(right = ()))
+          )(
+            f = _ => S.fromF(F.fromEither(result))
+          ) { (_, _) =>
+            F.delay {
+              counter += 1
+            } flatMap { _ =>
+              F.fromEither(finalizerEx.toLeft(right = ()))
+            }
           }
-        }
-      ))
+        )
+      )
     }
   }
 
@@ -94,7 +96,7 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
   it should "execute finalizer and return finalizer exception when finalizer fails" in {
     val fixture = new StreamGuaranteeFixture
 
-    recoverToSucceededIf[FinalizerException]{
+    recoverToSucceededIf[FinalizerException] {
       fixture.runStream(result = Right("result"), finalizerEx = Some(FinalizerException))
     } map { _ =>
       fixture.assertFinalizerWasCalledOnlyOnce
@@ -105,7 +107,11 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
     val fixture = new StreamGuaranteeFixture
 
     recoverToSucceededIf[InputException] {
-      fixture.runStream(inputEx = Some(InputException), result = Right("result"), finalizerEx = Some(FinalizerException))
+      fixture.runStream(
+        inputEx = Some(InputException),
+        result = Right("result"),
+        finalizerEx = Some(FinalizerException)
+      )
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }
@@ -125,7 +131,11 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
     val fixture = new StreamGuaranteeFixture
 
     recoverToSucceededIf[InputException] {
-      fixture.runStream(inputEx = Some(InputException), result = Left(UseException), finalizerEx = Some(FinalizerException))
+      fixture.runStream(
+        inputEx = Some(InputException),
+        result = Left(UseException),
+        finalizerEx = Some(FinalizerException)
+      )
     } map { _ =>
       fixture.assertFinalizerWasNotCalled
     }

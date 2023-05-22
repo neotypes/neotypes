@@ -18,31 +18,37 @@ trait ZioStreams {
       override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): ZioStream[A] =
         Adapters.publisherToStream(toPublisher(publisher), chunkSize)
 
-       override final def append[A, B >: A](sa: ZioStream[A], sb: ZioStream[B]): ZioStream[B] =
+      override final def append[A, B >: A](sa: ZioStream[A], sb: ZioStream[B]): ZioStream[B] =
         sa ++ sb
 
       override final def fromF[A](task: Task[A]): ZioStream[A] =
         ZStream.fromZIO(task)
 
-      override final def guarantee[A, B](r: Task[A])
-                                        (f: A => ZioStream[B])
-                                        (finalizer: (A, Option[Throwable]) => Task[Unit]): ZioStream[B] =
-        ZStream.acquireReleaseExitWith(r) {
-          case (a, Exit.Failure(cause)) =>
-            cause.failureOrCause match {
-              case Left(ex: Throwable) =>
-                finalizer(a, Some(ex)).orDie
+      override final def guarantee[A, B](
+        r: Task[A]
+      )(
+        f: A => ZioStream[B]
+      )(
+        finalizer: (A, Option[Throwable]) => Task[Unit]
+      ): ZioStream[B] =
+        ZStream
+          .acquireReleaseExitWith(r) {
+            case (a, Exit.Failure(cause)) =>
+              cause.failureOrCause match {
+                case Left(ex: Throwable) =>
+                  finalizer(a, Some(ex)).orDie
 
-              case Right(c) if c.isInterruptedOnly =>
-                finalizer(a, Some(CancellationException)).orDie
+                case Right(c) if c.isInterruptedOnly =>
+                  finalizer(a, Some(CancellationException)).orDie
 
-              case _ =>
-                finalizer(a, None).orDie
-            }
+                case _ =>
+                  finalizer(a, None).orDie
+              }
 
-          case (a, _) =>
-            finalizer(a, None).orDie
-        }.flatMap(f)
+            case (a, _) =>
+              finalizer(a, None).orDie
+          }
+          .flatMap(f)
 
       override final def map[A, B](sa: ZioStream[A])(f: A => B): ZioStream[B] =
         sa.map(f)

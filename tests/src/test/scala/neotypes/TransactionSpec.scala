@@ -16,7 +16,7 @@ sealed trait BaseTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] { self
       _ <- "CREATE (p: PERSON { name: 'Dmitry' })".execute.void(tx)
       _ <- tx.commit
       people <- "MATCH (p: PERSON) RETURN p.name".query(ResultMapper.string).set(driver)
-    } yield  {
+    } yield {
       people should contain theSameElementsAs Set("Luis", "Dmitry")
     }
   }
@@ -36,17 +36,19 @@ sealed trait BaseTransactionSpec[F[_]] extends CleaningIntegrationSpec[F] { self
 
 final class AsyncTransactionSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseTransactionSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseTransactionSpec[F]
 
 final class StreamTransactionSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseTransactionSpec[F] {
+) extends StreamDriverProvider(testkit)
+    with BaseTransactionSpec[F] {
   it should "support stream the records" in {
     executeAsFutureList { driver =>
       driver.streamTransaction.flatMapS { tx =>
         "UNWIND [1, 2, 3] AS x RETURN x".query(ResultMapper.int).stream(tx) andThen S.fromF(tx.commit)
-      } collect {
-        case Left(i) => i
+      } collect { case Left(i) =>
+        i
       }
     } map { ints =>
       ints shouldBe List(1, 2, 3)

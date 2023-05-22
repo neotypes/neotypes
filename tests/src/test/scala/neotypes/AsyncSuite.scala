@@ -41,7 +41,9 @@ abstract class BaseAsyncSpec[F[_]](effectTestkit: AsyncTestkit[F]) extends BaseA
 }
 
 /** Provides an Driver[F] instance for Async tests. */
-abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F]) extends BaseAsyncSpec[F](testkit) with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
+abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F])
+    extends BaseAsyncSpec[F](testkit)
+    with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
   override protected final type DriverType = AsyncDriver[F]
   override protected final type TransactionType = AsyncTransaction[F]
 
@@ -59,15 +61,16 @@ abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F]) extends BaseA
 }
 
 /** Group all the Async specs into one big suite, which can be called for each Async type. */
-abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F]) extends Suites(
-  new AsyncGuaranteeSpec(testkit),
-  new AsyncDriverSpec(testkit),
-  new AsyncTransactionSpec(testkit),
-  new AsyncDriverTransactSpec(testkit),
-  new AsyncDriverConcurrentUsageSpec(testkit),
-  new AsyncParameterSpec(testkit),
-  new AsyncAlgorithmSpec(testkit),
-  new cats.data.AsyncCatsDataSpec(testkit),
-  new enumeratum.AsyncEnumeratumSpec(testkit),
-  new refined.AsyncRefinedSpec(testkit)
-)
+abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F])
+    extends Suites(
+      new AsyncGuaranteeSpec(testkit),
+      new AsyncDriverSpec(testkit),
+      new AsyncTransactionSpec(testkit),
+      new AsyncDriverTransactSpec(testkit),
+      new AsyncDriverConcurrentUsageSpec(testkit),
+      new AsyncParameterSpec(testkit),
+      new AsyncAlgorithmSpec(testkit),
+      new cats.data.AsyncCatsDataSpec(testkit),
+      new enumeratum.AsyncEnumeratumSpec(testkit),
+      new refined.AsyncRefinedSpec(testkit)
+    )

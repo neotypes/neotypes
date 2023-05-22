@@ -19,7 +19,9 @@ sealed trait BaseEnumeratumSpec[F[_]] extends CleaningIntegrationSpec[F] { self:
       executeAsFuture { driver =>
         for {
           _ <- c"CREATE (: Data { name: ${enumValue.entryName}, value: ${enumValue} })".execute.void(driver)
-          r <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value".query(SimpleEnum.resultMapper).single(driver)
+          r <- c"MATCH (data: Data { name: ${enumValue.entryName} }) RETURN data.value"
+            .query(SimpleEnum.resultMapper)
+            .single(driver)
         } yield {
           r shouldBe enumValue
         }
@@ -40,7 +42,9 @@ sealed trait BaseEnumeratumSpec[F[_]] extends CleaningIntegrationSpec[F] { self:
       executeAsFuture { driver =>
         for {
           _ <- c"CREATE (: Data { name: ${enumValue.name}, value: ${enumValue} })".execute.void(driver)
-          r <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value".query(ValueEnum.resultMapper).single(driver)
+          r <- c"MATCH (data: Data { name: ${enumValue.name}}) RETURN data.value"
+            .query(ValueEnum.resultMapper)
+            .single(driver)
         } yield {
           r shouldBe enumValue
         }
@@ -113,7 +117,7 @@ object BaseEnumeratumSpec {
     val values = findValues
   }
 
-  sealed abstract class ValueEnum (val value: Int, val name: String) extends IntEnumEntry with Product with Serializable
+  sealed abstract class ValueEnum(val value: Int, val name: String) extends IntEnumEntry with Product with Serializable
   object ValueEnum extends IntEnum[ValueEnum] with NeotypesIntEnum[ValueEnum] {
     final case object A extends ValueEnum(value = 1, name = "A")
     final case object B extends ValueEnum(value = 3, name = "B")
@@ -136,7 +140,7 @@ object BaseEnumeratumSpec {
     )
   }
 
-  sealed abstract class KeyStringEnum (val value: String) extends StringEnumEntry with Product with Serializable
+  sealed abstract class KeyStringEnum(val value: String) extends StringEnumEntry with Product with Serializable
   object KeyStringEnum extends StringEnum[KeyStringEnum] with NeotypesStringEnum[KeyStringEnum] { self =>
     final case object KeyA extends KeyStringEnum(value = "keyA")
     final case object KeyB extends KeyStringEnum(value = "keyB")
@@ -153,8 +157,10 @@ object BaseEnumeratumSpec {
 
 final class AsyncEnumeratumSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseEnumeratumSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseEnumeratumSpec[F]
 
 final class StreamEnumeratumSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseEnumeratumSpec[F]
+) extends StreamDriverProvider(testkit)
+    with BaseEnumeratumSpec[F]

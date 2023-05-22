@@ -37,7 +37,8 @@ sealed trait BaseDriverConcurrentUsageSpec[F[_]] extends BaseIntegrationSpec[F] 
 
 final class AsyncDriverConcurrentUsageSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseDriverConcurrentUsageSpec[F] {
+) extends AsyncDriverProvider(testkit)
+    with BaseDriverConcurrentUsageSpec[F] {
   override protected def runBothQueriesConcurrently(q1: DeferredQueryBuilder, q2: DeferredQueryBuilder): Future[Unit] =
     executeAsFuture { driver =>
       def run(q: DeferredQueryBuilder): F[Unit] =
@@ -49,7 +50,8 @@ final class AsyncDriverConcurrentUsageSpec[F[_]](
 
 final class StreamDriverConcurrentUsageSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseDriverConcurrentUsageSpec[F] {
+) extends StreamDriverProvider(testkit)
+    with BaseDriverConcurrentUsageSpec[F] {
   override protected def runBothQueriesConcurrently(q1: DeferredQueryBuilder, q2: DeferredQueryBuilder): Future[Unit] =
     executeAsFutureList { driver =>
       def run(q: DeferredQueryBuilder): S[Unit] =

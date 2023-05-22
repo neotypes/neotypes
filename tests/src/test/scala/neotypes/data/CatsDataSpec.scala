@@ -1,14 +1,6 @@
 package neotypes.cats.data
 
-import cats.data.{
-  Chain,
-  Const,
-  NonEmptyChain,
-  NonEmptyList,
-  NonEmptyMap,
-  NonEmptySet,
-  NonEmptyVector
-}
+import cats.data.{Chain, Const, NonEmptyChain, NonEmptyList, NonEmptyMap, NonEmptySet, NonEmptyVector}
 import neotypes._
 import neotypes.cats.data.mappers._
 import neotypes.internal.syntax.async._
@@ -124,8 +116,12 @@ sealed trait BaseCatsDataSpec[F[_]] extends CleaningIntegrationSpec[F] { self: D
     val bag: Bag = NonEmptyMap.of(1 -> "foo", 3 -> "bar", 5 -> "baz")
 
     for {
-      _ <- c"UNWIND ${bag} AS element CREATE (: BagElement { key: HEAD(element), value: HEAD(TAIL(element)) })".execute.void(driver)
-      r <- "MATCH (element: BagElement) RETURN collect([element.key, element.value])".query(Bag.resultMapper).single(driver)
+      _ <- c"UNWIND ${bag} AS element CREATE (: BagElement { key: HEAD(element), value: HEAD(TAIL(element)) })"
+        .execute
+        .void(driver)
+      r <- "MATCH (element: BagElement) RETURN collect([element.key, element.value])"
+        .query(Bag.resultMapper)
+        .single(driver)
     } yield {
       r shouldBe bag
     }
@@ -195,22 +191,28 @@ object BaseCatsDataSpec {
   type Bag = NonEmptyMap[Int, String]
   object Bag {
     val resultMapper: ResultMapper[Bag] = nonEmptyMap(
-      keyMapper = int, valueMapper = string, keyOrder = implicitly
+      keyMapper = int,
+      valueMapper = string,
+      keyOrder = implicitly
     )
   }
 
   type Properties = NonEmptyMap[String, Boolean]
   object Properties {
     val resultMapper: ResultMapper[Properties] = nonEmptyNeoMap(
-      keyMapper = KeyMapper.string, valueMapper = boolean, keyOrder = implicitly
+      keyMapper = KeyMapper.string,
+      valueMapper = boolean,
+      keyOrder = implicitly
     )
   }
 }
 
 final class AsyncCatsDataSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseCatsDataSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseCatsDataSpec[F]
 
 final class StreamCatsDataSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseCatsDataSpec[F]
+) extends StreamDriverProvider(testkit)
+    with BaseCatsDataSpec[F]

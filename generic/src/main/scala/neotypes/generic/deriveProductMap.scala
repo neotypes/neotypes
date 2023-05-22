@@ -11,8 +11,7 @@ import shapeless.labelled.{field => tag, FieldType}
 
 trait CaseClassDerivedProductMap[P <: Product] extends ResultMapper.DerivedProductMap[P]
 object CaseClassDerivedProductMap {
-  implicit final def instance[P <: Product, R <: HList](
-    implicit
+  implicit final def instance[P <: Product, R <: HList](implicit
     gen: LabelledGeneric.Aux[P, R],
     ev: Lazy[ReprDerivedProductMap[R]]
   ): CaseClassDerivedProductMap[P] =
@@ -30,17 +29,15 @@ object ReprDerivedProductMap {
         Right(HNil)
     }
 
-  implicit final def hconsInstance[K <: Symbol, H, T <: HList](
-    implicit
+  implicit final def hconsInstance[K <: Symbol, H, T <: HList](implicit
     key: Witness.Aux[K],
     head: Lazy[ResultMapper[H]],
     tail: ReprDerivedProductMap[T]
   ): ReprDerivedProductMap[FieldType[K, H] :!: T] =
     new ReprDerivedProductMap[FieldType[K, H] :!: T] {
       override def map(obj: NeoObject): Either[ResultMapperException, FieldType[K, H] :!: T] =
-        obj.getAs(key = key.value.name, mapper = head.value).and(tail.map(obj)).map {
-          case (h, t) =>
-            tag[K](h) :: t
+        obj.getAs(key = key.value.name, mapper = head.value).and(tail.map(obj)).map { case (h, t) =>
+          tag[K](h) :: t
         }
     }
 }

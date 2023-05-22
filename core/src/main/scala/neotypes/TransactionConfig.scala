@@ -7,10 +7,11 @@ import org.neo4j.driver.{AccessMode, SessionConfig => NeoSessionConfig, Transact
 import scala.concurrent.duration.FiniteDuration
 import scala.jdk.DurationConverters._
 
-/** Scala friendly builder for instances of
-  * [[org.neo4j.driver.TransactionConfig]] and [[org.neo4j.driver.SessionConfig]].
+/** Scala friendly builder for instances of [[org.neo4j.driver.TransactionConfig]] and
+  * [[org.neo4j.driver.SessionConfig]].
   *
-  * @see [[https://neo4j.com/docs/operations-manual/current/monitoring/transaction-management/ Neo4j Transaction Management]].
+  * @see
+  *   [[https://neo4j.com/docs/operations-manual/current/monitoring/transaction-management/ Neo4j Transaction Management]].
   */
 final class TransactionConfig private (
   accessMode: Option[AccessMode] = None,
@@ -52,6 +53,7 @@ final class TransactionConfig private (
 }
 
 object TransactionConfig {
+
   /** Default configuration. */
   val default: TransactionConfig =
     new TransactionConfig()

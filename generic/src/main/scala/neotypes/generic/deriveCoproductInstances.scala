@@ -11,8 +11,7 @@ import scala.annotation.unused
 
 trait SealedTraitDerivedCoproductInstances[C] extends ResultMapper.DerivedCoproductInstances[C]
 object SealedTraitDerivedCoproductInstances {
-  implicit final def instance[A, C <: Coproduct, R <: HList](
-    implicit
+  implicit final def instance[A, C <: Coproduct, R <: HList](implicit
     @unused gen: LabelledGeneric.Aux[A, C],
     @unused hlist: ToHList.Aux[C, R],
     ev: Lazy[ReprDerivedCoproductInstances[A, R]]
@@ -31,8 +30,7 @@ object ReprDerivedCoproductInstances {
         List.empty
     }
 
-  implicit final def hconsInstance[A, K <: Symbol, H <: A, T <: HList](
-    implicit
+  implicit final def hconsInstance[A, K <: Symbol, H <: A, T <: HList](implicit
     key: Witness.Aux[K],
     head: Lazy[ResultMapper[H]],
     tail: ReprDerivedCoproductInstances[A, T]

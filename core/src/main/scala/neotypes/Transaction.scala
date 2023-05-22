@@ -52,10 +52,10 @@ sealed trait StreamTransaction[S[_], F[_]] extends AsyncTransaction[F] {
 
 object Transaction {
   private[neotypes] def async[F[_]](
-      transaction: NeoAsyncTransaction,
-      close: () => F[Unit]
-  ) (
-      implicit evF: Async[F]
+    transaction: NeoAsyncTransaction,
+    close: () => F[Unit]
+  )(implicit
+    evF: Async[F]
   ): AsyncTransaction[F] =
     new AsyncTransaction[F] {
       override final val F: Async[F] = evF
@@ -89,9 +89,9 @@ object Transaction {
       ): F[(T, ResultSummary)] =
         for {
           result <- runQuery(query, params)
-          record <- F.fromCompletionStage(
-            result.singleAsync()
-          ).mapError(ex => MissingRecordException(cause = ex))
+          record <- F.fromCompletionStage(result.singleAsync()).mapError { ex =>
+            MissingRecordException(cause = ex)
+          }
           t <- F.fromEither(Parser.decodeRecord(record, mapper))
           rs <- resultSummary(result)
         } yield t -> rs
@@ -113,10 +113,11 @@ object Transaction {
     }
 
   private[neotypes] def stream[S[_], F[_]](
-      transaction: NeoReactiveTransaction,
-      close: () => F[Unit]
-  ) (
-      implicit evS: Stream.Aux[S, F], evF: Async[F]
+    transaction: NeoReactiveTransaction,
+    close: () => F[Unit]
+  )(implicit
+    evS: Stream.Aux[S, F],
+    evF: Async[F]
   ): StreamTransaction[S, F] =
     new StreamTransaction[S, F] {
       override final val F: Async[F] = evF
@@ -129,17 +130,30 @@ object Transaction {
         S.fromPublisher(transaction.rollback[Unit]).voidS[F].guarantee(_ => close())
 
       private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoReactiveResult] =
-        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).single[F].flatMap { result =>
-          F.fromEither(result.toRight(
-            left = MissingRecordException(cause = new NoSuchElementException("NeoReactiveTransaction.NeoReactiveResult"))
-          ))
-        }.mapError(ex => MissingRecordException(cause = ex))
+        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params)))
+          .single[F]
+          .flatMap { result =>
+            F.fromEither(
+              result.toRight(
+                left = MissingRecordException(
+                  cause = new NoSuchElementException("NeoReactiveTransaction.NeoReactiveResult")
+                )
+              )
+            )
+          }
+          .mapError { ex =>
+            MissingRecordException(cause = ex)
+          }
 
       private def resultSummary(result: NeoReactiveResult): F[ResultSummary] =
         S.fromPublisher(result.consume()).single[F].flatMap { rs =>
-          F.fromEither(rs.toRight(
-            left = MissingRecordException(cause = new NoSuchElementException("NeoReactiveResult.ResultSummary"))
-          ))
+          F.fromEither(
+            rs.toRight(
+              left = MissingRecordException(
+                cause = new NoSuchElementException("NeoReactiveResult.ResultSummary")
+              )
+            )
+          )
         }
 
       override final def execute(
@@ -160,9 +174,13 @@ object Transaction {
         for {
           result <- runQuery(query, params)
           recordOpt <- S.fromPublisher(result.records()).single[F]
-          record <- F.fromEither(recordOpt.toRight(
-            left = MissingRecordException(cause = new NoSuchElementException("NeoReactiveResult.Record"))
-          ))
+          record <- F.fromEither(
+            recordOpt.toRight(
+              left = MissingRecordException(
+                cause = new NoSuchElementException("NeoReactiveResult.Record")
+              )
+            )
+          )
           t <- F.fromEither(Parser.decodeRecord(record, mapper))
           rs <- resultSummary(result)
         } yield t -> rs

@@ -12,11 +12,13 @@ object ZioTaskTestkit extends AsyncTestkit[Task] {
     new Behaviour {
       val runtime =
         Unsafe.unsafe { implicit unsafe =>
-          Runtime.unsafe.fromLayer(
-            Runtime.setExecutor(
-              Executor.fromExecutionContext(ec)
+          Runtime
+            .unsafe
+            .fromLayer(
+              Runtime.setExecutor(
+                Executor.fromExecutionContext(ec)
+              )
             )
-          )
         }
 
       override final def fToFuture[A](task: Task[A]): Future[A] =

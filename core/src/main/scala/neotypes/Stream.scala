@@ -13,9 +13,7 @@ trait Stream[S[_]] {
 
   private[neotypes] def append[A, B >: A](sa: S[A], sb: S[B]): S[B]
 
-  private[neotypes] def guarantee[A, B](r: F[A])
-                                       (f: A => S[B])
-                                       (finalizer: (A, Option[Throwable]) => F[Unit]): S[B]
+  private[neotypes] def guarantee[A, B](r: F[A])(f: A => S[B])(finalizer: (A, Option[Throwable]) => F[Unit]): S[B]
 
   private[neotypes] def map[A, B](sa: S[A])(f: A => B): S[B]
 

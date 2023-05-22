@@ -1,10 +1,9 @@
-package neotypes
-package enumeratum
+package neotypes.enumeratum
 
-import mappers.{KeyMapper, ParameterMapper, ResultMapper}
+import neotypes.mappers.{KeyMapper, ParameterMapper, ResultMapper}
 
-import _root_.enumeratum.{Enum, EnumEntry}
-import _root_.enumeratum.values._
+import enumeratum.{Enum, EnumEntry}
+import enumeratum.values._
 
 trait NeotypesEnum[EntryType <: EnumEntry] {
   self: Enum[EntryType] =>
@@ -34,45 +33,57 @@ trait NeotypesIntEnum[EntryType <: IntEnumEntry] extends NeotypesValueEnum[Int, 
   self: ValueEnum[Int, EntryType] =>
 
   override implicit final val parameterMapper: ParameterMapper[EntryType] =
-    Impl.values.parameterMapper(
-      mapper = ParameterMapper.IntParameterMapper
-    )
+    Impl
+      .values
+      .parameterMapper(
+        mapper = ParameterMapper.IntParameterMapper
+      )
 
   override implicit final val resultMapper: ResultMapper[EntryType] =
-    Impl.values.resultMapper(
-      _enum = self,
-      mapper = ResultMapper.int
-    )
+    Impl
+      .values
+      .resultMapper(
+        _enum = self,
+        mapper = ResultMapper.int
+      )
 }
 
 trait NeotypesLongEnum[EntryType <: LongEnumEntry] extends NeotypesValueEnum[Long, EntryType] {
   self: ValueEnum[Long, EntryType] =>
 
   override implicit final val parameterMapper: ParameterMapper[EntryType] =
-    Impl.values.parameterMapper(
-      mapper = ParameterMapper.LongParameterMapper
-    )
+    Impl
+      .values
+      .parameterMapper(
+        mapper = ParameterMapper.LongParameterMapper
+      )
 
   override implicit final val resultMapper: ResultMapper[EntryType] =
-    Impl.values.resultMapper(
-      _enum = self,
-      mapper = ResultMapper.long
-    )
+    Impl
+      .values
+      .resultMapper(
+        _enum = self,
+        mapper = ResultMapper.long
+      )
 }
 
 trait NeotypesStringEnum[EntryType <: StringEnumEntry] extends NeotypesValueEnum[String, EntryType] {
   self: ValueEnum[String, EntryType] =>
 
   override implicit final val parameterMapper: ParameterMapper[EntryType] =
-    Impl.values.parameterMapper(
-      mapper = ParameterMapper.StringParameterMapper
-    )
+    Impl
+      .values
+      .parameterMapper(
+        mapper = ParameterMapper.StringParameterMapper
+      )
 
   override implicit final val resultMapper: ResultMapper[EntryType] =
-    Impl.values.resultMapper(
-      _enum = self,
-      mapper = ResultMapper.string
-    )
+    Impl
+      .values
+      .resultMapper(
+        _enum = self,
+        mapper = ResultMapper.string
+      )
 
   implicit final val keyMapper: KeyMapper[EntryType] =
     Impl.values.keyMapper(_enum = self)

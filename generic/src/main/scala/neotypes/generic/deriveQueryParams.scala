@@ -10,8 +10,9 @@ import shapeless.labelled.FieldType
 
 trait CaseClassDerivedQueryParams[P <: Product] extends DerivedQueryParams[P]
 object CaseClassDerivedQueryParams {
-  implicit final def instance[P <: Product, R <: HList](
-    implicit gen: LabelledGeneric.Aux[P, R], ev: ReprDerivedQueryParams[R]
+  implicit final def instance[P <: Product, R <: HList](implicit
+    gen: LabelledGeneric.Aux[P, R],
+    ev: ReprDerivedQueryParams[R]
   ): CaseClassDerivedQueryParams[P] =
     new CaseClassDerivedQueryParams[P] {
       override def getParams(value: P): List[(String, QueryParam)] =
@@ -27,8 +28,10 @@ object ReprDerivedQueryParams {
         List.empty
     }
 
-  implicit final def hconsInstance[K <: Symbol, H, T <: HList](
-    implicit key: Witness.Aux[K], head: ParameterMapper[H], tail: ReprDerivedQueryParams[T]
+  implicit final def hconsInstance[K <: Symbol, H, T <: HList](implicit
+    key: Witness.Aux[K],
+    head: ParameterMapper[H],
+    tail: ReprDerivedQueryParams[T]
   ): ReprDerivedQueryParams[FieldType[K, H] :!: T] =
     new ReprDerivedQueryParams[FieldType[K, H] :!: T] {
       override def getParams(value: FieldType[K, H] :!: T): List[(String, QueryParam)] =

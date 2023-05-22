@@ -5,13 +5,20 @@ import mappers.{ParameterMapper, ResultMapper}
 
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
-import java.time.{LocalDate => JDate, LocalDateTime => JDateTime, LocalTime => JTime, OffsetTime => JZTime, ZonedDateTime => JZDateTime}
+import java.time.{
+  LocalDate => JDate,
+  LocalDateTime => JDateTime,
+  LocalTime => JTime,
+  OffsetTime => JZTime,
+  ZonedDateTime => JZDateTime
+}
 import java.util.{Map => JMap}
 import scala.collection.immutable.ArraySeq
 import scala.jdk.CollectionConverters._
 import scala.util.control.NoStackTrace
 
-object query{
+object query {
+
   /** Safe wrapper over a Neo4j query parameter. */
   type QueryParam <: AnyRef
   object QueryParam {
@@ -26,15 +33,16 @@ object query{
       tag(null)
 
     private[neotypes] def toJavaMap(map: Map[String, QueryParam]): JMap[String, Object] =
-      map.map {
-        case (key, value) =>
-          key -> value.asInstanceOf[Object]
+      map.map { case (key, value) =>
+        key -> value.asInstanceOf[Object]
       }.asJava
   }
 }
 
 /** Data types supported by Neo4j. */
 object types {
+  import exceptions._
+
   /** Parent type of all Neo4j types. */
   sealed abstract class NeoType extends Product with Serializable
 
@@ -48,11 +56,11 @@ object types {
     final def get(key: String): NeoType =
       properties.getOrElse(key, default = Value.NullValue)
 
-    final def getAs[A](key: String, mapper: ResultMapper[A]): Either[exceptions.ResultMapperException, A] =
+    final def getAs[A](key: String, mapper: ResultMapper[A]): Either[ResultMapperException, A] =
       properties.get(key) match {
         case Some(value) =>
           mapper.decode(value).left.map {
-            case ex: exceptions.IncoercibleException =>
+            case ex: IncoercibleException =>
               ex.forField(key)
 
             case ex =>
@@ -61,9 +69,7 @@ object types {
 
         case None =>
           mapper.decode(Value.NullValue).left.map { ex =>
-            exceptions.ChainException.from(
-              exceptions = ex, exceptions.PropertyNotFoundException(key)
-            )
+            ChainException.from(exceptions = ex, PropertyNotFoundException(key))
           }
       }
 
@@ -86,10 +92,11 @@ object types {
 
   /** Represents a Neo4j Node. */
   final case class Node(
-      elementId: String,
-      labels: Set[String],
-      properties: Map[String, Value]
+    elementId: String,
+    labels: Set[String],
+    properties: Map[String, Value]
   ) extends Entity {
+
     /** Checks if this Node contains the given label; case insensitive. */
     def hasLabel(label: String): Boolean =
       labels.contains(label.toLowerCase)
@@ -97,12 +104,13 @@ object types {
 
   /** Represents a Neo4j Relationship. */
   final case class Relationship(
-      elementId: String,
-      relationshipType: String,
-      properties: Map[String, Value],
-      startNodeId: String,
-      endNodeId: String
+    elementId: String,
+    relationshipType: String,
+    properties: Map[String, Value],
+    startNodeId: String,
+    endNodeId: String
   ) extends Entity {
+
     /** Checks if this Relationship has the given type; case insensitive. */
     def hasType(tpe: String): Boolean =
       relationshipType.equalsIgnoreCase(tpe)
@@ -183,41 +191,50 @@ object types {
 
 /** Exceptions provided by this library. */
 object exceptions {
-  sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None) extends Exception(message, cause.orNull) with NoStackTrace
+  sealed abstract class NeotypesException(message: String, cause: Option[Throwable] = None)
+      extends Exception(message, cause.orNull)
+      with NoStackTrace
 
-  final object TransactionWasNotCreatedException extends NeotypesException(
-    message = "Couldn't create a transaction"
-  )
+  final object TransactionWasNotCreatedException
+      extends NeotypesException(
+        message = "Couldn't create a transaction"
+      )
 
-  final object CancellationException extends NeotypesException(
-    message = "An operation was cancelled"
-  )
+  final object CancellationException
+      extends NeotypesException(
+        message = "An operation was cancelled"
+      )
 
-  sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None) extends NeotypesException(message, cause)
+  sealed abstract class ResultMapperException(message: String, cause: Option[Throwable] = None)
+      extends NeotypesException(message, cause)
 
-  final case class MissingRecordException(cause: Throwable) extends ResultMapperException(
-    message = "A record was expected but none was received",
-    Some(cause)
-  )
+  final case class MissingRecordException(cause: Throwable)
+      extends ResultMapperException(
+        message = "A record was expected but none was received",
+        Some(cause)
+      )
 
-  final class KeyMapperException(key: String, cause: Throwable) extends ResultMapperException(
-    message = s"Error decoding key: '${key}'",
-    Some(cause)
-  )
+  final class KeyMapperException(key: String, cause: Throwable)
+      extends ResultMapperException(
+        message = s"Error decoding key: '${key}'",
+        Some(cause)
+      )
   object KeyMapperException {
     def apply(key: String, cause: Throwable): KeyMapperException =
       new KeyMapperException(key, cause)
   }
 
-  final class PropertyNotFoundException(key: String) extends ResultMapperException(
-    message = s"Field '${key}' not found"
-  )
+  final class PropertyNotFoundException(key: String)
+      extends ResultMapperException(
+        message = s"Field '${key}' not found"
+      )
   object PropertyNotFoundException {
     def apply(key: String): PropertyNotFoundException =
       new PropertyNotFoundException(key)
   }
 
-  final class IncoercibleException(message: String, cause: Option[Throwable]) extends ResultMapperException(message, cause) {
+  final class IncoercibleException(message: String, cause: Option[Throwable])
+      extends ResultMapperException(message, cause) {
     def forField(key: String): IncoercibleException =
       IncoercibleException(
         s"${message} for field '${key}'",
@@ -229,11 +246,12 @@ object exceptions {
       new IncoercibleException(message, cause)
   }
 
-  final class ChainException(private val parts: Iterable[ResultMapperException]) extends ResultMapperException(message = "") {
+  final class ChainException(private val parts: Iterable[ResultMapperException])
+      extends ResultMapperException(message = "") {
     override def getMessage(): String =
       parts
         .view
-        .map(ex => ex.getMessage)
+        .map(_.getMessage)
         .mkString(
           start = "Multiple decoding errors:" + System.lineSeparator,
           sep = System.lineSeparator,
@@ -244,8 +262,11 @@ object exceptions {
     def from(exceptions: ResultMapperException*): ChainException =
       new ChainException(
         parts = exceptions.view.flatMap {
-          case chainException: ChainException => chainException.parts
-          case decodingException => decodingException :: Nil
+          case chainException: ChainException =>
+            chainException.parts
+
+          case decodingException =>
+            decodingException :: Nil
         }
       )
   }

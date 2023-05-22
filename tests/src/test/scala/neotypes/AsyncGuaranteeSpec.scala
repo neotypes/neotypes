@@ -38,8 +38,8 @@ final class AsyncGuaranteeSpec[F[_]](testkit: AsyncTestkit[F]) extends BaseAsync
       fToFuture(
         F.guarantee[Unit, T](
           fa = F.fromEither(inputEx.toLeft(right = ()))
-        ) (
-          _ => F.fromEither(result)
+        )(
+          f = _ => F.fromEither(result)
         ) { (_, _) =>
           F.delay {
             counter += 1

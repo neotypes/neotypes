@@ -16,11 +16,13 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
 
     // First case.
     locally {
-      val input = NeoMap(properties = Map(
-        "type" -> Value.Str("Foo"),
-        "int" -> Value.Integer(3),
-        "str" -> Value.Str("Luis")
-      ))
+      val input = NeoMap(
+        properties = Map(
+          "type" -> Value.Str("Foo"),
+          "int" -> Value.Integer(3),
+          "str" -> Value.Str("Luis")
+        )
+      )
       val result = mapper.decode(input)
 
       result.value shouldBe SimpleADT.Foo(
@@ -31,10 +33,12 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
 
     // Second case.
     locally {
-      val input = NeoMap(properties = Map(
-        "type" -> Value.Str("Bar"),
-        "bool" -> Value.Bool(true)
-      ))
+      val input = NeoMap(
+        properties = Map(
+          "type" -> Value.Str("Bar"),
+          "bool" -> Value.Bool(true)
+        )
+      )
       val result = mapper.decode(input)
 
       result.value shouldBe SimpleADT.Bar(
@@ -48,9 +52,11 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
 
     // First case.
     locally {
-      val input = NeoMap(properties = Map(
-        "type" -> Value.Str("Baz")
-      ))
+      val input = NeoMap(
+        properties = Map(
+          "type" -> Value.Str("Baz")
+        )
+      )
       val result = mapper.decode(input)
 
       result.value shouldBe SimpleEnum.Baz
@@ -58,9 +64,11 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
 
     // Second case.
     locally {
-      val input = NeoMap(properties = Map(
-        "type" -> Value.Str("Quax")
-      ))
+      val input = NeoMap(
+        properties = Map(
+          "type" -> Value.Str("Quax")
+        )
+      )
       val result = mapper.decode(input)
 
       result.value shouldBe SimpleEnum.Quax

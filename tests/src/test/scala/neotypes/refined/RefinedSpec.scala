@@ -45,8 +45,10 @@ object BaseRefinedSpec {
 
 final class AsyncRefinedSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseRefinedSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseRefinedSpec[F]
 
 final class StreamRefinedSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseRefinedSpec[F]
+) extends StreamDriverProvider(testkit)
+    with BaseRefinedSpec[F]

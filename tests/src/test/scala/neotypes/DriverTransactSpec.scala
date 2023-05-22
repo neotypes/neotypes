@@ -15,13 +15,16 @@ sealed trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] { s
 
   behavior of s"${driverName} managed transaction ${transactionName}"
 
-  private final def ensureCommittedTransaction[T](expectedResult: T)
-                                                 (txF: TransactionType => F[T]): Future[Assertion] =
+  private final def ensureCommittedTransaction[T](
+    expectedResult: T
+  )(
+    txF: TransactionType => F[T]
+  ): Future[Assertion] =
     executeAsFuture(driver => transact(driver)(txF)).map { result =>
       result shouldBe expectedResult
     }
 
-  private final def ensureRollbackedTransaction[E <: Throwable : ClassTag](
+  private final def ensureRollbackedTransaction[E <: Throwable: ClassTag](
     txF: TransactionType => F[Unit]
   ): Future[Assertion] =
     recoverToSucceededIf[E] {
@@ -65,11 +68,13 @@ object BaseDriverTransactSpec {
 
 final class AsyncDriverTransactSpec[F[_]](
   testkit: AsyncTestkit[F]
-) extends AsyncDriverProvider(testkit) with BaseDriverTransactSpec[F]
+) extends AsyncDriverProvider(testkit)
+    with BaseDriverTransactSpec[F]
 
 final class StreamDriverTransactSpec[S[_], F[_]](
   testkit: StreamTestkit[S, F]
-) extends StreamDriverProvider(testkit) with BaseDriverTransactSpec[F] {
+) extends StreamDriverProvider(testkit)
+    with BaseDriverTransactSpec[F] {
   it should "support stream the records" in {
     executeAsFutureList { driver =>
       driver.streamTransact { tx =>

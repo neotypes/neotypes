@@ -1,15 +1,15 @@
-package neotypes
-package enumeratum
+package neotypes.enumeratum
 
-import mappers.{KeyMapper, ParameterMapper, ResultMapper}
-import model.exceptions.{IncoercibleException, KeyMapperException}
+import neotypes.mappers.{KeyMapper, ParameterMapper, ResultMapper}
+import neotypes.model.exceptions.{IncoercibleException, KeyMapperException}
 
-import _root_.enumeratum.{Enum, EnumEntry}
-import _root_.enumeratum.values._
+import enumeratum.{Enum, EnumEntry}
+import enumeratum.values._
 
 private[enumeratum] object Impl {
   private def getEnumEntryByName[EntryType <: EnumEntry](
-    _enum: Enum[EntryType], name: String
+    _enum: Enum[EntryType],
+    name: String
   ): Either[KeyMapperException, EntryType] =
     _enum.withNameEither(name).left.map { ex =>
       KeyMapperException(key = name, cause = ex)
@@ -28,7 +28,8 @@ private[enumeratum] object Impl {
 
   object values {
     private def getEnumEntryByValue[ValueType, EntryType <: ValueEnumEntry[ValueType]](
-      _enum: ValueEnum[ValueType, EntryType], value: ValueType
+      _enum: ValueEnum[ValueType, EntryType],
+      value: ValueType
     ): Either[IncoercibleException, EntryType] =
       _enum.withValueEither(value).left.map { ex =>
         IncoercibleException(

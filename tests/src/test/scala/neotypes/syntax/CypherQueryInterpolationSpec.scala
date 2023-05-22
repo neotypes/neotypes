@@ -54,7 +54,7 @@ final class CypherQueryInterpolationSpec extends BaseSynchronousSpec {
           })""".build()
 
     query shouldBe
-       """CREATE (a: Test {
+      """CREATE (a: Test {
             name: $p1,
             age: $p2,
             born: $p3
@@ -103,11 +103,11 @@ final class CypherQueryInterpolationSpec extends BaseSynchronousSpec {
 
     val deferredQuery =
       c"CREATE (a: Test {" +
-      c"firstName: ${firstName}," +
-      c"lastName: ${lastName}," +
-      "city: 'Filadelfia'," +
-      c"born: ${born}" +
-      " })"
+        c"firstName: ${firstName}," +
+        c"lastName: ${lastName}," +
+        "city: 'Filadelfia'," +
+        c"born: ${born}" +
+        " })"
 
     val (query, params, _) = deferredQuery.build()
 
@@ -204,7 +204,7 @@ final class CypherQueryInterpolationSpec extends BaseSynchronousSpec {
         "q1_q1_p2" -> QueryParam(subQuery1subQueryParam2),
         "q2_p1" -> QueryParam(subQuery2Param),
         "q2_q1_p1" -> QueryParam(subQuery2subQueryParam1),
-        "q2_q1_p2" -> QueryParam(subQuery2subQueryParam2),
+        "q2_q1_p2" -> QueryParam(subQuery2subQueryParam2)
       )
     }
   }
@@ -254,7 +254,8 @@ final class CypherQueryInterpolationSpec extends BaseSynchronousSpec {
     val cat = Cat("Waffles", 3)
     val relationship = HasCatRelationship(2)
 
-    val (query, params, _) = c"CREATE (u: User { $user })-[r: HAS_CAT { $relationship }]->(c: Cat { $cat }) RETURN r".build()
+    val (query, params, _) =
+      c"CREATE (u: User { $user })-[r: HAS_CAT { $relationship }]->(c: Cat { $cat }) RETURN r".build()
 
     query shouldBe "CREATE (u: User { name: $p1, age: $p2 })-[r: HAS_CAT { friendsFor: $p3 }]->(c: Cat { tag: $p4, age: $p5 }) RETURN r"
     params shouldBe Map(

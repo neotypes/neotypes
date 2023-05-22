@@ -11,13 +11,14 @@ import org.neo4j.driver.reactive.ReactiveSession
 import scala.util.Try
 import scala.jdk.CollectionConverters._
 
-/** A neotypes async driver for accessing the neo4j graph database.
-  * A driver wrapped in the resource type can be created using the neotypes GraphDatabase:
+/** A neotypes async driver for accessing the neo4j graph database. A driver wrapped in the resource type can be created
+  * using the neotypes GraphDatabase:
   * {{{
   *    val driver = GraphDatabase.driver[F]("bolt://localhost:7687")
   * }}}
   *
-  * @tparam F Async type for driver
+  * @tparam F
+  *   Async type for driver
   */
 sealed trait AsyncDriver[F[_]] {
   def metrics: F[List[ConnectionPoolMetrics]]
@@ -36,14 +37,16 @@ sealed trait AsyncDriver[F[_]] {
   def close: F[Unit]
 }
 
-/** A neotypes stream driver for accessing the neo4j graph database.
-  * A driver wrapped in the resource type can be created using the neotypes GraphDatabase:
+/** A neotypes stream driver for accessing the neo4j graph database. A driver wrapped in the resource type can be
+  * created using the neotypes GraphDatabase:
   * {{{
   *    val driver = GraphDatabase.streamDriver[S, F]("bolt://localhost:7687")
   * }}}
   *
-  * @tparam S Stream type for driver
-  * @tparam F Async type for driver
+  * @tparam S
+  *   Stream type for driver
+  * @tparam F
+  *   Async type for driver
   */
 sealed trait StreamDriver[S[_], F[_]] extends AsyncDriver[F] {
   def streamTransaction(config: TransactionConfig): S[StreamTransaction[S, F]]
@@ -64,9 +67,9 @@ object Driver {
   }
 
   private class AsyncDriverImpl[F[_]](
-      driver: NeoDriver
-  ) (
-      implicit F: Async[F]
+    driver: NeoDriver
+  )(implicit
+    F: Async[F]
   ) extends AsyncDriver[F] {
     override final def metrics: F[List[ConnectionPoolMetrics]] =
       F.fromEither(
@@ -74,13 +77,12 @@ object Driver {
       )
 
     override final def transaction(config: TransactionConfig): F[AsyncTransaction[F]] =
-      F.delay(config.getConfigs).flatMap {
-        case (sessionConfig, transactionConfig) =>
-          F.delay(driver.session(classOf[AsyncSession], sessionConfig)).flatMap { s =>
-            F.fromCompletionStage(s.beginTransactionAsync(transactionConfig)).map { tx =>
-              Transaction.async[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
-            }
+      F.delay(config.getConfigs).flatMap { case (sessionConfig, transactionConfig) =>
+        F.delay(driver.session(classOf[AsyncSession], sessionConfig)).flatMap { s =>
+          F.fromCompletionStage(s.beginTransactionAsync(transactionConfig)).map { tx =>
+            Transaction.async[F](tx, () => F.fromCompletionStage(s.closeAsync()).void)
           }
+        }
       }
 
     override final def transact[T](config: TransactionConfig)(txF: AsyncTransaction[F] => F[T]): F[T] =
@@ -91,10 +93,12 @@ object Driver {
   }
 
   private final class StreamDriverImpl[S[_], F[_]](
-      driver: NeoDriver
-  ) (
-      implicit S: Stream.Aux[S, F], F: Async[F]
-  ) extends AsyncDriverImpl[F](driver) with StreamDriver[S, F] {
+    driver: NeoDriver
+  )(implicit
+    S: Stream.Aux[S, F],
+    F: Async[F]
+  ) extends AsyncDriverImpl[F](driver)
+      with StreamDriver[S, F] {
     override final def streamTransaction(config: TransactionConfig): S[StreamTransaction[S, F]] = {
       val (sessionConfig, transactionConfig) = config.getConfigs
 
@@ -116,11 +120,14 @@ object Driver {
     }
   }
 
-  private[neotypes] def async[F[_]](driver: NeoDriver)
-                                   (implicit F: Async[F]): AsyncDriver[F] =
+  private[neotypes] def async[F[_]](driver: NeoDriver)(implicit F: Async[F]): AsyncDriver[F] =
     new AsyncDriverImpl(driver)
 
-  private[neotypes] def stream[S[_], F[_]](driver: NeoDriver)
-                                         (implicit S: Stream.Aux[S, F], F: Async[F]): StreamDriver[S, F] =
+  private[neotypes] def stream[S[_], F[_]](
+    driver: NeoDriver
+  )(implicit
+    S: Stream.Aux[S, F],
+    F: Async[F]
+  ): StreamDriver[S, F] =
     new StreamDriverImpl(driver)
 }
