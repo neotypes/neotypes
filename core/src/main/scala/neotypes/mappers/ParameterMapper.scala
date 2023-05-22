@@ -167,7 +167,7 @@ object ParameterMapper {
   implicit final val JZDateTimeParameterMapper: ParameterMapper[JZDateTime] =
     ParameterMapper.identity
 
-  private final def iterableParameterMapper[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
+  private final def iterableParameterMapperImpl[T](mapper: ParameterMapper[T]): ParameterMapper[Iterable[T]] =
     ParameterMapper.fromCast { col =>
       col.iterator.map(mapper.toQueryParam).asJava
     }
@@ -179,10 +179,10 @@ object ParameterMapper {
     iterableParameterMapperImpl(mapper).contramap(ev)
 
   implicit final def collectionParameterMapper[T, C[_]](implicit
-    mapper: ParameterMapper[T],
-    ev: C[T] <:< Iterable[T]
+    ev: C[T] <:< Iterable[T],
+    mapper: ParameterMapper[T]
   ): ParameterMapper[C[T]] =
-    iterableParameterMapper(mapper).contramap(ev)
+    iterableParameterMapperImpl(mapper).contramap(ev)
 
   private final def iterableMapParameterMapperImpl[K, V](
     keyMapper: KeyMapper[K],
@@ -203,7 +203,7 @@ object ParameterMapper {
     keyMapper: KeyMapper[K],
     valueMapper: ParameterMapper[V]
   ): ParameterMapper[M[K, V]] =
-    iterableMapParameterMapper(keyMapper, valueMapper).contramap(ev)
+    iterableMapParameterMapperImpl(keyMapper, valueMapper).contramap(ev)
 
   implicit final def optionAnyRefParameterMapper[T](implicit mapper: ParameterMapper[T]): ParameterMapper[Option[T]] =
     new ParameterMapper[Option[T]] {
