@@ -130,6 +130,7 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
 
   it should "execute a query and return its result summary" in executeAsFuture { driver =>
     val query = "CREATE (: Node { id: 1})"
+
     for {
       rs <- query.execute.resultSummary(driver)
       id <- "MATCH (n: Node) RETURN n.id".query(int).single(driver)
@@ -179,13 +180,11 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
   }
 
   it should "support querying either values" in executeAsFuture { driver =>
-    val queryLeft = "RETURN 5"
-    val queryRight = "RETURN 'Luis'"
     val mapper = either(int, string)
 
     for {
-      left <- queryLeft.query(mapper).single(driver)
-      right <- queryRight.query(mapper).single(driver)
+      left <- "RETURN 5".query(mapper).single(driver)
+      right <- "RETURN 'Luis'".query(mapper).single(driver)
     } yield {
       left shouldBe Left(5)
       right shouldBe Right("Luis")
@@ -578,11 +577,10 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
   }
 
   it should "support querying objects as lists" in executeAsFuture { driver =>
-    val query = "RETURN { foo: 1, bar: 3, baz: 5 }"
     val mapper = list(int)
 
     for {
-      r <- query.query(mapper).single(driver)
+      r <- "RETURN { foo: 1, bar: 3, baz: 5 }".query(mapper).single(driver)
     } yield {
       r should contain theSameElementsAs List(1, 3, 5)
     }
@@ -797,6 +795,20 @@ final class StreamDriverSpec[S[_], F[_]](
       "UNWIND [1, 2, 3] AS x RETURN x".query(ResultMapper.int).stream(driver)
     } map { ints =>
       ints shouldBe List(1, 2, 3)
+    }
+  }
+
+  it should "support stream the records and getting the result summary at the same time" in {
+    val query = "UNWIND [1, 2, 3] AS x RETURN x"
+
+    executeAsFutureList { driver =>
+      query.query(ResultMapper.int).withResultSummary.stream(driver)
+    } map { r =>
+      inside(r.partitionMap(identity)) { case (ints, rs :: Nil) =>
+        ints shouldBe List(1, 2, 3)
+        rs shouldBe a[ResultSummary]
+        rs.query.text shouldBe query
+      }
     }
   }
 }
