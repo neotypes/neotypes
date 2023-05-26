@@ -103,11 +103,11 @@ final class CypherQueryInterpolationSpec extends BaseSynchronousSpec {
 
     val deferredQuery =
       c"CREATE (a: Test {" +
-        c"firstName: ${firstName}," +
-        c"lastName: ${lastName}," +
-        "city: 'Filadelfia'," +
-        c"born: ${born}" +
-        " })"
+      c"firstName: ${firstName}," +
+      c"lastName: ${lastName}," +
+      "city: 'Filadelfia'," +
+      c"born: ${born}" +
+      " })"
 
     val (query, params, _) = deferredQuery.build()
 
