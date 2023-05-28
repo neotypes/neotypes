@@ -216,7 +216,7 @@ lazy val zioStream = (project in file("zio-stream"))
   .settings(
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio"         % zio2Version,
+      "dev.zio" %% "zio" % zio2Version,
       "dev.zio" %% "zio-streams" % zio2Version,
       "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
@@ -287,7 +287,7 @@ lazy val tests = (project in file("tests"))
 
 lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
 
-lazy val site = (project in file("site"))
+lazy val microsite = (project in file("microsite"))
   .dependsOn(
     core % "compile->compile;provided->provided",
     generic % "compile->compile;provided->provided",

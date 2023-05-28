@@ -48,17 +48,22 @@ position: 0
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
-import neotypes.generic.auto._
-import neotypes.implicits.syntax.all._
+import neotypes.mappers.ResultMapper
+import neotypes.syntax.all._
 import org.neo4j.driver.AuthTokens
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 
-val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver =
+  GraphDatabase.asyncDriver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
-val people = "MATCH (p: Person) RETURN p.name, p.born LIMIT 10".readOnlyQuery[(String, Int)].list(driver)
-Await.result(people, 1.second)
+val peopleTuple =
+  "MATCH (p: Person) RETURN p.name, p.born LIMIT 10"
+    .query(ResultMapper.tuple[String, Int])
+    .list(driver)
+
+Await.result(peopleTuple, 1.second)
 // res: Seq[(String, Int)] = ArrayBuffer(
 //   (Charlize Theron, 1975),
 //   (Keanu Reeves, 1964),
@@ -74,8 +79,12 @@ Await.result(people, 1.second)
 
 final case class Person(id: Long, born: Int, name: Option[String], notExists: Option[Int])
 
-val peopleCC = "MATCH (p: Person) RETURN p LIMIT 10".readOnlyQuery[Person].list(driver)
-Await.result(peopleCC, 1.second)
+val peopleCaseClass =
+  "MATCH (p: Person) RETURN p LIMIT 10"
+    .query(ResultMapper.fromFunction(Person.apply _))
+    .list(driver)
+
+Await.result(peopleCaseClass, 1.second)
 // res: Seq[Person] = ArrayBuffer(
 //   Person(0, 1975, Some(Charlize Theron), None),
 //   Person(1, 1964, Some(Keanu Reeves), None),

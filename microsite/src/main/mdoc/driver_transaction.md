@@ -20,7 +20,7 @@ A single `Driver` can start multiple concurrent `Transaction`s.
 
 ## Transaction management
 
-Each `Transaction` has to be started, used and finally, either committed or rolled back.
+Each `Transaction` has to be started, used, and finally either committed or rolled back.
 
 **neotypes** provides 3 ways of interacting with `Transaction`s, designed for different use cases.
 
@@ -35,12 +35,13 @@ import scala.concurrent.ExecutionContext.Implicits.global
 ```
 
 ```scala mdoc:compile-only
-import neotypes.Driver
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.AsyncDriver
+import neotypes.mappers.ResultMapper
+import neotypes.syntax.all._ // Provides the query[T] extension method.
 
-def result(driver: Driver[F]): F[String] =
+def result(driver: AsyncDriver[F]): F[String] =
   "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
-    .readOnlyQuery[String]
+    .query(ResultMapper.string)
     .single(driver)
 ```
 
@@ -50,15 +51,21 @@ Like the previous one, but with the possibility of executing multiple queries in
 You can use `Driver.transact` method.
 
 ```scala mdoc:compile-only
-import neotypes.Driver
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.AsyncDriver
+import neotypes.mappers.ResultMapper
+import neotypes.syntax.all._ // Provides the query[T] extension method.
 
-def result(driver: Driver[F]): F[(String, String)] = driver.readOnlyTransact { tx =>
-  for {
-    r1 <-"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(tx)
-    r2 <-"MATCH (p: Person { name: 'Tom Hanks' }) RETURN p.name".query[String].single(tx)
-  } yield (r1, r2)
-}
+def result(driver: AsyncDriver[F]): F[(String, String)] =
+  driver.transact { tx =>
+    for {
+      r1 <-"MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
+        .query(ResultMapper.string)
+        .single(tx)
+      r2 <-"MATCH (p: Person { name: 'Tom Hanks' }) RETURN p.name"
+        .query(ResultMapper.string)
+        .single(tx)
+    } yield (r1, r2)
+  }
 ```
 
 > **Note**: under the hood, the previous method uses this one. Thus, they are equivalent for single-query operations.
@@ -69,16 +76,17 @@ If you want to control when to `commit` or `rollback` a `Transaction`.
 You can use the `Driver.transaction` method, to create an `F[Transaction[F]]`.
 
 ```scala mdoc:compile-only
-import neotypes.Driver
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.AsyncDriver
+import neotypes.syntax.all._ // Provides the query[T] extension method.
 
-def result(driver: Driver[F]): F[Unit] = driver.transaction.flatMap { tx =>
-  for {
-    _ <-"CREATE (p: Person { name: 'Charlize Theron' })".query[Unit].execute(tx)
-    _ <-"CREATE (p: Person { name: 'Tom Hanks' })".query[Unit].execute(tx)
-    _ <- tx.rollback // Nothing will be done.
-  } yield ()
-}
+def result(driver: AsyncDriver[F]): F[Unit] =
+  driver.transaction.flatMap { tx =>
+    for {
+      _ <-"CREATE (p: Person { name: 'Charlize Theron' })".execute.void(tx)
+      _ <-"CREATE (p: Person { name: 'Tom Hanks' })".execute.void(tx)
+      _ <- tx.rollback // Nothing will be done.
+    } yield ()
+  }
 ```
 
 > **Note**: It is mandatory to only call either `commit` or `rollback` once.
@@ -92,7 +100,7 @@ Using a custom [`TransactionConfig`](https://neotypes.github.io/neotypes/api/neo
 
 ```scala mdoc
 import neotypes.TransactionConfig
-import neotypes.types.QueryParam
+import neotypes.model.query.QueryParam
 import scala.concurrent.duration._
 
 val config =
@@ -105,21 +113,27 @@ val config =
 Which you can use in operations that explicitly or implicitly create `Transaction`s.
 
 ```scala mdoc:compile-only
-import neotypes.{Driver, Transaction}
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.{AsyncDriver, AsyncTransaction}
+import neotypes.mappers.ResultMapper
+import neotypes.syntax.all._ // Provides the query[T] extension method.
 
-def customTransaction(driver: Driver[F]): F[Transaction[F]] =
+def customTransaction(driver: AsyncDriver[F]): F[AsyncTransaction[F]] =
   driver.transaction(config)
 
-def result1(driver: Driver[F]): F[(String, String)] = driver.readOnlyTransact(config) { tx =>
-  for {
-    r1 <-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name".query[String].single(tx)
-    r2 <-"MATCH (p:Person {name: 'Tom Hanks'}) RETURN p.name".query[String].single(tx)
-  } yield (r1, r2)
-}
+def result1(driver: AsyncDriver[F]): F[(String, String)] =
+  driver.transact(config) { tx =>
+    for {
+      r1 <-"MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name"
+        .query(ResultMapper.string)
+        .single(tx)
+      r2 <-"MATCH (p:Person {name: 'Tom Hanks'}) RETURN p.name"
+        .query(ResultMapper.string)
+        .single(tx)
+    } yield (r1, r2)
+  }
 
-def result2(driver: Driver[F]): F[String] =
+def result2(driver: AsyncDriver[F]): F[String] =
   "MATCH (p:Person {name: 'Charlize Theron'}) RETURN p.name"
-    .readOnlyQuery[String]
+    .query(ResultMapper.string)
     .single(driver, config)
 ```

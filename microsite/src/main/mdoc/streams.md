@@ -22,10 +22,11 @@ Currently, there are four supported implementations _(one for each effect type)_
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl.{Sink, Source}
-import neotypes.{GraphDatabase, StreamingDriver}
+import neotypes.{GraphDatabase, StreamDriver}
 import neotypes.akkastreams.AkkaStream
 import neotypes.akkastreams.implicits._ // Brings the implicit Stream[AkkaStream] instance into the scope.
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import org.neo4j.driver.AuthTokens
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -33,10 +34,11 @@ import scala.concurrent.duration._
 
 implicit val system = ActorSystem("QuickStart")
 
-val driver = GraphDatabase.streamingDriver[AkkaStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver =
+  GraphDatabase.streamDriver[AkkaStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
-def query(driver: StreamingDriver[AkkaStream, Future]): Source[String, NotUsed] =
-  "MATCH (p:Person) RETURN p.name".query[String].stream(driver)
+def query(driver: StreamDriver[AkkaStream, Future]): Source[String, NotUsed] =
+  "MATCH (p: Person) RETURN p.name".query(ResultMapper.string).stream(driver)
 
 val program: Future[Unit] = for {
   _ <- query(driver).runWith(Sink.foreach(println))
@@ -54,22 +56,23 @@ Await.ready(program, 5.seconds)
 import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
 import fs2.Stream
-import neotypes.{GraphDatabase, StreamingDriver}
+import neotypes.{GraphDatabase, StreamDriver}
 import neotypes.cats.effect.implicits._ // Brings the implicit Async[IO] instance into the scope.
 import neotypes.fs2.Fs2IoStream
 import neotypes.fs2.implicits._ // Brings the implicit Stream[Fs2IOStream] instance into the scope.
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import org.neo4j.driver.AuthTokens
 
-val driver: Resource[IO, StreamingDriver[Fs2IoStream, IO]] =
-  GraphDatabase.streamingDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driverR: Resource[IO, StreamDriver[Fs2IoStream, IO]] =
+  GraphDatabase.streamDriver[Fs2IoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Stream[IO, Unit] =
-  Stream.resource(driver).flatMap { d =>
-    "MATCH (p:Person) RETURN p.name"
-      .query[String]
-      .stream(d)
-      .evalMap(n => IO(println(n)))
+  Stream.resource(driverR).flatMap { driver =>
+    "MATCH (p: Person) RETURN p.name"
+      .query(ResultMapper.string)
+      .stream(driver)
+      .foreach(IO.println)
   }
 
 program.compile.drain.unsafeRunSync()
@@ -88,22 +91,23 @@ import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
 import monix.reactive.Observable
-import neotypes.{GraphDatabase, StreamingDriver}
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.{GraphDatabase, StreamDriver}
+import neotypes.mappers.ResultMapper // Allows to decode query results.
 import neotypes.monix.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.monix.stream.MonixStream
 import neotypes.monix.stream.implicits._ // Brings the implicit Stream[MonixStream] instance into the scope.
+import neotypes.syntax.all._ // Provides the query extension method.
 import org.neo4j.driver.AuthTokens
 import scala.concurrent.duration._
 
-val driver: Resource[Task, StreamingDriver[MonixStream, Task]] =
-  GraphDatabase.streamingDriver[MonixStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driverR: Resource[Task, StreamDriver[MonixStream, Task]] =
+  GraphDatabase.streamDriver[MonixStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Observable[Unit] =
-  Observable.fromResource(driver).flatMap { d =>
-    "MATCH (p:Person) RETURN p.name"
-      .query[String]
-      .stream(d)
+  Observable.fromResource(driverR).flatMap { driver =>
+    "MATCH (p: Person) RETURN p.name"
+      .query(ResultMapper.string)
+      .stream(driver)
       .mapEval(n => Task(println(n)))
 }
 
@@ -115,25 +119,28 @@ program.completedL.runSyncUnsafe(5.seconds)
 ```scala mdoc:compile-only
 import zio.{Runtime, Scope, Task, Unsafe, ZIO}
 import zio.stream.ZStream
-import neotypes.{GraphDatabase, StreamingDriver}
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.{GraphDatabase, StreamDriver}
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import neotypes.zio.implicits._ // Brings the implicit Async[Task] instance into the scope.
 import neotypes.zio.stream.ZioStream
 import neotypes.zio.stream.implicits._ // Brings the implicit Stream[ZioStream] instance into the scope.
 import org.neo4j.driver.AuthTokens
 
-val driver: ZIO[Scope, Throwable, StreamingDriver[ZioStream, Task]] =
-  GraphDatabase.streamingDriver[ZioStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driverS: ZIO[Scope, Throwable, StreamDriver[ZioStream, Task]] =
+  GraphDatabase.streamDriver[ZioStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: ZStream[Scope, Throwable, String] =
-  ZStream.fromZIO(driver).flatMap { s =>
-    "MATCH (p:Person) RETURN p.name".query[String].stream(s)
+  ZStream.fromZIO(driverS).flatMap { driver =>
+    "MATCH (p: Person) RETURN p.name"
+      .query(ResultMapper.string)
+      .stream(driver)
   }
 
 
 Unsafe.unsafe { implicit unsafe =>
   Runtime.default.unsafe.run {
-    // ZStream#.foreach returns a ZIO and we want to eliminate Scope from R
+    // ZStream.foreach returns a ZIO and we want to eliminate Scope from R
     ZIO.scoped {
       program.foreach(n => ZIO.succeed(println(n)))
     }
@@ -153,26 +160,26 @@ import neotypes.GraphDatabase
 import neotypes.cats.effect.implicits._
 import neotypes.fs2.implicits._
 val uri: String = ""
-def query: neotypes.DeferredQuery[String] = ???
+def query: neotypes.query.DeferredQuery[String, neotypes.query.ResultType.Simple.type] = ???
 ```
 
 * **_Type lambdas_:**
 
 ```scala mdoc:compile-only
-val driver = GraphDatabase.streamingDriver[({ type T[A] = fs2.Stream[IO, A] })#T](uri)
+val driver = GraphDatabase.streamDriver[({ type T[A] = fs2.Stream[IO, A] })#T](uri)
 ```
 
 * **_Type Alias_:**
 
 ```scala mdoc:compile-only
 type Fs2Stream[T] = fs2.Stream[IO, T]
-val driver = GraphDatabase.streamingDriver[Fs2Stream](uri)
+val driver = GraphDatabase.streamDriver[Fs2Stream](uri)
 ```
 
 * **[_Kind Projector_](https://github.com/typelevel/kind-projector):**
 
 ```scala
-val driver = GraphDatabase.streamingDriver[fs2.Stream[IO, ?]](uri)
+val driver = GraphDatabase.streamDriver[fs2.Stream[IO, ?]](uri)
 ```
 
 -----
@@ -189,7 +196,7 @@ You have two options in transaction management:
 + **Manual**: if you use `neotypes.Transaction` and call `stream`,
 you need to ensure that the transaction is gracefully closed after reading is finished.
 + **Auto-closing**: you may wish to automatically rollback the transaction once all elements are consumed.
-This behavior is provided by `DeferredQuery.stream(StreamingDriver[S, F])`
+This behavior is provided by `DeferredQuery.stream(StreamDriver[S, F])`
 
 ## Alternative stream implementations
 

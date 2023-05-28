@@ -13,16 +13,19 @@ position: 40
 
 ```scala mdoc:compile-only
 import neotypes.GraphDatabase
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import scala.concurrent.{Await, Future}
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._ // Provides the second extension method.
 import org.neo4j.driver.AuthTokens
 
-val driver = GraphDatabase.driver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver = GraphDatabase.asyncDriver[Future]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Future[String] = for {
-  data <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(driver)
+  data <- "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
+    .query(ResultMapper.string)
+    .single(driver)
   _ <- driver.close
 } yield data
 
@@ -36,16 +39,19 @@ val data: String = Await.result(program, 1.second)
 ```scala mdoc:compile-only
 import cats.effect.{IO, Resource}
 import cats.effect.unsafe.implicits.global
-import neotypes.{GraphDatabase, Driver}
+import neotypes.{AsyncDriver, GraphDatabase}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import org.neo4j.driver.AuthTokens
 
-val driver: Resource[IO, Driver[IO]] =
-  GraphDatabase.driver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver: Resource[IO, AsyncDriver[IO]] =
+  GraphDatabase.asyncDriver[IO]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: IO[String] = driver.use { d =>
-  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
+    .query(ResultMapper.string)
+    .single(d)
 }
 
 val data: String = program.unsafeRunSync()
@@ -56,16 +62,19 @@ val data: String = program.unsafeRunSync()
 ```scala mdoc:compile-only
 import cats.effect.{Async, IO, Resource}
 import cats.effect.unsafe.implicits.global
-import neotypes.{GraphDatabase, Driver}
+import neotypes.{AsyncDriver, GraphDatabase}
 import neotypes.cats.effect.implicits._ // Brings the implicit neotypes.Async[IO] instance into the scope.
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import org.neo4j.driver.AuthTokens
 
-def driver[F[_] : Async]: Resource[F, Driver[F]] =
-  GraphDatabase.driver[F]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+def driver[F[_] : Async]: Resource[F, AsyncDriver[F]] =
+  GraphDatabase.asyncDriver[F]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 def program[F[_] : Async]: F[String] = driver[F].use { d =>
-  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
+    .query(ResultMapper.string)
+    .single(d)
 }
 
 val data: String = program[IO].unsafeRunSync()
@@ -77,17 +86,20 @@ val data: String = program[IO].unsafeRunSync()
 import cats.effect.Resource
 import monix.eval.Task
 import monix.execution.Scheduler.Implicits.global
-import neotypes.{GraphDatabase, Driver}
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.{AsyncDriver, GraphDatabase}
+import neotypes.mappers.ResultMapper // Allows to decode query results.
 import neotypes.monix.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
+import neotypes.syntax.all._ // Provides the query extension method.
 import scala.concurrent.duration._ // Provides the second extension method.
 import org.neo4j.driver.AuthTokens
 
-val driver: Resource[Task, Driver[Task]] =
-  GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver: Resource[Task, AsyncDriver[Task]] =
+  GraphDatabase.asyncDriver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Task[String] = driver.use { d =>
-  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+  "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
+    .query(ResultMapper.string)
+    .single(d)
 }
 
 val data: String = program.runSyncUnsafe(1.second)
@@ -96,18 +108,21 @@ val data: String = program.runSyncUnsafe(1.second)
 ### zio.Task _(neotypes-zio)_
 
 ```scala mdoc:compile-only
-import zio.{Runtime, Scope, Task, Unsafe, ZIO}
-import neotypes.{GraphDatabase, Driver}
-import neotypes.implicits.syntax.string._ // Provides the query[T] extension method.
+import neotypes.{AsyncDriver, GraphDatabase}
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
 import neotypes.zio.implicits._ // Brings the implicit neotypes.Async[Task] instance into the scope.
 import org.neo4j.driver.AuthTokens
+import zio.{Runtime, Scope, Task, Unsafe, ZIO}
 
-val driver: ZIO[Scope, Throwable, Driver[Task]] =
-  GraphDatabase.driver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+val driver: ZIO[Scope, Throwable, AsyncDriver[Task]] =
+  GraphDatabase.asyncDriver[Task]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 val program: Task[String] = ZIO.scoped {
   driver.flatMap {d =>
-    "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name".query[String].single(d)
+    "MATCH (p: Person { name: 'Charlize Theron' }) RETURN p.name"
+      .query(ResultMapper.string)
+      .single(d)
   }
 }
 
