@@ -24,7 +24,7 @@ sealed trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] { s
       result shouldBe expectedResult
     }
 
-  private final def ensureRollbackedTransaction[E <: Throwable: ClassTag](
+  private final def ensureRolledBackTransaction[E <: Throwable: ClassTag](
     txF: TransactionType => F[Unit]
   ): Future[Assertion] =
     recoverToSucceededIf[E] {
@@ -45,7 +45,7 @@ sealed trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] { s
     }
 
   it should "automatically rollback if any query fails inside a transact" in
-    ensureRollbackedTransaction[MissingRecordException] { tx =>
+    ensureRolledBackTransaction[MissingRecordException] { tx =>
       for {
         _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
         _ <- "bad query".execute.void(tx)
@@ -53,7 +53,7 @@ sealed trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] { s
     }
 
   it should "automatically rollback if there is an error inside the transact" in
-    ensureRollbackedTransaction[CustomException.type] { tx =>
+    ensureRolledBackTransaction[CustomException.type] { tx =>
       for {
         _ <- "CREATE (p: PERSON { name: 'Luis' })".execute.void(tx)
         _ <- F.fromEither[Unit](Left(CustomException))
