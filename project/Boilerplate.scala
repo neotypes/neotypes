@@ -7,14 +7,16 @@ object Boilerplate {
     List.range(start = 'b', end = 'z')
 
   private def generateMethod(generateFun: (Int, List[Char], String) => List[String]): List[String] =
-    List.range(
-      start = 2,
-      end = 23 // Actually 22, but range is exclusive on end.
-    ).flatMap { n =>
-      val parameters = letters.take(n)
-      val typeParameters = parameters.map(_.toUpper).mkString(", ")
-      generateFun(n, parameters, typeParameters)
-    }
+    List
+      .range(
+        start = 2,
+        end = 23 // Actually 22, but range is exclusive on end.
+      )
+      .flatMap { n =>
+        val parameters = letters.take(n)
+        val typeParameters = parameters.map(_.toUpper).mkString(", ")
+        generateFun(n, parameters, typeParameters)
+      }
 
   private def generateBoilerplateResultMappers(): List[String] = {
     def generateAnd(n: Int, parameters: List[Char], typeParameters: String): List[String] =
@@ -75,7 +77,7 @@ object Boilerplate {
 
     def generateTuple(n: Int, parameters: List[Char], typeParameters: String): List[String] =
       "/** Creates a tuple [[ResultMapper]], based on a heterogenous list. */" ::
-      s"implicit final def tuple[${typeParameters}](" ::
+      s"implicit final def tuple[${typeParameters}](implicit" ::
       parameters.map(l => s"${l}: ResultMapper[${l.toUpper}]").mkString(", ") ::
       s"): ResultMapper[(${typeParameters})] =" ::
       s"take(${n}).emap {" ::
