@@ -1,9 +1,9 @@
 package neotypes.generic
 
 import neotypes.BaseSynchronousSpec
+import neotypes.generic.implicits.deriveCaseClassProductMap
 import neotypes.mappers.ResultMapper
 import neotypes.model.types._
-import neotypes.generic.implicits.deriveCaseClassProductMap
 
 /** Base class for testing the derivation of a ResultMapper instance for case classes. */
 final class DeriveCaseClassProductMapSpec extends BaseSynchronousSpec {

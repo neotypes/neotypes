@@ -432,7 +432,8 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
 
   it should "support application of custom validations / transformations to fields" in {
     val idMapper = int.emap { i =>
-      Id.from(i)
+      Id
+        .from(i)
         .toRight(
           left = IncoercibleException(s"${i} is not a valid ID because is negative")
         )

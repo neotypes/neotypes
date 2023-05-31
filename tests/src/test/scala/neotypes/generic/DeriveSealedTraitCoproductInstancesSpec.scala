@@ -1,9 +1,9 @@
 package neotypes.generic
 
 import neotypes.BaseSynchronousSpec
+import neotypes.generic.implicits.deriveSealedTraitCoproductInstances
 import neotypes.mappers.ResultMapper
 import neotypes.model.types._
-import neotypes.generic.implicits.deriveSealedTraitCoproductInstances
 
 /** Base class for testing the derivation of a ResultMapper instance for sealed traits. */
 final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec {

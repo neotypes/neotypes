@@ -1,9 +1,9 @@
 package neotypes.generic
 
 import neotypes.BaseSynchronousSpec
+import neotypes.generic.implicits.deriveCaseClassQueryParams
 import neotypes.model.query.QueryParam
 import neotypes.query.{QueryArg, QueryArgMapper}
-import neotypes.generic.implicits.deriveCaseClassQueryParams
 
 /** Base class for testing the derivation of a QueryArgMapper instance for case classes. */
 final class DeriveCaseClassQueryParamSpec extends BaseSynchronousSpec {

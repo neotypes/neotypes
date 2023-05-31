@@ -1,6 +1,6 @@
 package neotypes
 
-import cats.effect.IO
+import _root_.cats.effect.IO
 import _root_.fs2.{Stream => Fs2Stream}
 
 package object fs2 {
