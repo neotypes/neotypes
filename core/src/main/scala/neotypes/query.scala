@@ -36,8 +36,8 @@ sealed trait BaseQuery {
     s"""${this.getClass.getSimpleName}:
        |query:
        |${query}
-       |params:${params.view.map(param => s"\t${param._1}: ${param._2}").mkString("\n")}
-     """.stripMargin
+       |params:
+       |${params.view.map(param => s"\t${param._1}: ${param._2}").mkString("\n")}""".stripMargin
 }
 
 /** Represents a query that doesn't produce results when executed. */
