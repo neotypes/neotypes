@@ -2,7 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val neo4jDriverVersion = "5.8.0"
+val neo4jDriverVersion = "5.9.0"
 val shapelessVersion = "2.3.10"
 val testcontainersNeo4jVersion = "1.17.6"
 val testcontainersScalaVersion = "0.40.11"
@@ -14,7 +14,7 @@ val catsEffect3Version = "3.5.0"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
 val fs2Version = "3.7.0"
-val zio2Version = "2.0.13"
+val zio2Version = "2.0.14"
 val zioInteropReactiveStreamsVersion = "2.0.2"
 val refinedVersion = "0.10.3"
 val enumeratumVersion = "1.7.2"
