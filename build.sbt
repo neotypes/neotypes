@@ -99,7 +99,8 @@ lazy val root = (project in file("."))
     zioStream,
     refined,
     catsData,
-    enumeratum
+    enumeratum,
+    extras
   )
   .settings(noPublishSettings)
   .settings(
@@ -285,6 +286,13 @@ lazy val enumeratum = (project in file("enumeratum"))
     )
   )
 
+lazy val extras = (project in file("extras"))
+  .dependsOn(generic % "compile->compile;test->test;provided->provided", coreTest % "test->test")
+  .settings(commonSettings)
+  .settings(
+    name := "neotypes-extras"
+  )
+
 lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
 
 lazy val microsite = (project in file("site"))
@@ -332,5 +340,6 @@ lazy val microsite = (project in file("site"))
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
     refined % "compile->compile;provided->provided",
-    enumeratum % "compile->compile;provided->provided"
+    enumeratum % "compile->compile;provided->provided",
+    extras % "compile->compile;provided->provided"
   )
