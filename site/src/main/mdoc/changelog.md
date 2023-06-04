@@ -7,9 +7,14 @@ position: 100
 
 # Changelog
 
+## v0.23.3 _(2023-06-04)_
+
+This release only bumps dependencies.<br>
+It also will be the final release before the `1.0.0` milestones begin.
+
 ## v0.23.2 _(2023-01-24)_
 
-This releases mostly bumps dependencies.
+This release mostly bumps dependencies.
 But also adds a minor improvement.
 
 ### Allow using heterogeneous lists and maps as parameters ([#595](https://github.com/neotypes/neotypes/pull/595){:target="_blank"})
