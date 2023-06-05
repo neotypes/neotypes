@@ -3,7 +3,6 @@ import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
 val neo4jDriverVersion = "5.9.0"
-val scalaCollectionCompatVersion = "2.10.0"
 val shapelessVersion = "2.3.10"
 val testcontainersNeo4jVersion = "1.17.6"
 val testcontainersScalaVersion = "0.40.11"
@@ -11,7 +10,7 @@ val scalaTestVersion = "3.2.14"
 val logbackVersion = "1.4.4"
 val catsVersion = "2.9.0"
 val catsEffect2Version = "2.5.5"
-val catsEffect3Version = "3.4.10"
+val catsEffect3Version = "3.5.0"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
 val fs2Version = "3.7.0"
@@ -51,26 +50,24 @@ ThisBuild / scmInfo ~= {
 
 // Global settings.
 ThisBuild / scalaVersion := "2.13.10"
-ThisBuild / crossScalaVersions := Seq("2.12.17", "2.13.10")
+ThisBuild / crossScalaVersions := Seq("2.13.10")
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 // Common settings.
 val commonSettings = Seq(
+  // Run the compiler linter after macros have expanded.
   scalacOptions += "-Ywarn-macros:after",
 
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
 
+  // Implicit resolution debug flags.
+  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
+
   // Make all warnings verbose.
   scalacOptions += "-Wconf:any:warning-verbose",
-
-  Test / parallelExecution := false,
-  Test / fork := true,
-
-  // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
-  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
 
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
@@ -79,6 +76,7 @@ val commonSettings = Seq(
   publishMavenStyle := true,
   releaseCrossBuild := true,
 
+  // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
 
@@ -99,7 +97,8 @@ lazy val root = (project in file("."))
     zioStream,
     refined,
     catsData,
-    enumeratum
+    enumeratum,
+    tests
   )
   .settings(noPublishSettings)
   .settings(
@@ -122,32 +121,17 @@ lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-core",
+    Compile / sourceGenerators += Boilerplate.generatorTask.taskValue,
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       ) ++ COMPILE(
-        "org.scala-lang.modules" %% "scala-collection-compat" % scalaCollectionCompatVersion,
         scalaVersion("org.scala-lang" % "scala-reflect" % _).value
       )
   )
 
-lazy val coreTest = (project in file("core-test"))
-  .dependsOn(core % "test->compile;provided->provided", generic)
-  .settings(commonSettings, noPublishSettings)
-  .settings(
-    name := "neotypes-core-test",
-    libraryDependencies ++=
-      TEST(
-        "org.scalatest" %% "scalatest" % scalaTestVersion,
-        "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
-        "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
-        "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
-        "ch.qos.logback" % "logback-classic" % logbackVersion
-      )
-  )
-
 lazy val generic = (project in file("generic"))
-  .dependsOn(core % "compile->compile;provided->provided")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-generic",
@@ -157,25 +141,11 @@ lazy val generic = (project in file("generic"))
       )
   )
 
-lazy val genericTest = (project in file("generic-test"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test", generic)
-  .settings(commonSettings, noPublishSettings)
-  .settings(
-    name := "neotypes-generic-test",
-  )
-
-def enablePartialUnificationIn2_12(scalaVersion: String) =
-  CrossVersion.partialVersion(scalaVersion) match {
-    case Some((2, 12)) => Seq("-Ypartial-unification")
-    case _ => Seq()
-  }
-
 lazy val catsEffect = (project in file("cats-effect"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
-    Test / scalacOptions ++= enablePartialUnificationIn2_12(scalaVersion.value),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version
@@ -183,7 +153,7 @@ lazy val catsEffect = (project in file("cats-effect"))
   )
 
 lazy val monix = (project in file("monix"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix",
@@ -195,7 +165,7 @@ lazy val monix = (project in file("monix"))
   )
 
 lazy val zio = (project in file("zio"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio",
@@ -205,7 +175,7 @@ lazy val zio = (project in file("zio"))
   )
 
 lazy val akkaStream = (project in file("akka-stream"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-akka-stream",
@@ -215,8 +185,7 @@ lazy val akkaStream = (project in file("akka-stream"))
   )
 
 lazy val fs2Stream = (project in file("fs2-stream"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
-  .dependsOn(catsEffect % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-fs2-stream",
@@ -229,8 +198,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
   )
 
 lazy val monixStream = (project in file("monix-stream"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
-  .dependsOn(monix % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix-stream",
@@ -243,30 +211,19 @@ lazy val monixStream = (project in file("monix-stream"))
   )
 
 lazy val zioStream = (project in file("zio-stream"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
-  .dependsOn(zio % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio-stream",
     libraryDependencies ++= PROVIDED(
-      "dev.zio" %% "zio"         % zio2Version,
+      "dev.zio" %% "zio" % zio2Version,
       "dev.zio" %% "zio-streams" % zio2Version,
       "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
 
-lazy val refined = (project in file("refined"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
-  .settings(commonSettings)
-  .settings(
-    name := "neotypes-refined",
-    libraryDependencies ++= PROVIDED(
-      "eu.timepit" %% "refined" % refinedVersion
-    )
-  )
-
 lazy val catsData = (project in file("cats-data"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-data",
@@ -275,8 +232,18 @@ lazy val catsData = (project in file("cats-data"))
     )
   )
 
+lazy val refined = (project in file("refined"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    name := "neotypes-refined",
+    libraryDependencies ++= PROVIDED(
+      "eu.timepit" %% "refined" % refinedVersion
+    )
+  )
+
 lazy val enumeratum = (project in file("enumeratum"))
-  .dependsOn(core % "compile->compile;provided->provided", coreTest % "test->test")
+  .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-enumeratum",
@@ -285,11 +252,56 @@ lazy val enumeratum = (project in file("enumeratum"))
     )
   )
 
+lazy val tests = (project in file("tests"))
+  .dependsOn(
+    core % "compile->compile;provided->provided",
+    generic % "compile->compile;provided->provided",
+    catsEffect % "compile->compile;provided->provided",
+    zio % "compile->compile;provided->provided",
+    akkaStream % "compile->compile;provided->provided",
+    fs2Stream % "compile->compile;provided->provided",
+    zioStream % "compile->compile;provided->provided",
+    catsData % "compile->compile;provided->provided",
+    refined % "compile->compile;provided->provided",
+    enumeratum % "compile->compile;provided->provided"
+  )
+  .settings(commonSettings, noPublishSettings)
+  .settings(
+    libraryDependencies ++=
+      TEST(
+        "org.scalatest" %% "scalatest" % scalaTestVersion,
+        "com.dimafeng" %% "testcontainers-scala" % testcontainersScalaVersion,
+        "com.dimafeng" %% "testcontainers-scala-neo4j" % testcontainersScalaVersion,
+        "org.testcontainers" % "neo4j" % testcontainersNeo4jVersion,
+        "ch.qos.logback" % "logback-classic" % logbackVersion
+      ),
+    // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
+    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
+    // Fork tests and disable parallel execution to avoid issues with Docker.
+    Test / parallelExecution := false,
+    Test / fork := true,
+    // Print full stack traces of failed tests and a remainder of failed tests:
+    // https://www.scalatest.org/user_guide/using_scalatest_with_sbt
+    Test / testOptions += Tests.Argument("-oFIK")
+  )
+
 lazy val docsMappingsAPIDir = settingKey[String]("Name of subdirectory in site target directory for api docs")
 
-lazy val microsite = (project in file("site"))
-  .settings(moduleName := "site")
+lazy val microsite = (project in file("microsite"))
+  .dependsOn(
+    core % "compile->compile;provided->provided",
+    generic % "compile->compile;provided->provided",
+    catsEffect % "compile->compile;provided->provided",
+    zio % "compile->compile;provided->provided",
+    akkaStream % "compile->compile;provided->provided",
+    fs2Stream % "compile->compile;provided->provided",
+    zioStream % "compile->compile;provided->provided",
+    catsData % "compile->compile;provided->provided",
+    refined % "compile->compile;provided->provided",
+    enumeratum % "compile->compile;provided->provided"
+  )
   .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
+  .settings(commonSettings, noPublishSettings)
   .settings(
     micrositeName := "neotypes",
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
@@ -322,15 +334,4 @@ lazy val microsite = (project in file("site"))
     ),
     ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream),
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-  ).dependsOn(
-    core % "compile->compile;provided->provided",
-    generic % "compile->compile;provided->provided",
-    catsEffect % "compile->compile;provided->provided",
-    zio % "compile->compile;provided->provided",
-    akkaStream % "compile->compile;provided->provided",
-    fs2Stream % "compile->compile;provided->provided",
-    zioStream % "compile->compile;provided->provided",
-    catsData % "compile->compile;provided->provided",
-    refined % "compile->compile;provided->provided",
-    enumeratum % "compile->compile;provided->provided"
   )

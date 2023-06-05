@@ -1,16 +1,17 @@
 package neotypes
 
-import internal.utils.toJavaDuration
-import types.QueryParam
+import model.query.QueryParam
 
 import org.neo4j.driver.{AccessMode, SessionConfig => NeoSessionConfig, TransactionConfig => NeoTransactionConfig}
 
 import scala.concurrent.duration.FiniteDuration
+import scala.jdk.DurationConverters._
 
-/** Scala friendly builder for instances of
-  * [[org.neo4j.driver.TransactionConfig]] and [[org.neo4j.driver.SessionConfig]].
+/** Scala friendly builder for instances of [[org.neo4j.driver.TransactionConfig]] and
+  * [[org.neo4j.driver.SessionConfig]].
   *
-  * @see [[https://neo4j.com/docs/operations-manual/current/monitoring/transaction-management/ Neo4j Transaction Management]].
+  * @see
+  *   [[https://neo4j.com/docs/operations-manual/current/monitoring/transaction-management/ Neo4j Transaction Management]].
   */
 final class TransactionConfig private (
   accessMode: Option[AccessMode] = None,
@@ -25,7 +26,7 @@ final class TransactionConfig private (
     accessMode.foreach(am => sessionConfigBuilder.withDefaultAccessMode(am))
     database.foreach(db => sessionConfigBuilder.withDatabase(db))
     metadata.foreach(md => transactionConfigBuilder.withMetadata(QueryParam.toJavaMap(md)))
-    timeout.foreach(d => transactionConfigBuilder.withTimeout(toJavaDuration(d)))
+    timeout.foreach(d => transactionConfigBuilder.withTimeout(d.toJava))
 
     (sessionConfigBuilder.build(), transactionConfigBuilder.build())
   }
@@ -52,5 +53,12 @@ final class TransactionConfig private (
 }
 
 object TransactionConfig {
-  def default: TransactionConfig = new TransactionConfig()
+
+  /** Default configuration. */
+  val default: TransactionConfig =
+    new TransactionConfig()
+
+  /** Same as [[default]], but overrides the access mode as [[READ]]. */
+  val readOnly: TransactionConfig =
+    default.withAccessMode(AccessMode.READ)
 }

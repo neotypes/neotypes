@@ -30,6 +30,9 @@ jobs:
       - name: Compile
         run: sbtn +Test/compile
 
+      - name: Linting
+        run: sbtn scalafmtCheckAll
+
       - name: Build the microsite
         run: sbtn microsite/makeMicrosite
 

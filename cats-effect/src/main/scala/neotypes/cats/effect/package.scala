@@ -1,7 +1,6 @@
-package neotypes
-package cats
+package neotypes.cats
 
-import _root_.cats.effect.{IO, Resource}
+import cats.effect.{IO, Resource}
 
 package object effect {
   type FResource[F[_]] = { type R[A] = Resource[F, A] }
@@ -9,6 +8,6 @@ package object effect {
   type IOResource[A] = Resource[IO, A]
 
   final object implicits extends CatsEffect {
-    implicit final val IOAsync: Async.Aux[IO, IOResource] = catsAsync
+    implicit final val IOAsync: neotypes.Async.Aux[IO, IOResource] = catsAsync
   }
 }

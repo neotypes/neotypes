@@ -1,211 +1,219 @@
 package neotypes
 
-import internal.utils.traverse._
+import internal.utils.traverseAs
 import internal.syntax.async._
-import internal.syntax.stage._
 import internal.syntax.stream._
-import exceptions.IncoercibleException
-import mappers.{ExecutionMapper, ResultMapper}
-import types.QueryParam
+import mappers.ResultMapper
+import model.exceptions.MissingRecordException
+import model.query.QueryParam
 
-import org.neo4j.driver.{Record, Value}
-import org.neo4j.driver.async.{AsyncSession => NeoAsyncSession, AsyncTransaction => NeoAsyncTransaction}
-import org.neo4j.driver.exceptions.NoSuchRecordException
-import org.neo4j.driver.reactive.{ReactiveSession => NeoReactiveSession, ReactiveTransaction => NeoReactiveTransaction}
+import org.neo4j.driver.async.{ResultCursor => NeoAsyncResult, AsyncTransaction => NeoAsyncTransaction}
+import org.neo4j.driver.reactive.{ReactiveResult => NeoReactiveResult, ReactiveTransaction => NeoReactiveTransaction}
+import org.neo4j.driver.summary.ResultSummary
 
-import scala.collection.compat._
+import scala.collection.Factory
 import scala.jdk.CollectionConverters._
 
-sealed trait Transaction[F[_]] {
-  def execute[T](query: String, params: Map[String, QueryParam] = Map.empty)
-                (implicit executionMapper: ExecutionMapper[T]): F[T]
-
-  def collectAs[C, T](factory: Factory[T, C])
-                     (query: String, params: Map[String, QueryParam] = Map.empty)
-                     (implicit resultMapper: ResultMapper[T]): F[C]
-
-  def list[T](query: String, params: Map[String, QueryParam] = Map.empty)
-             (implicit resultMapper: ResultMapper[T]): F[List[T]]
-
-  def map[K, V](query: String, params: Map[String, QueryParam] = Map.empty)
-               (implicit resultMapper: ResultMapper[(K, V)]): F[Map[K, V]]
-
-  def set[T](query: String, params: Map[String, QueryParam] = Map.empty)
-            (implicit resultMapper: ResultMapper[T]): F[Set[T]]
-
-  def vector[T](query: String, params: Map[String, QueryParam] = Map.empty)
-               (implicit resultMapper: ResultMapper[T]): F[Vector[T]]
-
-  def single[T](query: String, params: Map[String, QueryParam] = Map.empty)
-               (implicit resultMapper: ResultMapper[T]): F[T]
+sealed trait AsyncTransaction[F[_]] {
+  private[neotypes] def F: Async[F]
 
   def commit: F[Unit]
-
   def rollback: F[Unit]
+
+  def execute(
+    query: String,
+    params: Map[String, QueryParam]
+  ): F[ResultSummary]
+
+  def single[T](
+    query: String,
+    params: Map[String, QueryParam],
+    mapper: ResultMapper[T]
+  ): F[(T, ResultSummary)]
+
+  def collectAs[T, C](
+    query: String,
+    params: Map[String, QueryParam],
+    mapper: ResultMapper[T],
+    factory: Factory[T, C]
+  ): F[(C, ResultSummary)]
 }
 
-sealed trait StreamingTransaction[S[_], F[_]] extends Transaction[F] {
-  def stream[T](query: String, params: Map[String, QueryParam])
-               (implicit resultMapper: ResultMapper[T]): S[T]
+sealed trait StreamTransaction[S[_], F[_]] extends AsyncTransaction[F] {
+  private[neotypes] def S: Stream.Aux[S, F]
+
+  def stream[T](
+    query: String,
+    params: Map[String, QueryParam],
+    mapper: ResultMapper[T],
+    chunkSize: Int
+  ): S[Either[T, ResultSummary]]
 }
 
 object Transaction {
-  private def recordToList(record: Record): List[(String, Value)] =
-    record.fields.asScala.iterator.map(p => p.key -> p.value).toList
-
-  private[neotypes] def apply[F[_]](transaction: NeoAsyncTransaction, session: NeoAsyncSession)
-                                   (implicit F: Async[F]): Transaction[F] =
-    new Transaction[F] {
-      private def collectAsImpl[T, C](transaction: NeoAsyncTransaction, query: String, params: Map[String, QueryParam])
-                                     (traverseFun: Iterator[Record] => (Record => Either[Throwable, T]) => Either[Throwable, C])
-                                     (implicit resultMapper: ResultMapper[T]): F[C] =
-        F.async { cb =>
-          transaction
-            .runAsync(query, QueryParam.toJavaMap(params))
-            .thenCompose(_.listAsync())
-            .accept(cb) { records =>
-              traverseFun(records.asScala.iterator) { record =>
-                resultMapper.to(recordToList(record), None)
-              }
-            }
-        }
-
-      override final def execute[T](query: String, params: Map[String,QueryParam])
-                                   (implicit executionMapper: ExecutionMapper[T]): F[T] =
-        F.async { cb =>
-          transaction
-            .runAsync(query, QueryParam.toJavaMap(params))
-            .thenCompose(_.consumeAsync())
-            .accept(cb)(executionMapper.to)
-        }
-
-      override final def collectAs[C, T](factory: Factory[T,C])
-                                        (query: String, params: Map[String,QueryParam])
-                                        (implicit resultMapper: ResultMapper[T]): F[C] =
-        collectAsImpl(transaction, query, params)(traverseAs(factory))
-
-      override final def list[T](query: String, params: Map[String,QueryParam])
-                                (implicit resultMapper: ResultMapper[T]): F[List[T]] =
-        collectAsImpl(transaction, query, params)(traverseAsList[Record, T])
-
-      override final def map[K, V](query: String, params: Map[String,QueryParam])
-                                  (implicit resultMapper: ResultMapper[(K, V)]): F[Map[K,V]] =
-        collectAsImpl(transaction, query, params)(traverseAsMap[Record, K, V])
-
-      override final def set[T](query: String, params: Map[String,QueryParam])
-                               (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
-        collectAsImpl(transaction, query, params)(traverseAsSet[Record, T])
-
-      override final def vector[T](query: String, params: Map[String,QueryParam])
-                                  (implicit resultMapper: ResultMapper[T]): F[Vector[T]] =
-        collectAsImpl(transaction, query, params)(traverseAsVector[Record, T])
-
-      override final def single[T](query: String, params: Map[String,QueryParam])
-                                  (implicit resultMapper: ResultMapper[T]): F[T] =
-        F.async { cb =>
-          transaction
-            .runAsync(query, QueryParam.toJavaMap(params))
-            .thenCompose(_.singleAsync())
-            .acceptExceptionally(cb) { record =>
-              resultMapper.to(recordToList(record), None)
-            } {
-              case _: NoSuchRecordException => resultMapper.to(List.empty, None)
-            }
-        }
-
-      private def closeSession: F[Unit] =
-        F.async { cb =>
-          session.closeAsync().acceptVoid(cb)
-        }
+  private[neotypes] def async[F[_]](
+    transaction: NeoAsyncTransaction,
+    close: () => F[Unit]
+  )(implicit
+    evF: Async[F]
+  ): AsyncTransaction[F] =
+    new AsyncTransaction[F] {
+      override final val F: Async[F] = evF
 
       override final def commit: F[Unit] =
-        F.async[Unit] { cb =>
-          transaction.commitAsync().acceptVoid(cb)
-        } guarantee { _ =>
-          closeSession
-        }
+        F.fromCompletionStage(transaction.commitAsync()).void.guarantee(_ => close())
 
       override final def rollback: F[Unit] =
-        F.async[Unit] { cb =>
-          transaction.rollbackAsync().acceptVoid(cb)
-        } guarantee { _ =>
-          closeSession
-        }
+        F.fromCompletionStage(transaction.rollbackAsync()).void.guarantee(_ => close())
+
+      private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoAsyncResult] =
+        F.fromCompletionStage(
+          transaction.runAsync(query, QueryParam.toJavaMap(params))
+        ).mapError(ex => MissingRecordException(cause = ex))
+
+      private def resultSummary(result: NeoAsyncResult): F[ResultSummary] =
+        F.fromCompletionStage(
+          result.consumeAsync()
+        ).mapError(ex => MissingRecordException(cause = ex))
+
+      override final def execute(
+        query: String,
+        params: Map[String, QueryParam]
+      ): F[ResultSummary] =
+        runQuery(query, params).flatMap(resultSummary)
+
+      override final def single[T](
+        query: String,
+        params: Map[String, QueryParam],
+        mapper: ResultMapper[T]
+      ): F[(T, ResultSummary)] =
+        for {
+          result <- runQuery(query, params)
+          record <- F.fromCompletionStage(result.singleAsync()).mapError { ex =>
+            MissingRecordException(cause = ex)
+          }
+          t <- F.fromEither(Parser.decodeRecord(record, mapper))
+          rs <- resultSummary(result)
+        } yield t -> rs
+
+      override final def collectAs[T, C](
+        query: String,
+        params: Map[String, QueryParam],
+        mapper: ResultMapper[T],
+        factory: Factory[T, C]
+      ): F[(C, ResultSummary)] =
+        for {
+          result <- runQuery(query, params)
+          records <- F.fromCompletionStage(result.listAsync())
+          col <- F.fromEither(traverseAs(factory)(records.asScala) { record =>
+            Parser.decodeRecord(record, mapper)
+          })
+          rs <- resultSummary(result)
+        } yield col -> rs
     }
 
-  private[neotypes] def apply[S[_], F[_]](transaction: NeoReactiveTransaction, session: NeoReactiveSession)
-                                         (implicit S: Stream.Aux[S, F], F: Async[F]): StreamingTransaction[S, F] =
-    new StreamingTransaction[S, F] {
-      override final def execute[T](query: String, params: Map[String, QueryParam])
-                                   (implicit executionMapper: ExecutionMapper[T]): F[T] = {
-        val resultPublisher = transaction.run(query, QueryParam.toJavaMap(params))
-
-        resultPublisher.toStream[S].flatMapS { result =>
-          // Ensure to process all records before asking for the result summary.
-          S.discardAppend(
-            left = result.records().toStream[S],
-            right = result.consume().toStream[S]
-          )
-        }.single[F].flatMap { rs =>
-          F.fromEither(
-            rs.toRight(
-              left = IncoercibleException(message = "Missing ResultSummary")
-            ).flatMap(executionMapper.to)
-          )
-        }
-      }
-
-      override final def collectAs[C, T](factory: Factory[T, C])
-                                        (query: String, params: Map[String, QueryParam])
-                                        (implicit resultMapper: ResultMapper[T]): F[C] =
-        stream(query, params).collectAs[F, C](factory)
-
-      override final def list[T](query: String, params: Map[String, QueryParam])
-                                (implicit resultMapper: ResultMapper[T]): F[List[T]] =
-        collectAs[List[T], T](List)(query, params)
-
-      override final def map[K, V](query: String, params: Map[String, QueryParam])
-                                  (implicit resultMapper: ResultMapper[(K, V)]): F[Map[K,V]] =
-        collectAs[Map[K, V], (K, V)](Map)(query, params)
-
-      override final def set[T](query: String, params: Map[String, QueryParam])
-                              (implicit resultMapper: ResultMapper[T]): F[Set[T]] =
-        collectAs[Set[T], T](Set)(query, params)
-
-      override final def vector[T](query: String, params: Map[String, QueryParam])
-                                  (implicit resultMapper: ResultMapper[T]): F[Vector[T]] =
-        collectAs[Vector[T], T](Vector)(query, params)
-
-      override final def single[T](query: String, params: Map[String, QueryParam])
-                                  (implicit resultMapper: ResultMapper[T]): F[T] =
-        stream(query, params).single[F].flatMap {
-          case Some(a) => F.delay(a)
-          case None    => F.fromEither(resultMapper.to(List.empty, None))
-        }
-
-      override final def stream[T](query: String, params: Map[String, QueryParam])
-                                  (implicit resultMapper: ResultMapper[T]): S[T] =
-        transaction
-          .run(query, QueryParam.toJavaMap(params))
-          .toStream[S]
-          .flatMapS(result => result.records.toStream[S])
-          .evalMap(r => F.fromEither(resultMapper.to(recordToList(r), None)))
-
-      private def closeSession: F[Unit] =
-        session.close[Unit].toStream[S].void
+  private[neotypes] def stream[S[_], F[_]](
+    transaction: NeoReactiveTransaction,
+    close: () => F[Unit]
+  )(implicit
+    evS: Stream.Aux[S, F],
+    evF: Async[F]
+  ): StreamTransaction[S, F] =
+    new StreamTransaction[S, F] {
+      override final val F: Async[F] = evF
+      override final val S: Stream.Aux[S, F] = evS
 
       override final def commit: F[Unit] =
-        transaction
-          .commit[Unit]
-          .toStream[S]
-          .void[F]
-          .guarantee(_ => closeSession)
+        S.fromPublisher(transaction.commit[Unit]).voidS[F].guarantee(_ => close())
 
       override final def rollback: F[Unit] =
-        transaction
-          .rollback[Unit]
-          .toStream[S]
-          .void[F]
-          .guarantee(_ => closeSession)
+        S.fromPublisher(transaction.rollback[Unit]).voidS[F].guarantee(_ => close())
+
+      private def runQuery(query: String, params: Map[String, QueryParam]): F[NeoReactiveResult] =
+        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params)))
+          .single[F]
+          .flatMap { result =>
+            F.fromEither(
+              result.toRight(
+                left = MissingRecordException(
+                  cause = new NoSuchElementException("NeoReactiveTransaction.NeoReactiveResult")
+                )
+              )
+            )
+          }
+          .mapError { ex =>
+            MissingRecordException(cause = ex)
+          }
+
+      private def resultSummary(result: NeoReactiveResult): F[ResultSummary] =
+        S.fromPublisher(result.consume()).single[F].flatMap { rs =>
+          F.fromEither(
+            rs.toRight(
+              left = MissingRecordException(
+                cause = new NoSuchElementException("NeoReactiveResult.ResultSummary")
+              )
+            )
+          )
+        }
+
+      override final def execute(
+        query: String,
+        params: Map[String, QueryParam]
+      ): F[ResultSummary] =
+        for {
+          result <- runQuery(query, params)
+          _ <- S.fromPublisher(result.records()).voidS[F]
+          rs <- resultSummary(result)
+        } yield rs
+
+      override final def single[T](
+        query: String,
+        params: Map[String, QueryParam],
+        mapper: ResultMapper[T]
+      ): F[(T, ResultSummary)] =
+        for {
+          result <- runQuery(query, params)
+          recordOpt <- S.fromPublisher(result.records()).single[F]
+          record <- F.fromEither(
+            recordOpt.toRight(
+              left = MissingRecordException(
+                cause = new NoSuchElementException("NeoReactiveResult.Record")
+              )
+            )
+          )
+          t <- F.fromEither(Parser.decodeRecord(record, mapper))
+          rs <- resultSummary(result)
+        } yield t -> rs
+
+      override final def collectAs[T, C](
+        query: String,
+        params: Map[String, QueryParam],
+        mapper: ResultMapper[T],
+        factory: Factory[T, C]
+      ): F[(C, ResultSummary)] =
+        for {
+          result <- runQuery(query, params)
+          records = S.fromPublisher(result.records(), chunkSize = 256).evalMap { record =>
+            F.fromEither(Parser.decodeRecord(record, mapper))
+          }
+          col <- records.collectAs(factory)
+          rs <- resultSummary(result)
+        } yield col -> rs
+
+      override final def stream[T](
+        query: String,
+        params: Map[String, QueryParam],
+        mapper: ResultMapper[T],
+        chunkSize: Int
+      ): S[Either[T, ResultSummary]] =
+        S.fromPublisher(transaction.run(query, QueryParam.toJavaMap(params))).flatMapS { result =>
+          val records = S.fromPublisher(result.records(), chunkSize).evalMap { record =>
+            F.fromEither(Parser.decodeRecord(record, mapper))
+          }
+
+          lazy val summary = S.fromPublisher(result.consume())
+
+          records andThen summary
+        }
     }
 }
