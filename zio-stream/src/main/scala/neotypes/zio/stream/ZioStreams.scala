@@ -16,7 +16,10 @@ trait ZioStreams {
       override final type F[T] = Task[T]
 
       override final def fromPublisher[A](publisher: => Publisher[A], chunkSize: Int): ZioStream[A] =
-        Adapters.publisherToStream(toPublisher(publisher), chunkSize)
+        Adapters.publisherToStream(
+          publisher = toPublisher(publisher),
+          bufferSize = math.max(chunkSize, 2) // ZIO requires a buffer size of minimum two.
+        )
 
       override final def append[A, B >: A](sa: ZioStream[A], sb: => ZioStream[B]): ZioStream[B] =
         sa ++ sb
