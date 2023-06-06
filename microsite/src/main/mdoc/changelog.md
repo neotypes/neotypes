@@ -7,6 +7,33 @@ position: 100
 
 # Changelog
 
+## v1.0.0-M1 _(2023-06-05)_
+
+> We start the road for the first stable version of **Neotypes**!
+
+This first milestone introduces a bunch of breaking changes,
+especially with everything related to `ResultMapper`.
+
+### Neotypes-Schema — Explicit decoders ([#584](https://github.com/neotypes/neotypes/pull/584){:target="_blank"})
+
+We not longer use `ResultMapper` as a _typeclass_,
+rather the `query` method expects an explicit mapper;
+which you may construct based on the the provided ones and _combinators_.<br>
+See [supported types](types) for more information.
+
+### Miscellaneous
+
+Additionally, we made a couple of renames to make everything more consistent.
+
+A non exhaustive list of renames are:
+
++ `GraphDatabase.driver` -> `GraphDatabase.asyncDriver`
++ `GraphDatabase.streamingDriver` -> `GraphDatabase.streamDriver`
++ `query.query[Unit].execute(driver)` -> `query.execute.void(driver)`
++ `query.query[ResultSummary].execute(driver)` -> `query.execute.resultSummary(driver)`
++ `import neotypes.implicits.syntax.all._` -> `import neotypes.syntax.all._`
++ `import neotypes.generic.auto._` -> `import neotypes.generic.implicits._`
+
 ## v0.23.3 _(2023-06-04)_
 
 This release only bumps dependencies.<br>
