@@ -22,15 +22,15 @@ import scala.util.Try
 object Parser {
   val Types = TypeSystem.getDefault
 
-  /** Parses and decodes a [[NeoRecord]] into a value using a [[ResultMapper]]. */
+  /** Parses and decodes a [[org.neo4j.driver.Record]] into a value using a [[neotypes.mappers.ResultMapper]]. */
   def decodeRecord[A](record: NeoRecord, mapper: ResultMapper[A]): Either[ResultMapperException, A] =
     parseRecord(record).flatMap(mapper.decode)
 
-  /** Parses a Neo4j [[NeoRecord]] into a [[NeoMap]]. */
+  /** Parses a Neo4j [[org.neo4j.driver.Record]] into a [[neotypes.model.types.NeoMap]]. */
   def parseRecord(record: NeoRecord): Either[ResultMapperException, NeoMap] =
     parseNeoMap(entity = record)
 
-  /** Parses a Neo4j [[NeoValue]] into a [[NeoType]]. */
+  /** Parses a Neo4j [[org.neo4j.driver.Value]] into a [[neotypes.model.types.NeoType]]. */
   def parseNeoType(value: NeoValue): Either[ResultMapperException, NeoType] =
     if (value.hasType(Types.NODE))
       parseNeoNode(value.asNode)
@@ -51,7 +51,7 @@ object Parser {
     else
       parseNeoValue(value)
 
-  /** Parses a Neo4j [[NeoValue]] into a [[Value]]. */
+  /** Parses a Neo4j [[org.neo4j.driver.Value]] into a [[neotypes.model.types.Value]]. */
   def parseNeoValue(value: NeoValue): Either[ResultMapperException, Value] = {
     def parseSimpleValue(value: NeoValue): Either[ResultMapperException, Value.SimpleValue] =
       if (value.hasType(Types.INTEGER))
@@ -99,7 +99,7 @@ object Parser {
       parseSimpleValue(value)
   }
 
-  /** Attempts to parse the properties of a [[NeoEntity]]. */
+  /** Attempts to parse the properties of a [[org.neo4j.driver.types.MapAccessor]]. */
   private def parseProperties[V <: NeoType](
     entity: NeoEntity
   )(
@@ -111,11 +111,11 @@ object Parser {
       }
     }
 
-  /** Attempts to parse a [[NeoEntity]] as a [[NeoMap]]. */
+  /** Attempts to parse a [[org.neo4j.driver.types.MapAccessor]] as a [[neotypes.model.types.NeoMap]]. */
   private def parseNeoMap(entity: NeoEntity): Either[ResultMapperException, NeoMap] =
     parseProperties(entity)(parseNeoType).map(NeoMap.apply)
 
-  /** Attempts to parse a [[NeoNode]] as a [[Node]]. */
+  /** Attempts to parse a [[org.neo4j.driver.types.Node]] as a [[neotypes.model.types.Node]]. */
   private def parseNeoNode(node: NeoNode): Either[ResultMapperException, Node] =
     parseProperties(entity = node)(parseNeoValue).map { properties =>
       Node(
@@ -125,7 +125,7 @@ object Parser {
       )
     }
 
-  /** Attempts to parse a [[NeoRelationship]] as a [[Relationship]]. */
+  /** Attempts to parse a [[org.neo4j.driver.types.Relationship]] as a [[neotypes.model.types.Relationship]]. */
   private def parseNeoRelationship(relationship: NeoRelationship): Either[ResultMapperException, Relationship] =
     parseProperties(entity = relationship)(parseNeoValue).map { properties =>
       Relationship(
@@ -137,7 +137,7 @@ object Parser {
       )
     }
 
-  /** Attempts to parse a [[NeoPath]] as a [[Path]]. */
+  /** Attempts to parse a [[NeoPath]] as a [[neotypes.model.types.Path]]. */
   private def parseNeoPath(path: NeoPath): Either[ResultMapperException, Path] =
     traverseAs(List.iterableFactory[Path.Segment])(path.asScala) { segment =>
       (parseNeoNode(segment.start) and parseNeoRelationship(segment.relationship) and parseNeoNode(segment.end)).map {
@@ -154,7 +154,7 @@ object Parser {
         Right(Path.NonEmptyPath(segments))
     }
 
-  /** Attempts to parse a [[NeoValue]] as a [[Value.TemporalInstantValue]]. */
+  /** Attempts to parse a [[neotypes.model.types.NeoValue]] as a [[neotypes.model.types.Value.TemporalInstantValue]]. */
   private def parseNeoTemporalValue[T <: Value.TemporalInstantValue](value: => T): Either[ResultMapperException, T] =
     Try(value).toEither.left.map { ex =>
       IncoercibleException(

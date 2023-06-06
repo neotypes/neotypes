@@ -25,7 +25,7 @@ import scala.concurrent.duration.{FiniteDuration => SDuration}
 import scala.reflect.ClassTag
 import scala.util.Try
 
-/** Allows decoding a [[NeoType]] into a value of type [[A]]. */
+/** Allows decoding a [[neotypes.model.types.NeoType]] into a value of type `A`. */
 @annotation.implicitNotFound(
   """
 Could not find the ResultMapper for "${A}".
@@ -37,7 +37,9 @@ then `import neotypes.generic.implicits._` to enable automatic derivation.
 )
 trait ResultMapper[A] { self =>
 
-  /** Attempts to decode the given [[NeoType]], may fail with a [[ResultMapperException]]. */
+  /** Attempts to decode the given [[neotypes.model.types.NeoType]], may fail with a
+    * [[neotypes.model.exceptions.ResultMapperException]].
+    */
   def decode(value: NeoType): Either[ResultMapperException, A]
 
   /** Chains another mapper based on decoding result of this one. */
@@ -110,8 +112,8 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
   def constant[A](a: A): ResultMapper[A] =
     instance(_ => Right(a))
 
-  /** Creates a [[ResultMapper]] that will always fail with the given [[ResultMapperException]], no matter the actual
-    * input passed to `decode`.
+  /** Creates a [[ResultMapper]] that will always fail with the given
+    * [[neotypes.model.exceptions.ResultMapperException]], no matter the actual input passed to `decode`.
     */
   def failed[A](ex: ResultMapperException): ResultMapper[A] =
     instance(_ => Left(ex))
@@ -176,7 +178,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
   implicit final val ignore: ResultMapper[Unit] =
     instance(_ => Right(()))
 
-  /** [[ResultMapper]] that will decode any numeric value into an [[Int]], may lose precision. */
+  /** [[ResultMapper]] that will decode any numeric value into an [[scala.Int]], may lose precision. */
   implicit final val int: ResultMapper[Int] =
     fromNumeric {
       case Value.Integer(value) =>
@@ -186,7 +188,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toInt
     }
 
-  /** [[ResultMapper]] that will decode any numeric value into an [[Short]], may lose precision. */
+  /** [[ResultMapper]] that will decode any numeric value into an [[scala.Short]], may lose precision. */
   implicit final val short: ResultMapper[Short] =
     fromNumeric {
       case Value.Integer(value) =>
@@ -196,7 +198,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toShort
     }
 
-  /** [[ResultMapper]] that will decode any numeric value into an [[Byte]], may lose precision. */
+  /** [[ResultMapper]] that will decode any numeric value into an [[scala.Byte]], may lose precision. */
   implicit final val byte: ResultMapper[Byte] =
     fromNumeric {
       case Value.Integer(value) =>
@@ -206,7 +208,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toByte
     }
 
-  /** [[ResultMapper]] that will decode any numeric value into an [[Long]], may lose precision. */
+  /** [[ResultMapper]] that will decode any numeric value into an [[scala.Long]], may lose precision. */
   implicit final val long: ResultMapper[Long] =
     fromNumeric {
       case Value.Integer(value) =>
@@ -216,7 +218,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toLong
     }
 
-  /** [[ResultMapper]] that will decode any numeric value into an [[Float]], may lose precision. */
+  /** [[ResultMapper]] that will decode any numeric value into an [[scala.Float]], may lose precision. */
   implicit final val float: ResultMapper[Float] =
     fromNumeric {
       case Value.Integer(value) =>
@@ -226,7 +228,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toFloat
     }
 
-  /** [[ResultMapper]] that will decode any numeric value into an [[Double]]. */
+  /** [[ResultMapper]] that will decode any numeric value into an [[scala.Double]]. */
   implicit final val double: ResultMapper[Double] =
     fromNumeric {
       case Value.Integer(value) =>
@@ -236,7 +238,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[BigInt]]. */
+  /** [[ResultMapper]] that will decode the input as a [[scala.BigInt]]. */
   implicit final val bigInt: ResultMapper[BigInt] =
     fromMatch {
       case Value.Integer(value) =>
@@ -249,7 +251,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         BigInt(value.unsafeArray.asInstanceOf[Array[Byte]])
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[BigDecimal]]. */
+  /** [[ResultMapper]] that will decode the input as a [[scala.BigDecimal]]. */
   implicit final val bigDecimal: ResultMapper[BigDecimal] =
     fromMatch {
       case Value.Integer(value) =>
@@ -265,19 +267,19 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         BigDecimal(BigInt(value.unsafeArray.asInstanceOf[Array[Byte]]))
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[Boolean]]. */
+  /** [[ResultMapper]] that will decode the input as a [[scala.Boolean]]. */
   implicit final val boolean: ResultMapper[Boolean] =
     fromMatch { case Value.Bool(value) =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[String]]. */
+  /** [[ResultMapper]] that will decode the input as a [[java.lang.String]]. */
   implicit final val string: ResultMapper[String] =
     fromMatch { case Value.Str(value) =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[UUID]]. */
+  /** [[ResultMapper]] that will decode the input as a [[java.util.UUID]]. */
   implicit final val uuid: ResultMapper[UUID] =
     fromMatch {
       case Value.Str(value) =>
@@ -303,37 +305,37 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[Node]]. */
+  /** [[ResultMapper]] that will decode the input as a [[neotypes.model.types.Node]]. */
   implicit final val node: ResultMapper[Node] =
     fromMatch { case value: Node =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[Relationship]]. */
+  /** [[ResultMapper]] that will decode the input as a [[neotypes.model.types.Relationship]]. */
   implicit final val relationship: ResultMapper[Relationship] =
     fromMatch { case value: Relationship =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[Path]]. */
+  /** [[ResultMapper]] that will decode the input as a [[neotypes.model.types.Path]]. */
   implicit final val path: ResultMapper[Path] =
     fromMatch { case value: Path =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[NeoPoint]]. */
+  /** [[ResultMapper]] that will decode the input as a [[org.neo4j.driver.types.Point]]. */
   implicit final val neoPoint: ResultMapper[NeoPoint] =
     fromMatch { case Value.Point(value) =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[NeoDuration]]. */
+  /** [[ResultMapper]] that will decode the input as a [[org.neo4j.driver.types.IsoDuration]]. */
   implicit final val neoDuration: ResultMapper[NeoDuration] =
     fromMatch { case Value.Duration(value) =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[JDuration]]. */
+  /** [[ResultMapper]] that will decode the input as a [[java.time.Duration]]. */
   implicit final val javaDuration: ResultMapper[JDuration] =
     neoDuration.map { isoDuration =>
       JDuration
@@ -343,7 +345,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         .plusNanos(isoDuration.nanoseconds.toLong)
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[JPeriod]]. */
+  /** [[ResultMapper]] that will decode the input as a [[java.time.Period]]. */
   implicit final val javaPeriod: ResultMapper[JPeriod] =
     neoDuration.map { isoDuration =>
       JPeriod
@@ -352,11 +354,11 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         .plusDays(isoDuration.days)
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[SDuration]]. */
+  /** [[ResultMapper]] that will decode the input as a [[scala.concurrent.duration.FiniteDuration]]. */
   implicit final val scalaDuration: ResultMapper[SDuration] =
     javaDuration.map(d => scala.concurrent.duration.Duration.fromNanos(d.toNanos))
 
-  /** [[ResultMapper]] that will decode any temporal-instant value into an [[JDate]]. */
+  /** [[ResultMapper]] that will decode any temporal-instant value into an [[java.time.LocalDate]]. */
   implicit final val javaLocalDate: ResultMapper[JDate] = fromTemporalInstant {
     case Value.LocalDate(value) =>
       value
@@ -368,7 +370,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
       value.toLocalDate
   }
 
-  /** [[ResultMapper]] that will decode any temporal-instant value into an [[JTime]]. */
+  /** [[ResultMapper]] that will decode any temporal-instant value into an [[java.time.LocalTime]]. */
   implicit final val javaLocalTime: ResultMapper[JTime] =
     fromTemporalInstant {
       case Value.LocalTime(value) =>
@@ -384,7 +386,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toLocalTime
     }
 
-  /** [[ResultMapper]] that will decode any temporal-instant value into an [[JDateTime]]. */
+  /** [[ResultMapper]] that will decode any temporal-instant value into an [[java.time.LocalDateTime]]. */
   implicit final val javaLocalDateTime: ResultMapper[JDateTime] =
     fromTemporalInstant {
       case Value.LocalDateTime(value) =>
@@ -394,7 +396,7 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toLocalDateTime
     }
 
-  /** [[ResultMapper]] that will decode any temporal-instant value into an [[JZTime]]. */
+  /** [[ResultMapper]] that will decode any temporal-instant value into an [[java.time.OffsetTime]]. */
   implicit final val javaOffsetTime: ResultMapper[JZTime] =
     fromTemporalInstant {
       case Value.ZonedTime(value) =>
@@ -404,19 +406,20 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         value.toOffsetDateTime.toOffsetTime
     }
 
-  /** [[ResultMapper]] that will decode any temporal-instant value into an [[JZDateTime]]. */
+  /** [[ResultMapper]] that will decode any temporal-instant value into an [[java.time.ZonedDateTime]]. */
   implicit final val javaZonedDateTime: ResultMapper[JZDateTime] =
     fromTemporalInstant { case Value.ZonedDateTime(value) =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as a [[NeoObject]]. */
+  /** [[ResultMapper]] that will decode the input as a [[neotypes.model.types.NeoObject]]. */
   implicit final val neoObject: ResultMapper[NeoObject] =
     fromMatch { case value: NeoObject =>
       value
     }
 
-  /** [[ResultMapper]] that will decode the input as an heterogeneous list of [[NeoType]] values. */
+  /** [[ResultMapper]] that will decode the input as an heterogeneous list of [[neotypes.model.types.NeoType]] values.
+    */
   implicit final val values: ResultMapper[List[NeoType]] =
     fromMatch {
       case NeoList(values) =>
@@ -429,10 +432,11 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
         values
     }
 
-  /** [[ResultMapper]] that will decode the input as fixed size heterogeneous list of [[NeoType]] values.
+  /** [[ResultMapper]] that will decode the input as fixed size heterogeneous list of [[neotypes.model.types.NeoType]]
+    * values.
     *
     * @note
-    *   Pads with [[Value.NullValue]] in case it is necessary.
+    *   Pads with [[neotypes.model.types.Value.NullValue]] in case it is necessary.
     * @see
     *   [[values]]
     */
@@ -478,37 +482,39 @@ object ResultMapper extends ResultMappersLowPriority0 with BoilerplateResultMapp
   ): ResultMapper[Either[A, B]] =
     a.map(Left.apply).or(b.map(Right.apply))
 
-  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[List]], using the provided mapper to
-    * decode each element.
+  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[scala.List]], using the provided
+    * mapper to decode each element.
     */
   def list[A](mapper: ResultMapper[A]): ResultMapper[List[A]] =
     collectAs(List, mapper)
 
-  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[Vector]], using the provided mapper
-    * to decode each element. .
+  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[scala.Vector]], using the provided
+    * mapper to decode each element. .
     */
   def vector[A](mapper: ResultMapper[A]): ResultMapper[Vector[A]] =
     collectAs(Vector, mapper)
 
-  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[Set]], using the provided mapper to
-    * decode each element.
+  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[scala.Predef.Set]], using the
+    * provided mapper to decode each element.
     */
   def set[A](mapper: ResultMapper[A]): ResultMapper[Set[A]] =
     collectAs(Set, mapper)
 
-  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[Map]], using the provided mapper to
-    * decode each key-value element.
+  /** Creates a [[ResultMapper]] that will collect all values into an homogeneous [[scala.Predef.Map]], using the
+    * provided mapper to decode each key-value element.
     */
   def map[K, V](keyMapper: ResultMapper[K], valueMapper: ResultMapper[V]): ResultMapper[Map[K, V]] =
     collectAsMap(Map, keyMapper, valueMapper)
 
-  /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[KeyMapper]] & [[ResultMapper]] to decode the
-    * key-values.
+  /** Decodes a [[neotypes.model.types.NeoObject]] into a [[scala.Predef.Map]] using the provided [[KeyMapper]] &
+    * [[ResultMapper]] to decode the key-values.
     */
   def neoMap[K, V](keyMapper: KeyMapper[K], valueMapper: ResultMapper[V]): ResultMapper[Map[K, V]] =
     collectAsNeoMap(Map, keyMapper, valueMapper)
 
-  /** Decodes a [[NeoObject]] into a [[Map]] using the provided [[ResultMapper]] to decode the values. */
+  /** Decodes a [[neotypes.model.types.NeoObject]] into a [[scala.Predef.Map]] using the provided [[ResultMapper]] to
+    * decode the values.
+    */
   def neoMap[V](valueMapper: ResultMapper[V]): ResultMapper[Map[String, V]] =
     collectAsNeoMap(Map, KeyMapper.string, valueMapper)
 
@@ -628,7 +634,8 @@ and that you imported `neotypes.generic.implicits._`
 private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultMappersLowPriority1 {
   self: ResultMapper.type =>
 
-  /** Creates a [[ResultMapper]] that will try to decode a [[NeoObject]] into a some form of [[Map]].
+  /** Creates a [[ResultMapper]] that will try to decode a [[neotypes.model.types.NeoObject]] into a some form of
+    * [[scala.Predef.Map]].
     *
     * @tparam K
     *   the type of the keys.
@@ -637,7 +644,7 @@ private[mappers] sealed abstract class ResultMappersLowPriority0 extends ResultM
     * @tparam M
     *   the kind of map to create.
     * @param mapFactory
-    *   the specific [[Map]] to create.
+    *   the specific [[scala.Predef.Map]] to create.
     * @param mapper
     *   the [[ResultMapper]] used to decode the values.
     * @param keyMapper
@@ -699,18 +706,18 @@ private[mappers] sealed abstract class ResultMappersLowPriority2 extends ResultM
 private[mappers] sealed abstract class ResultMappersLowPriority3 { self: ResultMapper.type =>
 
   /** Derives an opinionated [[ResultMapper]] for a given `case class`. The derived mapper will attempt to decode the
-    * result as a [[NeoObject]], and then decode each field using exact names matches, with the mappers in the implicit
-    * scope.
+    * result as a [[neotypes.model.types.NeoObject]], and then decode each field using exact names matches, with the
+    * mappers in the implicit scope.
     *
     * @note
-    *   if you need customization of the decoding logic, please refer to the [[product]] and [[productNamed]] factories.
+    *   if you need customization of the decoding logic, please refer to the `product` and `productNamed` factories.
     */
   implicit final def productDerive[P <: Product](implicit ev: DerivedProductMap[P]): ResultMapper[P] =
     neoObject.emap(ev.map)
 
   /** Derives an opinionated [[ResultMapper]] for a given `sealed trait`. The derived mapper will attempt to decode the
-    * result as a [[NeoObject]], then it will discriminate the corresponding case based on the `type` field and using
-    * exact names matches, with the mappers in the implicit scope.
+    * result as a [[neotypes.model.types.NeoObject]], then it will discriminate the corresponding case based on the
+    * `type` field and using exact names matches, with the mappers in the implicit scope.
     *
     * @note
     *   if you need customization of the decoding logic, please refer to the [[coproduct]] factory.

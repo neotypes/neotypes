@@ -16,7 +16,7 @@ sealed trait BaseQuery {
   /** The query statement that will be executed. */
   def query: String
 
-  /** @The parameters that will be substituted into the query statement. */
+  /** The parameters that will be substituted into the query statement. */
   def params: Map[String, QueryParam]
 
   /** Creates a new query with an updated set of parameters.
@@ -51,7 +51,7 @@ final class ExecuteQuery private[neotypes] (
       params = this.params ++ params
     )
 
-  /** Executes the query and returns its [[ResultSummary]].
+  /** Executes the query and returns its [[org.neo4j.driver.summary.ResultSummary]].
     *
     * @example
     *   {{{
@@ -76,7 +76,7 @@ final class ExecuteQuery private[neotypes] (
   ): F[ResultSummary] =
     driver.transact(config)(tx => resultSummary(tx))
 
-  /** Executes the query and returns its [[ResultSummary]].
+  /** Executes the query and returns its [[org.neo4j.driver.summary.ResultSummary]].
     *
     * @example
     *   {{{
@@ -212,7 +212,9 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
       mapper = this.mapper
     )
 
-  /** Transforms this simple query, into one that preserves the [[ResultSummary]] of its executions. */
+  /** Transforms this simple query, into one that preserves the [[org.neo4j.driver.summary.ResultSummary]] of its
+    * executions.
+    */
   def withResultSummary(implicit
     ev: RT <:< ResultType.Simple.type
   ): DeferredQuery[T, ResultType.WithResultSummary.type] =
@@ -327,7 +329,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   def collectAs[F[_], C](factory: Factory[T, C], tx: AsyncTransaction[F]): F[RT.AsyncR[C]] =
     RT.async(tx.collectAs(query, params, mapper, factory))(tx.F)
 
-  /** Executes the query and returns a [[List]] of values.
+  /** Executes the query and returns a [[scala.List]] of values.
     *
     * @example
     *   {{{
@@ -349,7 +351,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   def list[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[List[T]]] =
     driver.transact(config)(tx => list(tx))
 
-  /** Executes the query and returns a [[List]] of values.
+  /** Executes the query and returns a [[scala.List]] of values.
     *
     * @example
     *   {{{
@@ -370,7 +372,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   def list[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[List[T]]] =
     collectAs(factory = List, tx)
 
-  /** Executes the query and returns a [[Set]] of values.
+  /** Executes the query and returns a [[scala.Predef.Set]] of values.
     *
     * @example
     *   {{{
@@ -392,7 +394,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   def set[F[_]](driver: AsyncDriver[F], config: TransactionConfig = TransactionConfig.default): F[RT.AsyncR[Set[T]]] =
     driver.transact(config)(tx => set(tx))
 
-  /** Executes the query and returns a [[Set]] of values.
+  /** Executes the query and returns a [[scala.Predef.Set]] of values.
     *
     * @example
     *   {{{
@@ -413,7 +415,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   def set[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[Set[T]]] =
     collectAs(factory = Set, tx)
 
-  /** Executes the query and returns a [[Vector]] of values.
+  /** Executes the query and returns a [[scala.Vector]] of values.
     *
     * @example
     *   {{{
@@ -438,7 +440,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   ): F[RT.AsyncR[Vector[T]]] =
     driver.transact(config)(tx => vector(tx))
 
-  /** Executes the query and returns a [[Vector]] of values.
+  /** Executes the query and returns a [[scala.Vector]] of values.
     *
     * @example
     *   {{{
@@ -459,7 +461,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   def vector[F[_]](tx: AsyncTransaction[F]): F[RT.AsyncR[Vector[T]]] =
     collectAs(factory = Vector, tx)
 
-  /** Executes the query and returns a [[Map]] of values.
+  /** Executes the query and returns a [[scala.Predef.Map]] of values.
     *
     * @example
     *   {{{
@@ -489,7 +491,7 @@ final class DeferredQuery[T, RT <: ResultType] private[neotypes] (
   ): F[RT.AsyncR[Map[K, V]]] =
     driver.transact(config)(tx => map(tx))
 
-  /** Executes the query and returns a [[Map]] of values.
+  /** Executes the query and returns a [[scala.Predef.Map]] of values.
     *
     * @example
     *   {{{
@@ -631,7 +633,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
     new ExecuteQuery(query, params)
   }
 
-  /** Creates a [[DeferredQuery]] using the provided [[ResultMapper]]. */
+  /** Creates a [[DeferredQuery]] using the provided [[neotypes.mappers.ResultMapper]]. */
   def query[T](mapper: ResultMapper[T]): DeferredQuery[T, ResultType.Simple.type] = {
     val (query, params, _) = build()
     new DeferredQuery(query, params, RT = ResultType.Simple, mapper)
@@ -717,10 +719,10 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
   def +(that: DeferredQueryBuilder): DeferredQueryBuilder =
     new DeferredQueryBuilder(this.parts ::: that.parts)
 
-  /** Concatenate a [[String]] with this [[DeferredQueryBuilder]].
+  /** Concatenate a [[java.lang.String]] with this [[DeferredQueryBuilder]].
     *
     * @param that
-    *   the [[String]] to be concatenated.
+    *   the [[java.lang.String]] to be concatenated.
     * @return
     *   A new [[DeferredQueryBuilder]].
     */
