@@ -85,12 +85,14 @@ object DeriveSealedTraitCoproductInstancesSpec {
   object SimpleADT {
     final case class Foo(int: Int, str: String) extends SimpleADT
     object Foo {
-      implicit final val FooMapper = ResultMapper.fromFunctionNamed("int", "str")(Foo.apply _)
+      implicit final val FooMapper: ResultMapper[Foo] =
+        ResultMapper.fromFunctionNamed("int", "str")(Foo.apply _)
     }
 
     final case class Bar(bool: Boolean) extends SimpleADT
     object Bar {
-      implicit final val BarMapper = ResultMapper.field(key = "bool", mapper = ResultMapper.boolean).map(Bar.apply)
+      implicit final val BarMapper: ResultMapper[Bar] =
+        ResultMapper.field(key = "bool", mapper = ResultMapper.boolean).map(Bar.apply)
     }
   }
 

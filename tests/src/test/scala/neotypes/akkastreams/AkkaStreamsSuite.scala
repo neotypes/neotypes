@@ -13,7 +13,7 @@ import scala.concurrent.{ExecutionContext, Future}
 object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
-      implicit val system =
+      implicit final val system: ActorSystem =
         ActorSystem(name = "QuickStart")
 
       override final val streamInstance: Stream.Aux[AkkaStream, Future] =
