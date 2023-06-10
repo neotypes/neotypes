@@ -27,7 +27,7 @@ trait AkkaStreams {
     */
   implicit final def akkaStream(implicit mat: Materializer): neotypes.Stream.Aux[AkkaStream, Future] =
     new neotypes.Stream[AkkaStream] {
-      implicit val ec = mat.executionContext
+      implicit val ec: ExecutionContext = mat.executionContext
 
       override final type F[A] = Future[A]
 

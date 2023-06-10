@@ -714,16 +714,19 @@ object BaseDriverSpec {
   object Problem {
     final case class Error(msg: String) extends Problem
     object Error {
-      implicit val resultMapper = ResultMapper.productDerive[Error]
+      implicit val resultMapper: ResultMapper[Error] =
+        ResultMapper.productDerive
     }
 
     final case class Warning(msg: String) extends Problem
     object Warning {
-      implicit val resultMapper = ResultMapper.productDerive[Warning]
+      implicit val resultMapper: ResultMapper[Warning] =
+        ResultMapper.productDerive
     }
 
     final case object Unknown extends Problem {
-      implicit val resultMapper = ResultMapper.constant(this)
+      implicit val resultMapper: ResultMapper[Unknown.type] =
+        ResultMapper.constant(this)
     }
   }
 
@@ -764,7 +767,7 @@ object BaseDriverSpec {
     implicit val ordering: Ordering[CustomKey] =
       Ordering.by(_.name)
 
-    implicit val keyMapper =
+    implicit val keyMapper: KeyMapper[CustomKey] =
       KeyMapper.string.imap[CustomKey](_.name) { name =>
         CustomKey
           .from(name)
