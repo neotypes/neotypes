@@ -58,16 +58,16 @@ ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 // Common settings.
 val commonSettings = Seq(
   // Run the compiler linter after macros have expanded.
-  // scalacOptions += "-Ywarn-macros:after",
+  scalacOptions += "-Ywarn-macros:after",
 
   // Ensure we publish an artifact linked to the appropriate Java std library.
-  // scalacOptions += "-release:17",
+  scalacOptions += "-release:17",
 
   // Implicit resolution debug flags.
-  // scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
+  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
 
   // Make all warnings verbose.
-  // scalacOptions += "-Wconf:any:warning-verbose",
+  scalacOptions += "-Wconf:any:warning-verbose",
 
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
