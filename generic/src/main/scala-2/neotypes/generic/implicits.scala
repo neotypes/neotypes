@@ -6,7 +6,7 @@ import query.QueryArgMapper.DerivedQueryParams
 
 import shapeless.Lazy
 
-object implicits {
+package object implicits {
   implicit def deriveCaseClassQueryParams[P <: Product](implicit
     queryParams: Lazy[CaseClassDerivedQueryParams[P]]
   ): DerivedQueryParams[P] =

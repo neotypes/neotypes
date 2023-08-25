@@ -178,6 +178,7 @@ lazy val generic = (project in file("generic"))
     Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
   )
   .dependsOn(`test-helpers` % "test->test")
+  .settings(scalacOptions += "-Wconf:origin=neotypes.generic.implicits.given:s")
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core)

@@ -2,6 +2,7 @@ package neotypes.syntax
 
 import neotypes.BaseSynchronousSpec
 import neotypes.generic.implicits._
+import neotypes.generic.implicits.given
 import neotypes.model.query.QueryParam
 import neotypes.syntax.cypher._
 
