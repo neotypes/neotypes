@@ -58,16 +58,16 @@ ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 // Common settings.
 val commonSettings = Seq(
   // Run the compiler linter after macros have expanded.
-  // scalacOptions += "-Ywarn-macros:after",
+  scalacOptions += "-Ywarn-macros:after",
 
   // Ensure we publish an artifact linked to the appropriate Java std library.
-  // scalacOptions += "-release:17",
+  scalacOptions += "-release:17",
 
   // Implicit resolution debug flags.
-  // scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
+  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
 
   // Make all warnings verbose.
-  // scalacOptions += "-Wconf:any:warning-verbose",
+  scalacOptions += "-Wconf:any:warning-verbose",
 
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
@@ -123,26 +123,30 @@ lazy val scalaVersionDependentSettings = Def.settings(
                                scalaVersion("org.scala-lang" % "scala-reflect" % _).value
                              )
                            else Seq.empty),
-  scalacOptions ++= (if (scalaVersion.value.startsWith("2."))
-                       Seq(
-                         "-Ywarn-macros:after",
-
-                         // Ensure we publish an artifact linked to the appropriate Java std library.
-                         "-release:17",
-
-                         // Implicit resolution debug flags.
-                         "-Vimplicits",
-                         "-Vtype-diffs",
-                         // Make all warnings verbose.
-                         "-Wconf:any:warning-verbose"
-                       )
+  scalacOptions := (if (scalaVersion.value.startsWith("2."))
+                       scalacOptions.value
                      else
-                       Seq.empty)
+                       scalacOptions
+                         .value
+                         .filterNot(
+                           Set(
+                             "-Ywarn-macros:after",
+
+                             // Ensure we publish an artifact linked to the appropriate Java std library.
+                             "-release:17",
+
+                             // Implicit resolution debug flags.
+                             "-Vimplicits",
+                             "-Vtype-diffs",
+                             // Make all warnings verbose.
+                             "-Wconf:any:warning-verbose"
+                           )
+                         ))
 )
 
 lazy val `test-helpers` = (project in file("test-helpers"))
   .settings(
-    crossScalaVersions := Seq("2.13.11","3.3.0"),
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= TEST(
       "org.scalatest" %% "scalatest" % scalaTestVersion
     )

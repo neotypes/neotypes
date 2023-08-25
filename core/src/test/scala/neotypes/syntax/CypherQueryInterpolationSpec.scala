@@ -219,7 +219,7 @@ final class CypherQueryInterpolationSpec extends BaseSynchronousSpec {
       "p2" -> QueryParam.NullValue
     )
   }
-  // This fails on Scala 3.
+
   it should "interpolate literal nulls" in {
     val (query, params, _) = c"CREATE (u: User { np: ${null} }) RETURN u".build()
 
