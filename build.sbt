@@ -140,6 +140,12 @@ lazy val scalaVersionDependentSettings = Def.settings(
                        Seq.empty)
 )
 
+lazy val `test-helpers` = (project in file("test-helpers"))
+  .settings(
+    libraryDependencies ++= TEST(
+      "org.scalatest" %% "scalatest" % scalaTestVersion
+    )
+  )
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
@@ -148,9 +154,11 @@ lazy val core = (project in file("core"))
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      )
+      ),
+    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
   )
   .settings(scalaVersionDependentSettings)
+  .dependsOn(`test-helpers` % "test->test")
 
 lazy val generic = (project in file("generic"))
   .dependsOn(core)
@@ -160,8 +168,10 @@ lazy val generic = (project in file("generic"))
     libraryDependencies ++=
       COMPILE(
         "com.chuusai" %% "shapeless" % shapelessVersion
-      )
+      ),
+    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
   )
+  .dependsOn(`test-helpers` % "test->test")
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core)
