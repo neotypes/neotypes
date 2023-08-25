@@ -3,6 +3,7 @@ package query
 
 import scala.quoted.*
 import internal.utils.createQuery
+import neotypes.model.query.QueryParam
 
 final case class CypherStringInterpolator(private val sc: StringContext) extends AnyVal {
   inline def c(inline args: Any*): DeferredQueryBuilder = ${ CypherStringInterpolator.macroImpl('args, 'sc) }
@@ -27,17 +28,23 @@ object CypherStringInterpolator {
 
     def asRightQueryArg(expr: Expr[Any]): Expr[Res] =
       val tt = expr.asTerm.tpe.widen
-      Implicits.search(argMapperFor(tt)) match {
-        case iss: ImplicitSearchSuccess => {
-          val e = Apply(Select.unique(iss.tree, "toArg"), expr.asTerm :: Nil)
-            .asExprOf[QueryArg]
-          '{ Right($e) }
+      tt.asType match
+        case '[scala.Null] =>
+          '{
+            Right(QueryArg.Param(QueryParam.NullValue))
+          }
+        case _ =>
+          Implicits.search(argMapperFor(tt)) match {
+            case iss: ImplicitSearchSuccess => {
+              val e = Apply(Select.unique(iss.tree, "toArg"), expr.asTerm :: Nil)
+                .asExprOf[QueryArg]
+              '{ Right($e) }
 
-        }
-        case isf: ImplicitSearchFailure =>
-          val e = Expr(isf.explanation)
-          '{ compiletime.error($e) }
-      }
+            }
+            case isf: ImplicitSearchFailure =>
+              val e = Expr(isf.explanation)
+              '{ compiletime.error($e) }
+          }
 
     def parts: List[Expr[Boolean => Res]] = {
       val inverted = invert(argsExpr)
