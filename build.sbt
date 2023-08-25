@@ -58,16 +58,16 @@ ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 // Common settings.
 val commonSettings = Seq(
   // Run the compiler linter after macros have expanded.
-  scalacOptions += "-Ywarn-macros:after",
+  // scalacOptions += "-Ywarn-macros:after",
 
   // Ensure we publish an artifact linked to the appropriate Java std library.
-  scalacOptions += "-release:17",
+  // scalacOptions += "-release:17",
 
   // Implicit resolution debug flags.
-  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
+  // scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
 
   // Make all warnings verbose.
-  scalacOptions += "-Wconf:any:warning-verbose",
+  // scalacOptions += "-Wconf:any:warning-verbose",
 
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
@@ -117,6 +117,29 @@ lazy val root = (project in file("."))
     )
   )
 
+lazy val scalaVersionDependentSettings = Def.settings(
+  libraryDependencies ++= (if (scalaVersion.value.startsWith("2."))
+                             COMPILE(
+                               scalaVersion("org.scala-lang" % "scala-reflect" % _).value
+                             )
+                           else Seq.empty),
+  scalacOptions ++= (if (scalaVersion.value.startsWith("2."))
+                       Seq(
+                         "-Ywarn-macros:after",
+
+                         // Ensure we publish an artifact linked to the appropriate Java std library.
+                         "-release:17",
+
+                         // Implicit resolution debug flags.
+                         "-Vimplicits",
+                         "-Vtype-diffs",
+                         // Make all warnings verbose.
+                         "-Wconf:any:warning-verbose"
+                       )
+                     else
+                       Seq.empty)
+)
+
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
@@ -125,10 +148,9 @@ lazy val core = (project in file("core"))
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      ) ++ COMPILE(
-        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
       )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val generic = (project in file("generic"))
   .dependsOn(core)
