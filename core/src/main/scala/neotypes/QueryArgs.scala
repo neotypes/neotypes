@@ -4,8 +4,6 @@ package query
 import mappers.ParameterMapper
 import neotypes.model.query.QueryParam
 
-import query.DeferredQueryBuilder
-
 sealed trait QueryArg
 object QueryArg {
   final case class Param(param: QueryParam) extends QueryArg

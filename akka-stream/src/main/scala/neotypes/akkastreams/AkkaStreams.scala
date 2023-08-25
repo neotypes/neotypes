@@ -69,7 +69,7 @@ trait AkkaStreams {
       override final def single[A](sa: AkkaStream[A]): Future[Option[A]] =
         sa.take(1).runWith(Sink.lastOption)
 
-      override final def void(s: AkkaStream[_]): Future[Unit] =
+      override final def void[A](s: AkkaStream[A]): Future[Unit] =
         s.runWith(Sink.ignore).map(_ => ())
     }
 }
