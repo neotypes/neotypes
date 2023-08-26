@@ -123,21 +123,10 @@ lazy val scalaVersionDependentSettings = Def.settings(
                                scalaVersion("org.scala-lang" % "scala-reflect" % _).value
                              )
                            else Seq.empty),
-  scalacOptions ++= (if (scalaVersion.value.startsWith("2."))
-                       Seq(
-                         "-Ywarn-macros:after",
-
-                         // Ensure we publish an artifact linked to the appropriate Java std library.
-                         "-release:17",
-
-                         // Implicit resolution debug flags.
-                         "-Vimplicits",
-                         "-Vtype-diffs",
-                         // Make all warnings verbose.
-                         "-Wconf:any:warning-verbose"
-                       )
-                     else
-                       Seq.empty)
+  scalacOptions := (if (scalaVersion.value.startsWith("2."))
+                      scalacOptions.value
+                    else
+                      scalacOptions.value.filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs")))
 )
 
 lazy val core = (project in file("core"))
