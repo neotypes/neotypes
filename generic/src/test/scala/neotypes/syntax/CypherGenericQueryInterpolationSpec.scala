@@ -8,7 +8,7 @@ import neotypes.syntax.cypher._
 final class CypherGenericQueryInterpolationSpec extends BaseSynchronousSpec {
   import CypherGenericQueryInterpolationSpec._
 
-  behavior of s"Neotypes Cypher String interpolator"
+  behavior of s"Neotypes Cypher String interpolator plus generic capabilities"
 
   it should "interpolation with a case class" in {
     val testClass = TestClass("name", 33)

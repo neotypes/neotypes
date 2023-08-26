@@ -118,30 +118,30 @@ lazy val root = (project in file("."))
   )
 
 lazy val scalaVersionDependentSettings = Def.settings(
-  libraryDependencies ++= (if (scalaVersion.value.startsWith("2."))
-                             COMPILE(
-                               scalaVersion("org.scala-lang" % "scala-reflect" % _).value
-                             )
-                           else Seq.empty),
-  scalacOptions := (if (scalaVersion.value.startsWith("2."))
-                       scalacOptions.value
-                     else
-                       scalacOptions
-                         .value
-                         .filterNot(
-                           Set(
-                             "-Ywarn-macros:after",
-
-                             // Ensure we publish an artifact linked to the appropriate Java std library.
-                             "-release:17",
-
-                             // Implicit resolution debug flags.
-                             "-Vimplicits",
-                             "-Vtype-diffs",
-                             // Make all warnings verbose.
-                             "-Wconf:any:warning-verbose"
-                           )
-                         ))
+  libraryDependencies ++= (
+    if (scalaVersion.value.startsWith("2."))
+      COMPILE(
+        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
+      )
+    else Seq.empty
+  ),
+  scalacOptions := (
+    if (scalaVersion.value.startsWith("2."))
+      scalacOptions.value
+    else
+      scalacOptions
+        .value
+        .filterNot(
+          Set(
+            "-Ywarn-macros:after",
+            // Implicit resolution debug flags.
+            "-Vimplicits",
+            "-Vtype-diffs",
+            // Make all warnings verbose.
+            "-Wconf:any:warning-verbose"
+          )
+        )
+  )
 )
 
 lazy val `test-helpers` = (project in file("test-helpers"))
@@ -151,6 +151,7 @@ lazy val `test-helpers` = (project in file("test-helpers"))
       "org.scalatest" %% "scalatest" % scalaTestVersion
     )
   )
+
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
