@@ -19,8 +19,8 @@ object CypherStringInterpolator {
     def invert[T: Type](exprs: Expr[Seq[T]]): List[Expr[T]] =
       exprs match {
         case Varargs(props)                => props.toList
-        case '{ Seq(${ Varargs(props) }) } => props.toList.map(_.asExprOf[T])
-        case _                             => println(s"Unable to match ${exprs.show} "); null
+        case '{ Seq(${ Varargs(props) }) } => props.view.map(_.asExprOf[T]).toList
+        case _                             => report.errorAndAbort(s"Unable to match ${exprs.show}")
       }
 
     def argMapperFor(tt: TypeRepr) =
