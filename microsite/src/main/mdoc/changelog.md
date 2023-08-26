@@ -7,6 +7,17 @@ position: 100
 
 # Changelog
 
+## v1.0.0-M2 _(2023-08-26)_
+
+> We start the road for **Scala 3** support!
+
+This second milestone brings mostly dependency updates,
+as well as some internal changes in preparation for **Scala 3** support.
+
+### Prepare for scala 3 ([#665](https://github.com/neotypes/neotypes/pull/665){:target="_blank"})
+
+Thanks `@i10416`!
+
 ## v1.0.0-M1 _(2023-06-05)_
 
 > We start the road for the first stable version of **Neotypes**!
