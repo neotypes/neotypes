@@ -124,24 +124,25 @@ lazy val scalaVersionDependentSettings = Def.settings(
                              )
                            else Seq.empty),
   scalacOptions := (if (scalaVersion.value.startsWith("2."))
-                       scalacOptions.value
-                     else
-                       scalacOptions
-                         .value
-                         .filterNot(
-                           Set(
-                             "-Ywarn-macros:after",
+                      scalacOptions.value
+                    else
+                      scalacOptions
+                        .value
+                        .filterNot(
+                          Set(
+                            "-Ywarn-macros:after",
 
-                             // Ensure we publish an artifact linked to the appropriate Java std library.
-                             "-release:17",
+                            // Ensure we publish an artifact linked to the appropriate Java std library.
+                            "-release:17",
 
-                             // Implicit resolution debug flags.
-                             "-Vimplicits",
-                             "-Vtype-diffs",
-                             // Make all warnings verbose.
-                             "-Wconf:any:warning-verbose"
-                           )
-                         ))
+                            // Implicit resolution debug flags.
+                            "-Vimplicits",
+                            "-Vtype-diffs",
+                            // Make all warnings verbose.
+                            "-Wconf:any:warning-verbose",
+                            "-Wconf:origin=neotypes.generic.implicits.given:s"
+                          )
+                        ))
 )
 
 lazy val `test-helpers` = (project in file("test-helpers"))
@@ -151,6 +152,12 @@ lazy val `test-helpers` = (project in file("test-helpers"))
       "org.scalatest" %% "scalatest" % scalaTestVersion
     )
   )
+lazy val shapelessSettings = Def.settings(
+  libraryDependencies += (if (scalaVersion.value.startsWith("2."))
+                            "com.chuusai" %% "shapeless" % shapelessVersion
+                          else
+                            "org.typelevel" %% "shapeless3-deriving" % "3.1.0")
+)
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
@@ -171,14 +178,13 @@ lazy val generic = (project in file("generic"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-generic",
-    libraryDependencies ++=
-      COMPILE(
-        "com.chuusai" %% "shapeless" % shapelessVersion
-      ),
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
   )
   .dependsOn(`test-helpers` % "test->test")
   .settings(scalacOptions += "-Wconf:origin=neotypes.generic.implicits.given:s")
+  .settings(scalaVersionDependentSettings)
+  .settings(shapelessSettings)
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core)
