@@ -63,7 +63,7 @@ sealed trait BaseDriverTransactSpec[F[_]] extends CleaningIntegrationSpec[F] { s
 }
 
 object BaseDriverTransactSpec {
-  final object CustomException extends Throwable
+  object CustomException extends Throwable
 }
 
 final class AsyncDriverTransactSpec[F[_]](

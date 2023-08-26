@@ -185,7 +185,7 @@ object types {
     final case class LocalDateTime(value: JDateTime) extends TemporalInstantValue
     final case class ZonedTime(value: JZTime) extends TemporalInstantValue
     final case class ZonedDateTime(value: JZDateTime) extends TemporalInstantValue
-    final case object NullValue extends SimpleValue
+    case object NullValue extends SimpleValue
   }
 }
 
@@ -195,12 +195,12 @@ object exceptions {
       extends Exception(message, cause.orNull)
       with NoStackTrace
 
-  final object TransactionWasNotCreatedException
+  object TransactionWasNotCreatedException
       extends NeotypesException(
         message = "Couldn't create a transaction"
       )
 
-  final object CancellationException
+  object CancellationException
       extends NeotypesException(
         message = "An operation was cancelled"
       )

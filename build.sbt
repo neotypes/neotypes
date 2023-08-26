@@ -117,6 +117,22 @@ lazy val root = (project in file("."))
     )
   )
 
+lazy val scalaVersionDependentSettings = Def.settings(
+  libraryDependencies ++= (
+    if (scalaVersion.value.startsWith("2."))
+      COMPILE(
+        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
+      )
+    else Seq.empty
+  ),
+  scalacOptions := (
+    if (scalaVersion.value.startsWith("2."))
+      scalacOptions.value
+    else
+      scalacOptions.value.filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
+  )
+)
+
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
@@ -125,10 +141,9 @@ lazy val core = (project in file("core"))
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      ) ++ COMPILE(
-        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
       )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val generic = (project in file("generic"))
   .dependsOn(core)

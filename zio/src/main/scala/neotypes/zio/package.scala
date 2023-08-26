@@ -1,5 +1,5 @@
 package neotypes
 
 package object zio {
-  final object implicits extends Zio
+  object implicits extends Zio
 }

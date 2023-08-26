@@ -11,3 +11,4 @@ snapshots/*
 .bloop/*
 .bsp/*
 .metals/*
+**/metals.sbt
