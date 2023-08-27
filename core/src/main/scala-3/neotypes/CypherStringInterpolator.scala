@@ -115,7 +115,7 @@ object Interleave {
 
       case (Nil, interps) =>
         // this should be always query interpolations because if there is a plain value interpolation, there should be `#` prefix.
-        acc.reverse ++ (interps.map(_.apply(true)))
+        acc reverse_::: (interps.map(_.apply(true)))
 
       case (Left(nthPartExpectPlainValueInsert) :: tail, interp :: interps) =>
         interleave(interps, tail, interp(false) :: Left(nthPartExpectPlainValueInsert) :: acc)
