@@ -4,7 +4,7 @@ import ReleaseTransformations._
 
 val neo4jDriverVersion = "5.11.0"
 val shapelessVersion = "2.3.10"
-val testcontainersNeo4jVersion = "1.18.3"
+val testcontainersNeo4jVersion = "1.19.0"
 val testcontainersScalaVersion = "0.40.17"
 val scalaTestVersion = "3.2.16"
 val logbackVersion = "1.4.11"
@@ -14,7 +14,7 @@ val catsEffect3Version = "3.5.1"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
 val fs2Version = "3.8.0"
-val zio2Version = "2.0.15"
+val zio2Version = "2.0.16"
 val zioInteropReactiveStreamsVersion = "2.0.2"
 val refinedVersion = "0.11.0"
 val enumeratumVersion = "1.7.3"
@@ -129,18 +129,7 @@ lazy val scalaVersionDependentSettings = Def.settings(
     if (scalaVersion.value.startsWith("2."))
       scalacOptions.value
     else
-      scalacOptions
-        .value
-        .filterNot(
-          Set(
-            "-Ywarn-macros:after",
-            // Implicit resolution debug flags.
-            "-Vimplicits",
-            "-Vtype-diffs",
-            // Make all warnings verbose.
-            "-Wconf:any:warning-verbose"
-          )
-        )
+      scalacOptions.value.filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
   )
 )
 
