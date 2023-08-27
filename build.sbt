@@ -176,49 +176,58 @@ lazy val catsEffect = (project in file("cats-effect"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val monix = (project in file("monix"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect2Version,
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val zio = (project in file("zio"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio" % zio2Version
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val akkaStream = (project in file("akka-stream"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-akka-stream",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val fs2Stream = (project in file("fs2-stream"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-fs2-stream",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version,
@@ -226,12 +235,14 @@ lazy val fs2Stream = (project in file("fs2-stream"))
       "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val monixStream = (project in file("monix-stream"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix-stream",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect2Version,
@@ -239,28 +250,33 @@ lazy val monixStream = (project in file("monix-stream"))
       "io.monix" %% "monix-reactive" % monixVersion
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val zioStream = (project in file("zio-stream"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio-stream",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio" % zio2Version,
       "dev.zio" %% "zio-streams" % zio2Version,
       "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val catsData = (project in file("cats-data"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-data",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion
     )
   )
+  .settings(scalaVersionDependentSettings)
 
 lazy val refined = (project in file("refined"))
   .dependsOn(core)
