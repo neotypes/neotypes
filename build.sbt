@@ -129,7 +129,7 @@ lazy val scalaVersionDependentSettings = Def.settings(
     if (scalaVersion.value.startsWith("2."))
       scalacOptions.value
     else
-      scalacOptions.value.filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
+      scalacOptions.value.filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs","-Wconf:any:warning-verbose"))
   )
 )
 
