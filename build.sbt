@@ -117,7 +117,8 @@ lazy val root = (project in file("."))
     )
   )
 
-lazy val scalaVersionDependentSettings = Def.settings(
+lazy val scala3CrossCompileSettings = Def.settings(
+  crossScalaVersions := Seq("2.13.11", "3.3.0"),
   libraryDependencies ++= (
     if (scalaVersion.value.startsWith("2."))
       COMPILE(
@@ -147,14 +148,13 @@ lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-core",
-    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     Compile / sourceGenerators += Boilerplate.generatorTask.taskValue,
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       )
   )
-  .settings(scalaVersionDependentSettings)
+  .settings(scala3CrossCompileSettings)
   .dependsOn(`test-helpers` % "test->test")
 
 lazy val generic = (project in file("generic"))
@@ -179,6 +179,7 @@ lazy val catsEffect = (project in file("cats-effect"))
       "org.typelevel" %% "cats-effect" % catsEffect3Version
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val monix = (project in file("monix"))
   .dependsOn(core)
@@ -191,6 +192,7 @@ lazy val monix = (project in file("monix"))
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val zio = (project in file("zio"))
   .dependsOn(core)
@@ -201,6 +203,7 @@ lazy val zio = (project in file("zio"))
       "dev.zio" %% "zio" % zio2Version
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val akkaStream = (project in file("akka-stream"))
   .dependsOn(core)
@@ -211,6 +214,7 @@ lazy val akkaStream = (project in file("akka-stream"))
       "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val fs2Stream = (project in file("fs2-stream"))
   .dependsOn(core)
@@ -224,6 +228,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
       "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val monixStream = (project in file("monix-stream"))
   .dependsOn(core)
@@ -237,6 +242,7 @@ lazy val monixStream = (project in file("monix-stream"))
       "io.monix" %% "monix-reactive" % monixVersion
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val zioStream = (project in file("zio-stream"))
   .dependsOn(core)
@@ -249,6 +255,7 @@ lazy val zioStream = (project in file("zio-stream"))
       "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val catsData = (project in file("cats-data"))
   .dependsOn(core)
@@ -259,6 +266,7 @@ lazy val catsData = (project in file("cats-data"))
       "org.typelevel" %% "cats-core" % catsVersion
     )
   )
+  .settings(scala3CrossCompileSettings)
 
 lazy val refined = (project in file("refined"))
   .dependsOn(core)
