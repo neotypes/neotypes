@@ -7,15 +7,15 @@ import neotypes.query.QueryArg
 import neotypes.model.query.QueryParam
 import neotypes.query.DeferredQueryBuilder
 
-private[neotypes] object utils {
+object utils {
 
   /** Used to swallow warnings. */
   @inline
-  final def void(as: Any*): Unit = (as, ())._2
+  private[neotypes] final def void(as: Any*): Unit = (as, ())._2
 
   /** Applies a function to all elements of an iterable, accumulating all success or stopping at the first failure.
     */
-  def traverseAs[A, B, C, E](
+  private[neotypes] def traverseAs[A, B, C, E](
     factory: Factory[B, C]
   )(
     col: IterableOnce[A]

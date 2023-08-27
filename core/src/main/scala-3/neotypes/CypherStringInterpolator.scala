@@ -2,7 +2,7 @@ package neotypes
 package query
 
 import scala.quoted.*
-import internal.utils.createQuery
+import neotypes.internal.utils.createQuery
 import neotypes.model.query.QueryParam
 
 final case class CypherStringInterpolator(private val sc: StringContext) extends AnyVal {
@@ -19,8 +19,8 @@ object CypherStringInterpolator {
     def invert[T: Type](exprs: Expr[Seq[T]]): List[Expr[T]] =
       exprs match {
         case Varargs(props)                => props.toList
-        case '{ Seq(${ Varargs(props) }) } => props.toList.map(_.asExprOf[T])
-        case _                             => println(s"Unable to match ${exprs.show} "); null
+        case '{ Seq(${ Varargs(props) }) } => props.view.map(_.asExprOf[T]).toList
+        case _                             => report.errorAndAbort(s"Unable to match ${exprs.show}")
       }
 
     def argMapperFor(tt: TypeRepr) =
@@ -61,39 +61,75 @@ object CypherStringInterpolator {
 
     val partsPacked: Expr[List[Boolean => Res]] = Expr.ofList(parts)
 
-    val boolsAndRes: Expr[(List[Boolean], List[Res])] = '{
-      val (bs, rs) = $clz
+    val stringFragmentsPartitionedByInterpolationKind: Expr[List[Either[String, String]]] = '{
+      $clz
         .parts
-        .foldLeft((List.empty[Boolean], List.empty[Res])) { case ((hashTags, res), s) =>
-          if (s.endsWith("#"))
-            (false :: hashTags) -> (Left(s.init) :: res)
+        .map { part =>
+          if (part.endsWith("#"))
+            // 1. string before interpolation: "foo #${} bar" or "foo bar#${}"
+            //    In this case, `#` is a marker for interpolation that should be dropped.
+            // 2. the hashtag at the end of string: "foo bar#"
+            //    It is unusual that cypher query ends with `#`
+            //    so, optimistically use `part.init` here.
+            Left(
+              part.init
+            ) // Left means "nth part is `part.init` and the interpolation after the nth part is a plain value"
           else
-            (true :: hashTags) -> (Left(s) :: res)
+            // Right means "nth part is`part` and the interpolation after the nth part (if any) is a query parameter"
+            Right(part)
         }
-      (bs.reverse -> rs.reverse)
+        .toList
     }
-
     val interleaved: Expr[List[Res]] =
       '{
-        Interleave($partsPacked, $boolsAndRes._2, $boolsAndRes._1)
+        Interleave($partsPacked, $stringFragmentsPartitionedByInterpolationKind)
       }
-    '{ createQuery($interleaved: _*) }
+
+    '{
+      createQuery($interleaved: _*)
+    }
 }
 
 object Interleave {
   import CypherStringInterpolator.Res
-  def apply(parts: List[Boolean => Res], queries: List[Res], endWithHashTags: List[Boolean]): List[Res] =
-    interleave(parts, queries, endWithHashTags, List.empty)
+
+  /** @param interpolations
+    *   a list of interpolation generator functions. If a function receives `true` it should generate QueryArg
+    *   representation and otherwise it should generate String representation.
+    * @param stringFragments
+    *   a list of string splitted by interpolation and distinguished by interpolation kind. If the n-th element of
+    *   `stringFragments` is `Right`, it implies the next adjacent interpolation should be a `QueryArg` interpolation.
+    *   If the n-th element of `stringFragments` is `Left`, it implies the next adjacent interpolation should be a plain
+    *   value interpolation.
+    */
+  def apply(interpolations: List[Boolean => Res], stringFlagments: List[Either[String, String]]): List[Res] =
+    interleave(interpolations, stringFlagments, List.empty)
   private[this] def interleave(
-    parts: List[Boolean => Res],
-    queries: List[Res],
-    endWithHashTags: List[Boolean],
+    interpolations: List[Boolean => Res],
+    stringFlagments: List[Either[String, String]],
     acc: List[Res]
   ): List[Res] =
-    (queries, parts, endWithHashTags) match {
-      case (Nil, l2, b)                   => acc.reverse ++ (l2 zip b).map { case (e, b) => e(b) }
-      case (l1, Nil, _)                   => acc.reverse ++ l1
-      case (h1 :: t1, h2 :: t2, bh :: bt) => interleave(t2, t1, bt, h2(bh) +: h1 +: acc)
-      case _                              => acc
-    }
+    (stringFlagments, interpolations) match
+      case (Nil, Nil) =>
+        acc
+
+      case (Nil, interps) =>
+        // this should be always query interpolations because if there is a plain value interpolation, there should be `#` prefix.
+        acc reverse_::: (interps.map(_.apply(true)))
+
+      case (Left(nthPartExpectPlainValueInsert) :: tail, interp :: interps) =>
+        interleave(interps, tail, interp(false) :: Left(nthPartExpectPlainValueInsert) :: acc)
+
+      case (Right(nthPartExpectQueryValueInsert) :: tail, interp :: interps) =>
+        interleave(interps, tail, interp(true) :: Left(nthPartExpectQueryValueInsert) :: acc)
+
+      case (Right(theLastPart) :: Nil, Nil) =>
+        (Left(theLastPart) :: acc).reverse
+
+      case (Left(theLastPartIsAHashTag) :: Nil, Nil) =>
+        (Left(theLastPartIsAHashTag) :: acc).reverse
+
+      case _ =>
+        // this should be unreachable
+        throw new Exception("interpolation value number mismatch")
 }

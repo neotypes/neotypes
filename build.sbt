@@ -4,7 +4,7 @@ import ReleaseTransformations._
 
 val neo4jDriverVersion = "5.11.0"
 val shapelessVersion = "2.3.10"
-val testcontainersNeo4jVersion = "1.18.3"
+val testcontainersNeo4jVersion = "1.19.0"
 val testcontainersScalaVersion = "0.40.17"
 val scalaTestVersion = "3.2.16"
 val logbackVersion = "1.4.11"
@@ -14,7 +14,7 @@ val catsEffect3Version = "3.5.1"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
 val fs2Version = "3.8.0"
-val zio2Version = "2.0.15"
+val zio2Version = "2.0.16"
 val zioInteropReactiveStreamsVersion = "2.0.2"
 val refinedVersion = "0.11.0"
 val enumeratumVersion = "1.7.3"
@@ -75,7 +75,7 @@ val commonSettings = Seq(
   sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   publishMavenStyle := true,
   releaseCrossBuild := true,
-
+  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
   // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
@@ -118,31 +118,23 @@ lazy val root = (project in file("."))
   )
 
 lazy val scalaVersionDependentSettings = Def.settings(
-  libraryDependencies ++= (if (scalaVersion.value.startsWith("2."))
-                             COMPILE(
-                               scalaVersion("org.scala-lang" % "scala-reflect" % _).value
-                             )
-                           else Seq.empty),
-  scalacOptions := (if (scalaVersion.value.startsWith("2."))
-                      scalacOptions.value
-                    else
-                      scalacOptions
-                        .value
-                        .filterNot(
-                          Set(
-                            "-Ywarn-macros:after",
-
-                            // Ensure we publish an artifact linked to the appropriate Java std library.
-                            "-release:17",
-
-                            // Implicit resolution debug flags.
-                            "-Vimplicits",
-                            "-Vtype-diffs",
-                            // Make all warnings verbose.
-                            "-Wconf:any:warning-verbose",
-                            "-Wconf:origin=neotypes.generic.implicits.given:s"
-                          )
-                        ))
+  libraryDependencies ++= (
+    if (scalaVersion.value.startsWith("2."))
+      COMPILE(
+        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
+      )
+    else Seq.empty
+  ),
+  scalacOptions := (
+    if (scalaVersion.value.startsWith("2."))
+      scalacOptions.value
+    else
+      scalacOptions
+        .value
+        .filterNot(
+          Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs", "-Wconf:origin=neotypes.generic.implicits.given:s")
+        )
+  )
 )
 
 lazy val `test-helpers` = (project in file("test-helpers"))
@@ -153,10 +145,12 @@ lazy val `test-helpers` = (project in file("test-helpers"))
     )
   )
 lazy val shapelessSettings = Def.settings(
-  libraryDependencies += (if (scalaVersion.value.startsWith("2."))
-                            "com.chuusai" %% "shapeless" % shapelessVersion
-                          else
-                            "org.typelevel" %% "shapeless3-deriving" % "3.1.0")
+  libraryDependencies += (
+    if (scalaVersion.value.startsWith("2."))
+      "com.chuusai" %% "shapeless" % shapelessVersion
+    else
+      "org.typelevel" %% "shapeless3-deriving" % "3.1.0"
+  )
 )
 lazy val core = (project in file("core"))
   .settings(commonSettings)
@@ -167,8 +161,7 @@ lazy val core = (project in file("core"))
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      ),
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
+      )
   )
   .settings(scalaVersionDependentSettings)
   .dependsOn(`test-helpers` % "test->test")
@@ -178,8 +171,7 @@ lazy val generic = (project in file("generic"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-generic",
-    crossScalaVersions := Seq("2.13.11", "3.3.0"),
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
+    crossScalaVersions := Seq("2.13.11", "3.3.0")
   )
   .dependsOn(`test-helpers` % "test->test")
   .settings(scalacOptions += "-Wconf:origin=neotypes.generic.implicits.given:s")
@@ -321,7 +313,6 @@ lazy val tests = (project in file("tests"))
         "ch.qos.logback" % "logback-classic" % logbackVersion
       ),
     // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
     // Fork tests and disable parallel execution to avoid issues with Docker.
     Test / parallelExecution := false,
     Test / fork := true,
