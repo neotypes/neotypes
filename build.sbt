@@ -75,7 +75,7 @@ val commonSettings = Seq(
   sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   publishMavenStyle := true,
   releaseCrossBuild := true,
-
+  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
   // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
@@ -129,14 +129,25 @@ lazy val scalaVersionDependentSettings = Def.settings(
     if (scalaVersion.value.startsWith("2."))
       scalacOptions.value
     else
-      scalacOptions.value.filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
+      scalacOptions
+        .value
+        .filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
   )
 )
+
+lazy val `test-helpers` = (project in file("test-helpers"))
+  .settings(
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
+    libraryDependencies ++= TEST(
+      "org.scalatest" %% "scalatest" % scalaTestVersion
+    )
+  )
 
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-core",
+    crossScalaVersions := Seq("2.13.11", "3.3.0"),
     Compile / sourceGenerators += Boilerplate.generatorTask.taskValue,
     libraryDependencies ++=
       PROVIDED(
@@ -144,6 +155,7 @@ lazy val core = (project in file("core"))
       )
   )
   .settings(scalaVersionDependentSettings)
+  .dependsOn(`test-helpers` % "test->test")
 
 lazy val generic = (project in file("generic"))
   .dependsOn(core)
@@ -155,6 +167,7 @@ lazy val generic = (project in file("generic"))
         "com.chuusai" %% "shapeless" % shapelessVersion
       )
   )
+  .dependsOn(`test-helpers` % "test->test")
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core)
@@ -291,7 +304,6 @@ lazy val tests = (project in file("tests"))
         "ch.qos.logback" % "logback-classic" % logbackVersion
       ),
     // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
     // Fork tests and disable parallel execution to avoid issues with Docker.
     Test / parallelExecution := false,
     Test / fork := true,

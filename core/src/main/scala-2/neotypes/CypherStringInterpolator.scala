@@ -1,9 +1,6 @@
 package neotypes
 package query
 
-import mappers.ParameterMapper
-import model.query.QueryParam
-
 import scala.reflect.macros.blackbox
 
 final class CypherStringInterpolator(private val sc: StringContext) extends AnyVal {
@@ -11,84 +8,6 @@ final class CypherStringInterpolator(private val sc: StringContext) extends AnyV
 }
 
 object CypherStringInterpolator {
-  def createQuery(queryData: Either[String, QueryArg]*): DeferredQueryBuilder = {
-    var subQueryIndex = 0
-
-    new DeferredQueryBuilder(parts = queryData.toList.flatMap {
-      case Left(query) =>
-        DeferredQueryBuilder.Query(query) :: Nil
-
-      case Right(QueryArg.Param(param)) =>
-        DeferredQueryBuilder.Param(param) :: Nil
-
-      case Right(QueryArg.Params(params)) =>
-        caseClassParts(params)
-
-      case Right(QueryArg.QueryBuilder(builder)) =>
-        subQueryIndex += 1
-        subQueryParts(queryBuilder = builder, index = subQueryIndex)
-    })
-  }
-
-  private val comma = DeferredQueryBuilder.Query(",")
-
-  private def caseClassParts(params: List[(String, QueryParam)]): List[DeferredQueryBuilder.Part] = {
-    @annotation.tailrec
-    def loop(input: List[(String, QueryParam)], acc: List[DeferredQueryBuilder.Part]): List[DeferredQueryBuilder.Part] =
-      input match {
-        case (label, queryParam) :: tail =>
-          val query = DeferredQueryBuilder.Query(label + ": ")
-          val param = DeferredQueryBuilder.Param(queryParam)
-
-          loop(
-            input = tail,
-            comma :: param :: query :: acc
-          )
-
-        case Nil =>
-          acc.tail.reverse
-      }
-
-    loop(params, acc = Nil)
-  }
-
-  private def withParameterPrefix(
-    prefix: String,
-    query: String,
-    params: Map[String, QueryParam],
-    paramLocations: List[Int]
-  ): (String, Map[String, QueryParam], List[Int]) = {
-    val newParams = params.map { case (k, v) =>
-      (prefix + k) -> v
-    }
-
-    val newLocations = paramLocations.sorted.zipWithIndex.map { case (location, i) =>
-      location + (i * prefix.length)
-    }
-
-    val newQuery = newLocations.foldLeft(query) { case (query, location) =>
-      query.patch(location + 1, prefix, 0)
-    }
-
-    (
-      newQuery,
-      newParams,
-      newLocations
-    )
-  }
-
-  private def subQueryParts(queryBuilder: DeferredQueryBuilder, index: Int): List[DeferredQueryBuilder.Part] = {
-    val (originalQuery, originalParams, originalLocations) = queryBuilder.build()
-    val (prefixedQuery, prefixedParams, prefixedLocations) =
-      withParameterPrefix(s"q${index}_", originalQuery, originalParams, originalLocations)
-
-    val query = DeferredQueryBuilder.Query(prefixedQuery, prefixedLocations)
-    val params = prefixedParams.iterator.map { case (name, value) =>
-      DeferredQueryBuilder.SubQueryParam(name, value)
-    }
-
-    query :: params.toList
-  }
 
   def macroImpl(c: blackbox.Context)(args: c.Expr[Any]*): c.Expr[DeferredQueryBuilder] = {
     import c.universe._
@@ -139,51 +58,7 @@ object CypherStringInterpolator {
     }
 
     c.Expr(
-      q"_root_.neotypes.query.CypherStringInterpolator.createQuery(..${queryData})"
+      q"_root_.neotypes.internal.utils.createQuery(..${queryData})"
     )
   }
-}
-
-sealed trait QueryArg
-object QueryArg {
-  final case class Param(param: QueryParam) extends QueryArg
-  final case class Params(params: List[(String, QueryParam)]) extends QueryArg
-  final case class QueryBuilder(builder: DeferredQueryBuilder) extends QueryArg
-}
-
-@annotation.implicitNotFound(
-  """
-Could not find the ArgMapper for ${A}.
-
-Make sure ${A} is a supported type: https://neotypes.github.io/neotypes/types.html
-If ${A} is a case class then `import neotypes.generic.implicits._` for the automated derivation.
-"""
-)
-trait QueryArgMapper[A] {
-  def toArg(value: A): QueryArg
-}
-object QueryArgMapper {
-  def apply[A](implicit ev: QueryArgMapper[A]): ev.type = ev
-
-  implicit final def fromParameterMapper[A](implicit mapper: ParameterMapper[A]): QueryArgMapper[A] =
-    new QueryArgMapper[A] {
-      override def toArg(value: A): QueryArg =
-        QueryArg.Param(mapper.toQueryParam(value))
-    }
-
-  implicit final val deferredQueryBuilderArgMapper: QueryArgMapper[DeferredQueryBuilder] =
-    new QueryArgMapper[DeferredQueryBuilder] {
-      override def toArg(value: DeferredQueryBuilder): QueryArg =
-        QueryArg.QueryBuilder(value)
-    }
-
-  trait DerivedQueryParams[A] {
-    def getParams(a: A): List[(String, QueryParam)]
-  }
-
-  implicit final def fromDerivedQueryParams[A](implicit ev: DerivedQueryParams[A]): QueryArgMapper[A] =
-    new QueryArgMapper[A] {
-      override def toArg(value: A): QueryArg =
-        QueryArg.Params(params = ev.getParams(value))
-    }
 }

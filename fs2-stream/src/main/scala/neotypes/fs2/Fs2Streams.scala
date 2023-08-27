@@ -67,7 +67,7 @@ trait Fs2Streams {
       override final def single[A](sa: Stream[F, A]): F[Option[A]] =
         sa.take(1).compile.last
 
-      override final def void(s: Stream[F, _]): F[Unit] =
+      override final def void[A](s: Stream[F, A]): F[Unit] =
         s.compile.drain
     }
 }
