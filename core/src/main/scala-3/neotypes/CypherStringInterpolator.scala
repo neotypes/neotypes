@@ -110,20 +110,26 @@ object Interleave {
     acc: List[Res]
   ): List[Res] =
     (stringFlagments, interpolations) match
-      case (Nil, Nil) => acc
-      // this should be always query interpolations because if there is a plain value interpolation, there should be `#` prefix.
-      case (Nil, interps) => acc.reverse ++ (interps.map(_.apply(true)))
+      case (Nil, Nil) =>
+        acc
+
+      case (Nil, interps) =>
+        // this should be always query interpolations because if there is a plain value interpolation, there should be `#` prefix.
+        acc.reverse ++ (interps.map(_.apply(true)))
+
       case (Left(nthPartExpectPlainValueInsert) :: tail, interp :: interps) =>
         interleave(interps, tail, interp(false) :: Left(nthPartExpectPlainValueInsert) :: acc)
+
       case (Right(nthPartExpectQueryValueInsert) :: tail, interp :: interps) =>
         interleave(interps, tail, interp(true) :: Left(nthPartExpectQueryValueInsert) :: acc)
-      case (Right(theLastPart) :: Nil, Nil) => (Left(theLastPart) :: acc).reverse
+
+      case (Right(theLastPart) :: Nil, Nil) =>
+        (Left(theLastPart) :: acc).reverse
+
       case (Left(theLastPartIsAHashTag) :: Nil, Nil) =>
         (Left(theLastPartIsAHashTag) :: acc).reverse
-      case (Right(partExpectQueryValueInsert) :: _, Nil) =>
+
+      case _ =>
         // this should be unreachable
-        throw new Exception(s"interpolation value number mismatch")
-      case (Left(partExpectPlainValueInsert) :: _, Nil) =>
-        // this should be unreachable
-        throw new Exception(s"interpolation value number mismatch")
+        throw new Exception("interpolation value number mismatch")
 }

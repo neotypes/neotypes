@@ -75,7 +75,7 @@ val commonSettings = Seq(
   sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   publishMavenStyle := true,
   releaseCrossBuild := true,
-
+  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
   // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
@@ -131,7 +131,7 @@ lazy val scalaVersionDependentSettings = Def.settings(
     else
       scalacOptions
         .value
-        .filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs", "-Wconf:any:warning-verbose"))
+        .filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
   )
 )
 
@@ -152,8 +152,7 @@ lazy val core = (project in file("core"))
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      ),
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
+      )
   )
   .settings(scalaVersionDependentSettings)
   .dependsOn(`test-helpers` % "test->test")
@@ -166,8 +165,7 @@ lazy val generic = (project in file("generic"))
     libraryDependencies ++=
       COMPILE(
         "com.chuusai" %% "shapeless" % shapelessVersion
-      ),
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s"
+      )
   )
   .dependsOn(`test-helpers` % "test->test")
 
@@ -306,7 +304,6 @@ lazy val tests = (project in file("tests"))
         "ch.qos.logback" % "logback-classic" % logbackVersion
       ),
     // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
     // Fork tests and disable parallel execution to avoid issues with Docker.
     Test / parallelExecution := false,
     Test / fork := true,
