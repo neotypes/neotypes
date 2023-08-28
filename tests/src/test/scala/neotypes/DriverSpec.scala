@@ -718,13 +718,13 @@ object BaseDriverSpec {
         ResultMapper.productDerive
     }
 
-    final case class Warning(msg: String) extends Problem
+    case class Warning(msg: String) extends Problem
     object Warning {
       implicit val resultMapper: ResultMapper[Warning] =
         ResultMapper.productDerive
     }
 
-    final case object Unknown extends Problem {
+    case object Unknown extends Problem {
       implicit val resultMapper: ResultMapper[Unknown.type] =
         ResultMapper.constant(this)
     }
@@ -751,10 +751,10 @@ object BaseDriverSpec {
     def name: String
   }
   object CustomKey {
-    final case object Foo extends CustomKey {
+    case object Foo extends CustomKey {
       override final val name: String = "FOO"
     }
-    final case object Bar extends CustomKey {
+    case object Bar extends CustomKey {
       override final val name: String = "Bar"
     }
 
@@ -790,8 +790,8 @@ final class AsyncDriverSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseDriverSpec[F]
 
-final class StreamDriverSpec[S[_], F[_]](
-  testkit: StreamTestkit[S, F]
+final class StreamDriverSpec[S[_], F[_], A](
+  testkit: StreamTestkit[S, F, A]
 ) extends StreamDriverProvider(testkit)
     with BaseDriverSpec[F] {
   it should "support stream the records" in {

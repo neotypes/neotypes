@@ -1,12 +1,10 @@
 package neotypes
 
-import org.scalatest.Suites
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete Async type. */
-abstract class AsyncTestkit[F[_]](implicit ct: ClassTag[F[_]]) {
+abstract class AsyncTestkit[F[_]](implicit ct: ClassTag[F[AnyRef]]) {
   final val asyncName: String = ct.runtimeClass.getCanonicalName
 
   trait Behaviour {
@@ -59,18 +57,3 @@ abstract class AsyncDriverProvider[F[_]](testkit: AsyncTestkit[F])
   override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
     driver.transact(txF)
 }
-
-/** Group all the Async specs into one big suite, which can be called for each Async type. */
-abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F])
-    extends Suites(
-      new AsyncGuaranteeSpec(testkit),
-      new AsyncDriverSpec(testkit),
-      new AsyncTransactionSpec(testkit),
-      new AsyncDriverTransactSpec(testkit),
-      new AsyncDriverConcurrentUsageSpec(testkit),
-      new AsyncParameterSpec(testkit),
-      new AsyncAlgorithmSpec(testkit),
-      new cats.data.AsyncCatsDataSpec(testkit),
-      new enumeratum.AsyncEnumeratumSpec(testkit),
-      new refined.AsyncRefinedSpec(testkit)
-    )

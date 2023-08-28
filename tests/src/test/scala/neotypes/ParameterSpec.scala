@@ -99,7 +99,7 @@ final class AsyncParameterSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseParameterSpec[F]
 
-final class StreamParameterSpec[S[_], F[_]](
-  testkit: StreamTestkit[S, F]
+final class StreamParameterSpec[S[_], F[_], A](
+  testkit: StreamTestkit[S, F, A]
 ) extends StreamDriverProvider(testkit)
     with BaseParameterSpec[F]

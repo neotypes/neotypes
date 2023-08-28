@@ -1,6 +1,6 @@
 package neotypes.future
 
-import neotypes.{Async, AsyncSuite, AsyncTestkit}
+import neotypes.{Async, AsyncTestkit, AsyncSuite}
 import org.scalatest.Assertions
 
 import scala.concurrent.{ExecutionContext, Future}

@@ -160,7 +160,7 @@ final class AsyncEnumeratumSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseEnumeratumSpec[F]
 
-final class StreamEnumeratumSpec[S[_], F[_]](
-  testkit: StreamTestkit[S, F]
+final class StreamEnumeratumSpec[S[_], F[_], A](
+  testkit: StreamTestkit[S, F, A]
 ) extends StreamDriverProvider(testkit)
     with BaseEnumeratumSpec[F]

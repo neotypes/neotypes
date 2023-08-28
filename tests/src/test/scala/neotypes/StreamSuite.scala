@@ -1,12 +1,10 @@
 package neotypes
 
-import org.scalatest.Suites
-
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete Stream type. */
-abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])(implicit ctS: ClassTag[S[_]]) {
+abstract class StreamTestkit[S[_], F[_], A](val asyncTestkit: AsyncTestkit[F])(implicit ctS: ClassTag[S[A]]) {
   final val streamName: String = ctS.runtimeClass.getCanonicalName
 
   trait Behaviour {
@@ -18,7 +16,7 @@ abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])(impl
 }
 
 /** Base class for writing Stream specs. */
-abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F])
+abstract class BaseStreamSpec[S[_], F[_], A](streamTestkit: StreamTestkit[S, F, A])
     extends BaseAsyncSpec[F](streamTestkit.asyncTestkit) {
   protected final val streamName: String =
     streamTestkit.streamName
@@ -29,16 +27,16 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F])
   protected implicit final val S: Stream.Aux[S, F] =
     behaviour.streamInstance
 
-  protected final def streamConcurrently[A](stream1: S[Unit], stream2: S[Unit]): S[Unit] =
+  protected final def streamConcurrently(stream1: S[Unit], stream2: S[Unit]): S[Unit] =
     behaviour.streamConcurrently(stream1, stream2)
 
-  protected final def streamToFList[A](stream: S[A]): F[List[A]] =
+  protected final def streamToFList[B](stream: S[B]): F[List[B]] =
     S.collectAs(stream)(List)
 }
 
 /** Provides an StreamDriver[S, F] instance for Stream tests. */
-abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
-    extends BaseStreamSpec[S, F](testkit)
+abstract class StreamDriverProvider[S[_], F[_], A](testkit: StreamTestkit[S, F, A])
+    extends BaseStreamSpec[S, F, A](testkit)
     with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
   override protected final type DriverType = StreamDriver[S, F]
   override protected final type TransactionType = StreamTransaction[S, F]
@@ -55,21 +53,6 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
   override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
     F.map(streamToFList(driver.streamTransact(txF andThen S.fromF)))(_.head)
 
-  protected final def executeAsFutureList[A](work: DriverType => S[A]): Future[List[A]] =
+  protected final def executeAsFutureList[B](work: DriverType => S[B]): Future[List[B]] =
     executeAsFuture(work andThen streamToFList)
 }
-
-/** Group all the Stream specs into one big suite, which can be called for each Stream type. */
-abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F])
-    extends Suites(
-      new StreamGuaranteeSpec(testkit),
-      new StreamDriverSpec(testkit),
-      new StreamTransactionSpec(testkit),
-      new StreamDriverTransactSpec(testkit),
-      new StreamDriverConcurrentUsageSpec(testkit),
-      new StreamParameterSpec(testkit),
-      new StreamAlgorithmSpec(testkit),
-      new cats.data.StreamCatsDataSpec(testkit),
-      new enumeratum.StreamEnumeratumSpec(testkit),
-      new refined.StreamRefinedSpec(testkit)
-    )

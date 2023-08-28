@@ -98,7 +98,7 @@ object DeriveSealedTraitCoproductInstancesSpec {
 
   sealed trait SimpleEnum
   object SimpleEnum {
-    final case object Baz extends SimpleEnum
-    final case object Quax extends SimpleEnum
+    object Baz extends SimpleEnum
+    object Quax extends SimpleEnum
   }
 }

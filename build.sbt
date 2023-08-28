@@ -60,6 +60,7 @@ ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 // Common settings.
 lazy val commonSettings = Def.settings(
+  crossScalaVersions := Seq(scala213, scala3),
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
   // Make all warnings verbose.
@@ -71,7 +72,8 @@ lazy val commonSettings = Def.settings(
         "-Ywarn-macros:after",
         // Implicit resolution debug flags.
         "-Vimplicits",
-        "-Vtype-diffs"
+        "-Vtype-diffs",
+        "-Ytasty-reader"
       )
     else
       Seq.empty
@@ -129,7 +131,6 @@ lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-core",
-    crossScalaVersions := Seq(scala213, scala3),
     Compile / sourceGenerators += Boilerplate.generatorTask.taskValue,
     libraryDependencies ++=
       PROVIDED(
@@ -149,7 +150,6 @@ lazy val generic = (project in file("generic"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-generic",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies += (
       if (scalaVersion.value.startsWith("2."))
         "com.chuusai" %% "shapeless" % shapelessVersion
@@ -163,7 +163,6 @@ lazy val catsEffect = (project in file("cats-effect"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version
@@ -175,7 +174,6 @@ lazy val monix = (project in file("monix"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect2Version,
@@ -188,7 +186,6 @@ lazy val zio = (project in file("zio"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio" % zio2Version
     )
@@ -199,7 +196,6 @@ lazy val akkaStream = (project in file("akka-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-akka-stream",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
     )
@@ -210,7 +206,6 @@ lazy val fs2Stream = (project in file("fs2-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-fs2-stream",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version,
@@ -224,7 +219,6 @@ lazy val monixStream = (project in file("monix-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix-stream",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect2Version,
@@ -238,7 +232,6 @@ lazy val zioStream = (project in file("zio-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio-stream",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio" % zio2Version,
       "dev.zio" %% "zio-streams" % zio2Version,
@@ -251,7 +244,6 @@ lazy val catsData = (project in file("cats-data"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-data",
-    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion
     )
@@ -262,6 +254,7 @@ lazy val refined = (project in file("refined"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-refined",
+    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     libraryDependencies ++= PROVIDED(
       "eu.timepit" %% "refined" % refinedVersion
     )
@@ -272,6 +265,7 @@ lazy val enumeratum = (project in file("enumeratum"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-enumeratum",
+    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     libraryDependencies ++= PROVIDED(
       "com.beachape" %% "enumeratum" % enumeratumVersion
     )

@@ -54,7 +54,14 @@ object CypherStringInterpolator {
           '{ (b: Boolean) =>
             if (b)
               $qarg
-            else Left($expr.toString)
+            else
+              // This `asInstanceOf` is necessary because when some class overrides `toString()` without parentheses,
+              // this line causes compile error during macro expansion. Scala distinguishes `toString` from `toString()`,
+              // the former is `Select(tree,"toString")` and the latter is `Apply(tree, "toString", typeArgs = Nil, args = Nil)`.
+              //
+              // For example, `cats.data.Chain` overrides to string ` override def toString: String =show(Show.fromToString)`.
+              // Without this `asInstanceOf`, the test for Chain in BaseCatsDataSpec won't compile.
+              Left($expr.asInstanceOf[Object].toString())
           }
         }
     }

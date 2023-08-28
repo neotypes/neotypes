@@ -27,7 +27,6 @@ sealed trait BaseCatsDataSpec[F[_]] extends CleaningIntegrationSpec[F] { self: D
 
   it should "work with Chain" in executeAsFuture { driver =>
     val messages: Messages = Chain("a", "b")
-
     for {
       _ <- c"CREATE (: Chat { user1: 'Balmung', user2: 'Luis', messages: ${messages} })".execute.void(driver)
       r <- "MATCH (chat: Chat) RETURN chat.messages".query(Messages.resultMapper).single(driver)
@@ -180,7 +179,7 @@ object BaseCatsDataSpec {
 
   type Groceries = NonEmptyVector[String]
   object Groceries {
-    val resultMapper: ResultMapper[Groceries] = nonEmptyVector(string)
+    implicit val resultMapper: ResultMapper[Groceries] = nonEmptyVector(string)
   }
 
   type Numbers = NonEmptySet[Int]
@@ -212,7 +211,7 @@ final class AsyncCatsDataSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseCatsDataSpec[F]
 
-final class StreamCatsDataSpec[S[_], F[_]](
-  testkit: StreamTestkit[S, F]
+final class StreamCatsDataSpec[S[_], F[_], A](
+  testkit: StreamTestkit[S, F, A]
 ) extends StreamDriverProvider(testkit)
     with BaseCatsDataSpec[F]

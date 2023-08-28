@@ -10,7 +10,7 @@ import akka.stream.scaladsl.{Merge, Source}
 import scala.concurrent.{ExecutionContext, Future}
 
 /** Implementation of the Stream Testkit for Akka streams. */
-object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future](FutureTestkit) {
+object AkkaStreamsTestkit extends StreamTestkit[AkkaStream, Future, {}](FutureTestkit) {
   override def createBehaviour(implicit ec: ExecutionContext): Behaviour =
     new Behaviour {
       implicit final val system: ActorSystem =
