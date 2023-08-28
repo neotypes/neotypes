@@ -2,8 +2,11 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
+val scala213 = "2.13.11"
+val scala3 = "3.3.0"
 val neo4jDriverVersion = "5.11.0"
 val shapelessVersion = "2.3.10"
+val shapeless3Version = "3.1.0"
 val testcontainersNeo4jVersion = "1.19.0"
 val testcontainersScalaVersion = "0.40.17"
 val scalaTestVersion = "3.2.16"
@@ -49,25 +52,30 @@ ThisBuild / scmInfo ~= {
 }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.13.11"
-ThisBuild / crossScalaVersions := Seq("2.13.11")
+ThisBuild / scalaVersion := scala213
+ThisBuild / crossScalaVersions := Seq(scala213)
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 // Common settings.
-val commonSettings = Seq(
-  // Run the compiler linter after macros have expanded.
-  scalacOptions += "-Ywarn-macros:after",
-
+lazy val commonSettings = Def.settings(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
-
-  // Implicit resolution debug flags.
-  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
-
   // Make all warnings verbose.
   scalacOptions += "-Wconf:any:warning-verbose",
+  scalacOptions ++= (
+    if (scalaVersion.value.startsWith("2."))
+      Seq(
+        // Run the compiler linter after macros have expanded.
+        "-Ywarn-macros:after",
+        // Implicit resolution debug flags.
+        "-Vimplicits",
+        "-Vtype-diffs"
+      )
+    else
+      Seq.empty
+  ),
 
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
@@ -117,68 +125,36 @@ lazy val root = (project in file("."))
     )
   )
 
-lazy val scalaVersionDependentSettings = Def.settings(
-  libraryDependencies ++= (
-    if (scalaVersion.value.startsWith("2."))
-      COMPILE(
-        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
-      )
-    else Seq.empty
-  ),
-  scalacOptions := (
-    if (scalaVersion.value.startsWith("2."))
-      scalacOptions.value
-    else
-      scalacOptions
-        .value
-        .filterNot(
-          Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs")
-        )
-  )
-)
-
-lazy val `test-helpers` = (project in file("test-helpers"))
-  .settings(
-    crossScalaVersions := Seq("2.13.11", "3.3.0"),
-    libraryDependencies ++= TEST(
-      "org.scalatest" %% "scalatest" % scalaTestVersion
-    )
-  )
-lazy val shapelessSettings = Def.settings(
-  libraryDependencies += (
-    if (scalaVersion.value.startsWith("2."))
-      "com.chuusai" %% "shapeless" % shapelessVersion
-    else
-      "org.typelevel" %% "shapeless3-deriving" % "3.1.0"
-  )
-)
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-core",
-    crossScalaVersions := Seq("2.13.11", "3.3.0"),
+    crossScalaVersions := Seq(scala213, scala3),
     Compile / sourceGenerators += Boilerplate.generatorTask.taskValue,
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      )
+      ),
+    libraryDependencies ++= (
+      if (scalaVersion.value.startsWith("2."))
+        COMPILE(
+          scalaVersion("org.scala-lang" % "scala-reflect" % _).value
+        )
+      else Seq.empty
+    )
   )
-  .settings(scalaVersionDependentSettings)
-  .dependsOn(`test-helpers` % "test->test")
 
 lazy val generic = (project in file("generic"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-generic",
-    crossScalaVersions := Seq("2.13.11", "3.3.0")
-  )
-  .dependsOn(`test-helpers` % "test->test")
-  .settings(scalaVersionDependentSettings)
-  .settings(shapelessSettings)
-  .settings(
-    libraryDependencies ++= Seq(
-      "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion % Test
+    crossScalaVersions := Seq(scala213, scala3),
+    libraryDependencies += (
+      if (scalaVersion.value.startsWith("2."))
+        "com.chuusai" %% "shapeless" % shapelessVersion
+      else
+        "org.typelevel" %% "shapeless3-deriving" % shapeless3Version
     )
   )
 
@@ -187,6 +163,7 @@ lazy val catsEffect = (project in file("cats-effect"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-effect",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version
@@ -198,6 +175,7 @@ lazy val monix = (project in file("monix"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect2Version,
@@ -210,6 +188,7 @@ lazy val zio = (project in file("zio"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio" % zio2Version
     )
@@ -220,6 +199,7 @@ lazy val akkaStream = (project in file("akka-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-akka-stream",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
     )
@@ -230,6 +210,7 @@ lazy val fs2Stream = (project in file("fs2-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-fs2-stream",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect3Version,
@@ -243,6 +224,7 @@ lazy val monixStream = (project in file("monix-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-monix-stream",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion,
       "org.typelevel" %% "cats-effect" % catsEffect2Version,
@@ -256,6 +238,7 @@ lazy val zioStream = (project in file("zio-stream"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-zio-stream",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "dev.zio" %% "zio" % zio2Version,
       "dev.zio" %% "zio-streams" % zio2Version,
@@ -268,6 +251,7 @@ lazy val catsData = (project in file("cats-data"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-cats-data",
+    crossScalaVersions := Seq(scala213, scala3),
     libraryDependencies ++= PROVIDED(
       "org.typelevel" %% "cats-core" % catsVersion
     )
