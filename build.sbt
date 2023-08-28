@@ -132,7 +132,7 @@ lazy val scalaVersionDependentSettings = Def.settings(
       scalacOptions
         .value
         .filterNot(
-          Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs", "-Wconf:origin=neotypes.generic.implicits.given:s")
+          Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs")
         )
   )
 )
@@ -174,7 +174,6 @@ lazy val generic = (project in file("generic"))
     crossScalaVersions := Seq("2.13.11", "3.3.0")
   )
   .dependsOn(`test-helpers` % "test->test")
-  .settings(scalacOptions += "-Wconf:origin=neotypes.generic.implicits.given:s")
   .settings(scalaVersionDependentSettings)
   .settings(shapelessSettings)
   .settings(

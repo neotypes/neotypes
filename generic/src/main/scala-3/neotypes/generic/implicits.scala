@@ -12,3 +12,7 @@ object implicits:
     mapper: CaseClassDerivedProductMap[P]
   ): ResultMapper.DerivedProductMap[P] =
     mapper
+  implicit def deriveSealedTraitCoproductInstances[C](using
+    instances: SealedTraitDerivedCoproductInstances[C]
+  ): ResultMapper.DerivedCoproductInstances[C] =
+    instances
