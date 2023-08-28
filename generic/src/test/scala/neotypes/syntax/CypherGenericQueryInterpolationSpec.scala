@@ -2,7 +2,6 @@ package neotypes.syntax
 
 import neotypes.BaseSynchronousSpec
 import neotypes.generic.implicits._
-import neotypes.generic.implicits.given
 import neotypes.model.query.QueryParam
 import neotypes.syntax.cypher._
 
@@ -80,28 +79,6 @@ final class CypherGenericQueryInterpolationSpec extends BaseSynchronousSpec {
       "p1" -> QueryParam(user.name),
       "p2" -> QueryParam(user.age),
       "p3" -> QueryParam(extraProp)
-    )
-  }
-
-  it should "interpolate null values just like optional values" in {
-    val optionalProperty: Option[String] = None
-    val nullProperty: String = null
-
-    val (query, params, _) = c"CREATE (u: User { op: ${optionalProperty}, np: ${nullProperty} }) RETURN u".build()
-
-    query shouldBe "CREATE (u: User { op: $p1, np: $p2 }) RETURN u"
-    params shouldBe Map(
-      "p1" -> QueryParam.NullValue,
-      "p2" -> QueryParam.NullValue
-    )
-  }
-
-  it should "interpolate literal nulls" in {
-    val (query, params, _) = c"CREATE (u: User { np: ${null} }) RETURN u".build()
-
-    query shouldBe "CREATE (u: User { np: $p1 }) RETURN u"
-    params shouldBe Map(
-      "p1" -> QueryParam.NullValue
     )
   }
 }

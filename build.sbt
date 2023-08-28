@@ -177,6 +177,11 @@ lazy val generic = (project in file("generic"))
   .settings(scalacOptions += "-Wconf:origin=neotypes.generic.implicits.given:s")
   .settings(scalaVersionDependentSettings)
   .settings(shapelessSettings)
+  .settings(
+    libraryDependencies ++= Seq(
+      "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion % Test
+    )
+  )
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core)

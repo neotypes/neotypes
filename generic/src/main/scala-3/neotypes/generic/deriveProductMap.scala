@@ -1,9 +1,9 @@
 package neotypes
 package generic
 
+import neotypes.mappers.ResultMapper
 import neotypes.mappers.ResultMapper.DerivedProductMap
 import neotypes.model.types.NeoObject
-import neotypes.mappers.ResultMapper
 import neotypes.model.exceptions.ResultMapperException
 import neotypes.model.exceptions.IncoercibleException
 
@@ -11,11 +11,11 @@ import shapeless3.deriving.*
 
 trait CaseClassDerivedProductMap[P <: Product] extends DerivedProductMap[P]
 object CaseClassDerivedProductMap:
-  type Acc = (Int, NeoObject, Option[ResultMapperException])
-  given [P <: Product](using
+  private type Acc = (Int, NeoObject, Option[ResultMapperException])
+  implicit def CaseClassDerivedProductMapInst[P <: Product](using
     labelled: Labelling[P],
     inst: K0.ProductInstances[ResultMapper, P]
-  ): CaseClassDerivedProductMap[P] with
+  ): CaseClassDerivedProductMap[P] = new CaseClassDerivedProductMap[P]:
     override def map(obj: NeoObject): Either[ResultMapperException, P] =
       // `unfold` traverses over Product field types.
       // For example, `inst.unfold` for `case class A(i:Int, s: String)`
