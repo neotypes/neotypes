@@ -179,7 +179,7 @@ object BaseCatsDataSpec {
 
   type Groceries = NonEmptyVector[String]
   object Groceries {
-    implicit val resultMapper: ResultMapper[Groceries] = nonEmptyVector(string)
+    val resultMapper: ResultMapper[Groceries] = nonEmptyVector(string)
   }
 
   type Numbers = NonEmptySet[Int]
