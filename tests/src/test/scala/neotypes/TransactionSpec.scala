@@ -39,8 +39,8 @@ final class AsyncTransactionSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseTransactionSpec[F]
 
-final class StreamTransactionSpec[S[_], F[_], A](
-  testkit: StreamTestkit[S, F, A]
+final class StreamTransactionSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit)
     with BaseTransactionSpec[F] {
   it should "support stream the records" in {

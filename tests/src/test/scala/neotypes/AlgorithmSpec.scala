@@ -275,7 +275,7 @@ final class AsyncAlgorithmSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseAlgorithmSpec[F]
 
-final class StreamAlgorithmSpec[S[_], F[_], A](
-  testkit: StreamTestkit[S, F, A]
+final class StreamAlgorithmSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit)
     with BaseAlgorithmSpec[F]

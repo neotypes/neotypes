@@ -4,7 +4,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete Async type. */
-abstract class AsyncTestkit[F[_]](implicit ct: ClassTag[F[AnyRef]]) {
+abstract class AsyncTestkit[F[_]](implicit ct: ClassTag[F[Any]]) {
   final val asyncName: String = ct.runtimeClass.getCanonicalName
 
   trait Behaviour {

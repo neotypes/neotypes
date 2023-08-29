@@ -48,7 +48,7 @@ final class AsyncRefinedSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseRefinedSpec[F]
 
-final class StreamRefinedSpec[S[_], F[_], A](
-  testkit: StreamTestkit[S, F, A]
+final class StreamRefinedSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit)
     with BaseRefinedSpec[F]

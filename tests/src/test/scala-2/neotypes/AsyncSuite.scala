@@ -18,7 +18,7 @@ abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F])
     )
 
 /** Group all the Stream specs into one big suite, which can be called for each Stream type. */
-abstract class StreamSuite[S[_], F[_], A](testkit: StreamTestkit[S, F, A])
+abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F])
     extends Suites(
       new StreamGuaranteeSpec(testkit),
       new StreamDriverSpec(testkit),

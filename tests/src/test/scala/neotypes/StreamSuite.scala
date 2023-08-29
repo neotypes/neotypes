@@ -4,7 +4,7 @@ import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
 
 /** Testkit used to write specs abstracted from any concrete Stream type. */
-abstract class StreamTestkit[S[_], F[_], A](val asyncTestkit: AsyncTestkit[F])(implicit ctS: ClassTag[S[A]]) {
+abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])(implicit ctS: ClassTag[S[Any]]) {
   final val streamName: String = ctS.runtimeClass.getCanonicalName
 
   trait Behaviour {
@@ -16,7 +16,7 @@ abstract class StreamTestkit[S[_], F[_], A](val asyncTestkit: AsyncTestkit[F])(i
 }
 
 /** Base class for writing Stream specs. */
-abstract class BaseStreamSpec[S[_], F[_], A](streamTestkit: StreamTestkit[S, F, A])
+abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F])
     extends BaseAsyncSpec[F](streamTestkit.asyncTestkit) {
   protected final val streamName: String =
     streamTestkit.streamName
@@ -35,8 +35,8 @@ abstract class BaseStreamSpec[S[_], F[_], A](streamTestkit: StreamTestkit[S, F, 
 }
 
 /** Provides an StreamDriver[S, F] instance for Stream tests. */
-abstract class StreamDriverProvider[S[_], F[_], A](testkit: StreamTestkit[S, F, A])
-    extends BaseStreamSpec[S, F, A](testkit)
+abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
+    extends BaseStreamSpec[S, F](testkit)
     with DriverProvider[F] { self: BaseIntegrationSpec[F] =>
   override protected final type DriverType = StreamDriver[S, F]
   override protected final type TransactionType = StreamTransaction[S, F]

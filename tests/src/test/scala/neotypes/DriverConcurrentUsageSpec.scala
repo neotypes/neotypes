@@ -48,8 +48,8 @@ final class AsyncDriverConcurrentUsageSpec[F[_]](
     }
 }
 
-final class StreamDriverConcurrentUsageSpec[S[_], F[_], A](
-  testkit: StreamTestkit[S, F, A]
+final class StreamDriverConcurrentUsageSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit)
     with BaseDriverConcurrentUsageSpec[F] {
   override protected def runBothQueriesConcurrently(q1: DeferredQueryBuilder, q2: DeferredQueryBuilder): Future[Unit] =

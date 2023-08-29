@@ -790,8 +790,8 @@ final class AsyncDriverSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseDriverSpec[F]
 
-final class StreamDriverSpec[S[_], F[_], A](
-  testkit: StreamTestkit[S, F, A]
+final class StreamDriverSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit)
     with BaseDriverSpec[F] {
   it should "support stream the records" in {

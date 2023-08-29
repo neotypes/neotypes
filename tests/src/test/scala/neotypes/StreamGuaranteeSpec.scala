@@ -6,7 +6,7 @@ import org.scalatest.compatible.Assertion
 import scala.concurrent.Future
 
 /** Base class for testing the Stream.Aux[S, F].guarantee method. */
-final class StreamGuaranteeSpec[S[_], F[_], A](testkit: StreamTestkit[S, F, A]) extends BaseStreamSpec(testkit) {
+final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extends BaseStreamSpec(testkit) {
   behavior of s"Stream.Aux[${streamName}, ${asyncName}].guarantee"
 
   import StreamGuaranteeSpec._

@@ -211,7 +211,7 @@ final class AsyncCatsDataSpec[F[_]](
 ) extends AsyncDriverProvider(testkit)
     with BaseCatsDataSpec[F]
 
-final class StreamCatsDataSpec[S[_], F[_], A](
-  testkit: StreamTestkit[S, F, A]
+final class StreamCatsDataSpec[S[_], F[_]](
+  testkit: StreamTestkit[S, F]
 ) extends StreamDriverProvider(testkit)
     with BaseCatsDataSpec[F]
