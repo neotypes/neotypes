@@ -12,10 +12,10 @@ import shapeless3.deriving.*
 trait CaseClassDerivedProductMap[P <: Product] extends DerivedProductMap[P]
 object CaseClassDerivedProductMap:
   private type Acc = (Int, NeoObject, Option[ResultMapperException])
-  implicit def CaseClassDerivedProductMapInst[P <: Product](using
+  given [P <: Product](using
     labelled: Labelling[P],
     inst: K0.ProductInstances[ResultMapper, P]
-  ): CaseClassDerivedProductMap[P] = new CaseClassDerivedProductMap[P]:
+  ): CaseClassDerivedProductMap[P] with
     override def map(obj: NeoObject): Either[ResultMapperException, P] =
       // `unfold` traverses over Product field types.
       // For example, `inst.unfold` for `case class A(i:Int, s: String)`
