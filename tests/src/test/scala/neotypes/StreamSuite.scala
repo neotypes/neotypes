@@ -30,7 +30,7 @@ abstract class BaseStreamSpec[S[_], F[_]](streamTestkit: StreamTestkit[S, F])
   protected final def streamConcurrently(stream1: S[Unit], stream2: S[Unit]): S[Unit] =
     behaviour.streamConcurrently(stream1, stream2)
 
-  protected final def streamToFList[B](stream: S[B]): F[List[B]] =
+  protected final def streamToFList[A](stream: S[A]): F[List[A]] =
     S.collectAs(stream)(List)
 }
 
@@ -53,6 +53,6 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
   override protected final def transact[T](driver: DriverType)(txF: TransactionType => F[T]): F[T] =
     F.map(streamToFList(driver.streamTransact(txF andThen S.fromF)))(_.head)
 
-  protected final def executeAsFutureList[B](work: DriverType => S[B]): Future[List[B]] =
+  protected final def executeAsFutureList[A](work: DriverType => S[A]): Future[List[A]] =
     executeAsFuture(work andThen streamToFList)
 }
