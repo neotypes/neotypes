@@ -21,6 +21,6 @@ object CaseClassDerivedQueryParams:
           (acc: Acc, pm: ParameterMapper[t], x: t) =>
             val (oldM, idx) = acc
             val field = labelled.elemLabels(idx)
-            val nm = oldM :+ (field -> pm.toQueryParam(x))
+            val nm = (field -> pm.toQueryParam(x)) :: oldM
             nm -> (idx + 1)
-      m
+      m.reverse

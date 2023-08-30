@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
 /** Marker trait to signal that the test needs a driver. */
-trait DriverProvider[F[_]] extends AnyRef { self: BaseIntegrationSpec[F] =>
+trait DriverProvider[F[_]] { self: BaseIntegrationSpec[F] =>
   protected type DriverType <: AsyncDriver[F]
   protected type TransactionType <: AsyncTransaction[F]
 

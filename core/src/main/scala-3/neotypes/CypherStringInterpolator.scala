@@ -51,17 +51,26 @@ object CypherStringInterpolator {
       inverted
         .map { (expr: Expr[Any]) =>
           lazy val qarg: Expr[Res] = asRightQueryArg(expr)
+          lazy val selectToString = Select.unique(expr.asTerm, "toString")
+
+          lazy val toStringExpr = selectToString.signature match
+            case None =>
+              // handle the case where someone overrides `toString()` without parenthesis.
+              // If we "apply" `toString` of the overridden one,
+              // it causes a compile error "method toString in class X does not take parameter"
+              // during macro expansion.
+              // For example, `cats.data.Chain` overrides to string as `override def toString: String = show(Show.fromToString)`.
+              // Without this case, the test for Chain in BaseCatsDataSpec won't compile.
+              selectToString.asExprOf[String]
+
+            case Some(_) =>
+              selectToString.appliedToArgs(Nil).asExprOf[String]
+
           '{ (b: Boolean) =>
             if (b)
               $qarg
             else
-              // This `asInstanceOf` is necessary because when some class overrides `toString()` without parentheses,
-              // this line causes compile error during macro expansion. Scala distinguishes `toString` from `toString()`,
-              // the former is `Select(tree,"toString")` and the latter is `Apply(tree, "toString", typeArgs = Nil, args = Nil)`.
-              //
-              // For example, `cats.data.Chain` overrides to string `override def toString: String = show(Show.fromToString)`.
-              // Without this `asInstanceOf`, the test for Chain in BaseCatsDataSpec won't compile.
-              Left($expr.asInstanceOf[Object].toString())
+              Left($toStringExpr)
           }
         }
     }
