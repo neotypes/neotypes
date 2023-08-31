@@ -15,8 +15,6 @@ object SealedTraitDerivedCoproductInstances:
         .elemLabels
         .zipWithIndex
         .map[(String, ResultMapper[C])] { (s, idx) =>
-          // TODO is there a way to not use asInstanceOf here? widen as it is currently implemented will
-          // not suffice
-          s -> inst.inject(idx) { [t] => (x: ResultMapper[t]) => x.asInstanceOf[ResultMapper[C]] }
+          s -> inst.inject(idx) { [t <: C] => (x: ResultMapper[t]) => x.widen[C] }
         }
         .toList
