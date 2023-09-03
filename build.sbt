@@ -53,14 +53,13 @@ ThisBuild / scmInfo ~= {
 
 // Global settings.
 ThisBuild / scalaVersion := scala213
-ThisBuild / crossScalaVersions := Seq(scala213)
+ThisBuild / crossScalaVersions := Seq(scala213, scala3)
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 // Common settings.
 lazy val commonSettings = Def.settings(
-  crossScalaVersions := Seq(scala213, scala3),
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
   // Make all warnings verbose.
@@ -78,14 +77,12 @@ lazy val commonSettings = Def.settings(
     else
       Seq.empty
   ),
-
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   publishMavenStyle := true,
   releaseCrossBuild := true,
-  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
   // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
@@ -295,9 +292,10 @@ lazy val tests = (project in file("tests"))
         "ch.qos.logback" % "logback-classic" % logbackVersion
       ),
     // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
+    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
     // Fork tests and disable parallel execution to avoid issues with Docker.
-    Test / parallelExecution := false,
     Test / fork := true,
+    Test / parallelExecution := false,
     // Print full stack traces of failed tests and a remainder of failed tests:
     // https://www.scalatest.org/user_guide/using_scalatest_with_sbt
     Test / testOptions += Tests.Argument("-oFIK")
@@ -321,6 +319,9 @@ lazy val microsite = (project in file("microsite"))
   .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
   .settings(commonSettings, noPublishSettings)
   .settings(
+    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
+    Compile / scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion,
     micrositeName := "neotypes",
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
     micrositeAuthor := "neotypes",
@@ -341,7 +342,6 @@ lazy val microsite = (project in file("microsite"))
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    Compile / scalacOptions -= "-Xfatal-warnings",
     ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",
@@ -350,6 +350,5 @@ lazy val microsite = (project in file("microsite"))
       (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
     ),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream),
-    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream)
   )
