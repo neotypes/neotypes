@@ -2,8 +2,11 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
+val scala213 = "2.13.11"
+val scala3 = "3.3.0"
 val neo4jDriverVersion = "5.11.0"
 val shapelessVersion = "2.3.10"
+val shapeless3Version = "3.3.0"
 val testcontainersNeo4jVersion = "1.19.0"
 val testcontainersScalaVersion = "0.41.0"
 val scalaTestVersion = "3.2.16"
@@ -49,33 +52,37 @@ ThisBuild / scmInfo ~= {
 }
 
 // Global settings.
-ThisBuild / scalaVersion := "2.13.11"
-ThisBuild / crossScalaVersions := Seq("2.13.11")
+ThisBuild / scalaVersion := scala213
+ThisBuild / crossScalaVersions := Seq(scala213, scala3)
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
 ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 // Common settings.
-val commonSettings = Seq(
-  // Run the compiler linter after macros have expanded.
-  scalacOptions += "-Ywarn-macros:after",
-
+lazy val commonSettings = Def.settings(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
-
-  // Implicit resolution debug flags.
-  scalacOptions ++= Seq("-Vimplicits", "-Vtype-diffs"),
-
   // Make all warnings verbose.
   scalacOptions += "-Wconf:any:warning-verbose",
-
+  scalacOptions ++= (
+    if (scalaVersion.value.startsWith("2."))
+      Seq(
+        // Run the compiler linter after macros have expanded.
+        "-Ywarn-macros:after",
+        // Implicit resolution debug flags.
+        "-Vimplicits",
+        "-Vtype-diffs",
+        "-Ytasty-reader"
+      )
+    else
+      Seq.empty
+  ),
   // Publishing.
   publishTo := sonatypePublishToBundle.value,
   sonatypeProfileName := "neotypes",
   sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
   publishMavenStyle := true,
   releaseCrossBuild := true,
-  Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
   // License.
   licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
 )
@@ -117,33 +124,6 @@ lazy val root = (project in file("."))
     )
   )
 
-lazy val scala3CrossCompileSettings = Def.settings(
-  crossScalaVersions := Seq("2.13.11", "3.3.0"),
-  libraryDependencies ++= (
-    if (scalaVersion.value.startsWith("2."))
-      COMPILE(
-        scalaVersion("org.scala-lang" % "scala-reflect" % _).value
-      )
-    else Seq.empty
-  ),
-  scalacOptions := (
-    if (scalaVersion.value.startsWith("2."))
-      scalacOptions.value
-    else
-      scalacOptions
-        .value
-        .filterNot(Set("-Ywarn-macros:after", "-Vimplicits", "-Vtype-diffs"))
-  )
-)
-
-lazy val `test-helpers` = (project in file("test-helpers"))
-  .settings(
-    crossScalaVersions := Seq("2.13.11", "3.3.0"),
-    libraryDependencies ++= TEST(
-      "org.scalatest" %% "scalatest" % scalaTestVersion
-    )
-  )
-
 lazy val core = (project in file("core"))
   .settings(commonSettings)
   .settings(
@@ -152,22 +132,28 @@ lazy val core = (project in file("core"))
     libraryDependencies ++=
       PROVIDED(
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
-      )
+      ),
+    libraryDependencies ++= (
+      if (scalaVersion.value.startsWith("2."))
+        COMPILE(
+          scalaVersion("org.scala-lang" % "scala-reflect" % _).value
+        )
+      else Seq.empty
+    )
   )
-  .settings(scala3CrossCompileSettings)
-  .dependsOn(`test-helpers` % "test->test")
 
 lazy val generic = (project in file("generic"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-generic",
-    libraryDependencies ++=
-      COMPILE(
+    libraryDependencies += (
+      if (scalaVersion.value.startsWith("2."))
         "com.chuusai" %% "shapeless" % shapelessVersion
-      )
+      else
+        "org.typelevel" %% "shapeless3-deriving" % shapeless3Version
+    )
   )
-  .dependsOn(`test-helpers` % "test->test")
 
 lazy val catsEffect = (project in file("cats-effect"))
   .dependsOn(core)
@@ -179,7 +165,6 @@ lazy val catsEffect = (project in file("cats-effect"))
       "org.typelevel" %% "cats-effect" % catsEffect3Version
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val monix = (project in file("monix"))
   .dependsOn(core)
@@ -192,7 +177,6 @@ lazy val monix = (project in file("monix"))
       "io.monix" %% "monix-eval" % monixVersion
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val zio = (project in file("zio"))
   .dependsOn(core)
@@ -203,7 +187,6 @@ lazy val zio = (project in file("zio"))
       "dev.zio" %% "zio" % zio2Version
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val akkaStream = (project in file("akka-stream"))
   .dependsOn(core)
@@ -214,7 +197,6 @@ lazy val akkaStream = (project in file("akka-stream"))
       "com.typesafe.akka" %% "akka-stream" % akkaStreamVersion
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val fs2Stream = (project in file("fs2-stream"))
   .dependsOn(core)
@@ -228,7 +210,6 @@ lazy val fs2Stream = (project in file("fs2-stream"))
       "co.fs2" %% "fs2-reactive-streams" % fs2Version
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val monixStream = (project in file("monix-stream"))
   .dependsOn(core)
@@ -242,7 +223,6 @@ lazy val monixStream = (project in file("monix-stream"))
       "io.monix" %% "monix-reactive" % monixVersion
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val zioStream = (project in file("zio-stream"))
   .dependsOn(core)
@@ -255,7 +235,6 @@ lazy val zioStream = (project in file("zio-stream"))
       "dev.zio" %% "zio-interop-reactivestreams" % zioInteropReactiveStreamsVersion
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val catsData = (project in file("cats-data"))
   .dependsOn(core)
@@ -266,13 +245,13 @@ lazy val catsData = (project in file("cats-data"))
       "org.typelevel" %% "cats-core" % catsVersion
     )
   )
-  .settings(scala3CrossCompileSettings)
 
 lazy val refined = (project in file("refined"))
   .dependsOn(core)
   .settings(commonSettings)
   .settings(
     name := "neotypes-refined",
+    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     libraryDependencies ++= PROVIDED(
       "eu.timepit" %% "refined" % refinedVersion
     )
@@ -283,6 +262,7 @@ lazy val enumeratum = (project in file("enumeratum"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-enumeratum",
+    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     libraryDependencies ++= PROVIDED(
       "com.beachape" %% "enumeratum" % enumeratumVersion
     )
@@ -312,9 +292,10 @@ lazy val tests = (project in file("tests"))
         "ch.qos.logback" % "logback-classic" % logbackVersion
       ),
     // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
+    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
     // Fork tests and disable parallel execution to avoid issues with Docker.
-    Test / parallelExecution := false,
     Test / fork := true,
+    Test / parallelExecution := false,
     // Print full stack traces of failed tests and a remainder of failed tests:
     // https://www.scalatest.org/user_guide/using_scalatest_with_sbt
     Test / testOptions += Tests.Argument("-oFIK")
@@ -338,6 +319,9 @@ lazy val microsite = (project in file("microsite"))
   .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
   .settings(commonSettings, noPublishSettings)
   .settings(
+    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
+    Compile / scalacOptions -= "-Xfatal-warnings",
+    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion,
     micrositeName := "neotypes",
     micrositeDescription := "Scala lightweight, type-safe, asynchronous driver for neo4j",
     micrositeAuthor := "neotypes",
@@ -358,7 +342,6 @@ lazy val microsite = (project in file("microsite"))
     micrositeDocumentationLabelDescription := "API Documentation",
     micrositeDocumentationUrl := "/neotypes/api/neotypes/index.html",
     mdocExtraArguments := Seq("--no-link-hygiene"),
-    Compile / scalacOptions -= "-Xfatal-warnings",
     ScalaUnidoc / unidoc / scalacOptions ++= Seq(
       "-groups",
       "-doc-source-url",
@@ -367,6 +350,5 @@ lazy val microsite = (project in file("microsite"))
       (LocalRootProject / baseDirectory).value.getAbsolutePath,
       "-diagrams"
     ),
-    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream),
-    libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
+    ScalaUnidoc / unidoc / unidocProjectFilter := inAnyProject -- inProjects(monix, monixStream)
   )

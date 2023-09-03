@@ -712,7 +712,7 @@ private[mappers] sealed abstract class ResultMappersLowPriority3 { self: ResultM
     * @note
     *   if you need customization of the decoding logic, please refer to the `product` and `productNamed` factories.
     */
-  implicit final def productDerive[P <: Product](implicit ev: DerivedProductMap[P]): ResultMapper[P] =
+  implicit final def productDerive[P <: Product](implicit ev: ResultMapper.DerivedProductMap[P]): ResultMapper[P] =
     neoObject.emap(ev.map)
 
   /** Derives an opinionated [[ResultMapper]] for a given `sealed trait`. The derived mapper will attempt to decode the
@@ -722,7 +722,9 @@ private[mappers] sealed abstract class ResultMappersLowPriority3 { self: ResultM
     * @note
     *   if you need customization of the decoding logic, please refer to the [[coproduct]] factory.
     */
-  implicit final def coproductDerive[C](implicit instances: DerivedCoproductInstances[C]): ResultMapper[C] =
+  implicit final def coproductDerive[C](implicit
+    instances: ResultMapper.DerivedCoproductInstances[C]
+  ): ResultMapper[C] =
     coproduct(
       strategy = CoproductDiscriminatorStrategy.Field(name = "type", mapper = string)
     )(

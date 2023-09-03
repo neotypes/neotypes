@@ -143,12 +143,12 @@ final class StreamGuaranteeSpec[S[_], F[_]](testkit: StreamTestkit[S, F]) extend
 }
 
 object StreamGuaranteeSpec {
-  final case object InputException extends Exception("Input failed")
+  case object InputException extends Exception("Input failed")
   type InputException = InputException.type
 
-  final case object UseException extends Exception("Use failed")
+  case object UseException extends Exception("Use failed")
   type UseException = UseException.type
 
-  final case object FinalizerException extends Exception("Finalizer failed")
+  case object FinalizerException extends Exception("Finalizer failed")
   type FinalizerException = FinalizerException.type
 }
