@@ -8,7 +8,6 @@ final class CypherStringInterpolator(private val sc: StringContext) extends AnyV
 }
 
 object CypherStringInterpolator {
-
   def macroImpl(c: blackbox.Context)(args: c.Expr[Any]*): c.Expr[DeferredQueryBuilder] = {
     import c.universe._
 
