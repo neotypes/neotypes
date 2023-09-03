@@ -27,6 +27,7 @@ sealed trait BaseCatsDataSpec[F[_]] extends CleaningIntegrationSpec[F] { self: D
 
   it should "work with Chain" in executeAsFuture { driver =>
     val messages: Messages = Chain("a", "b")
+
     for {
       _ <- c"CREATE (: Chat { user1: 'Balmung', user2: 'Luis', messages: ${messages} })".execute.void(driver)
       r <- "MATCH (chat: Chat) RETURN chat.messages".query(Messages.resultMapper).single(driver)
