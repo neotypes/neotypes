@@ -1,10 +1,11 @@
 package neotypes
 package generic
 
-import neotypes.mappers.ResultMapper
-import neotypes.mappers.ResultMapper.DerivedProductMap
-import neotypes.model.types.NeoObject
-import neotypes.model.exceptions.ResultMapperException
+import internal.syntax.either.*
+import model.exceptions.ResultMapperException
+import mappers.ResultMapper
+import mappers.ResultMapper.DerivedProductMap
+import model.types.NeoObject
 
 import shapeless3.deriving.*
 
@@ -15,18 +16,18 @@ object CaseClassDerivedProductMap:
     inst: K0.ProductInstances[ResultMapper, P]
   ): CaseClassDerivedProductMap[P] with
     override def map(obj: NeoObject): Either[ResultMapperException, P] =
-      import neotypes.internal.syntax.either.*
       val labels = labelled.elemLabels.iterator
-      val decodeField = [t] =>
-        (resolvedMapper: ResultMapper[t]) =>
-          for
-            field <- Right(labels.next())
-            value <- obj.getAs(field, resolvedMapper)
-          yield value
+
+      val decodeField =
+        [t] => (rm: ResultMapper[t]) => obj.getAs(key = labels.next(), rm)
+
+      val combineFields: Ap[[a] =>> Either[ResultMapperException, a]] =
+        [a, b] =>
+          (ff: Either[ResultMapperException, a => b], fa: Either[ResultMapperException, a]) =>
+            ff.and(fa).map((f, a) => f(a))
 
       inst.constructA(decodeField)(
-        [t] => (x: t) => Right(x),
-        [t, s] => (fa: Either[ResultMapperException, t], f: t => s) => fa.map(f),
-        [t, s] =>
-          (ff: Either[ResultMapperException, t => s], fa: Either[ResultMapperException, t]) => ff.and(fa).map(_(_))
+        pure = [a] => (x: a) => Right(x),
+        map = [a, b] => (fa: Either[ResultMapperException, a], f: a => b) => fa.map(f),
+        ap = combineFields
       )

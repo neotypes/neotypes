@@ -1,8 +1,9 @@
 package neotypes
 package generic
 
+import mappers.ResultMapper
+
 import shapeless3.deriving.*
-import neotypes.mappers.ResultMapper
 
 trait SealedTraitDerivedCoproductInstances[C] extends ResultMapper.DerivedCoproductInstances[C]
 object SealedTraitDerivedCoproductInstances:
@@ -14,7 +15,9 @@ object SealedTraitDerivedCoproductInstances:
       labelled
         .elemLabels
         .zipWithIndex
-        .map[(String, ResultMapper[C])] { (s, idx) =>
-          s -> inst.inject(idx) { [t <: C] => (x: ResultMapper[t]) => x.widen[C] }
+        .map[(String, ResultMapper[C])] { (caseName, idx) =>
+          caseName -> inst.inject(idx) {
+            [t <: C] => (rm: ResultMapper[t]) => rm.widen[C]
+          }
         }
         .toList
