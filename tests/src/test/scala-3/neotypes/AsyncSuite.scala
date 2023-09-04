@@ -12,7 +12,8 @@ abstract class AsyncSuite[F[_]](testkit: AsyncTestkit[F])
       new AsyncDriverConcurrentUsageSpec(testkit),
       new AsyncParameterSpec(testkit),
       new AsyncAlgorithmSpec(testkit),
-      new cats.data.AsyncCatsDataSpec(testkit)
+      new cats.data.AsyncCatsDataSpec(testkit),
+      new enumeratum.AsyncEnumeratumSpec(testkit)
     )
 
 /** Group all the Stream specs into one big suite, which can be called for each Stream type. */
@@ -25,5 +26,6 @@ abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F])
       new StreamDriverConcurrentUsageSpec(testkit),
       new StreamParameterSpec(testkit),
       new StreamAlgorithmSpec(testkit),
-      new cats.data.StreamCatsDataSpec(testkit)
+      new cats.data.StreamCatsDataSpec(testkit),
+      new enumeratum.StreamEnumeratumSpec(testkit)
     )
