@@ -262,7 +262,6 @@ lazy val enumeratum = (project in file("enumeratum"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-enumeratum",
-    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     libraryDependencies ++= PROVIDED(
       "com.beachape" %% "enumeratum" % enumeratumVersion
     )
@@ -283,6 +282,7 @@ lazy val tests = (project in file("tests"))
   )
   .settings(commonSettings, noPublishSettings)
   .settings(
+    scalacOptions += "-Yretain-trees",
     libraryDependencies ++=
       TEST(
         "org.scalatest" %% "scalatest" % scalaTestVersion,
