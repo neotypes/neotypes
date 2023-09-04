@@ -110,27 +110,27 @@ sealed trait BaseEnumeratumSpec[F[_]] extends CleaningIntegrationSpec[F] { self:
 object BaseEnumeratumSpec {
   sealed trait SimpleEnum extends EnumEntry with Product with Serializable
   object SimpleEnum extends Enum[SimpleEnum] with NeotypesEnum[SimpleEnum] {
-    final case object Foo extends SimpleEnum
-    final case object Bar extends SimpleEnum
-    final case object Baz extends SimpleEnum
+    case object Foo extends SimpleEnum
+    case object Bar extends SimpleEnum
+    case object Baz extends SimpleEnum
 
     val values = findValues
   }
 
   sealed abstract class ValueEnum(val value: Int, val name: String) extends IntEnumEntry with Product with Serializable
   object ValueEnum extends IntEnum[ValueEnum] with NeotypesIntEnum[ValueEnum] {
-    final case object A extends ValueEnum(value = 1, name = "A")
-    final case object B extends ValueEnum(value = 3, name = "B")
-    final case object C extends ValueEnum(value = 5, name = "C")
+    case object A extends ValueEnum(value = 1, name = "A")
+    case object B extends ValueEnum(value = 3, name = "B")
+    case object C extends ValueEnum(value = 5, name = "C")
 
     val values = findValues
   }
 
   sealed trait KeyEnum extends EnumEntry with Product with Serializable
   object KeyEnum extends Enum[KeyEnum] with NeotypesKeyEnum[KeyEnum] { self =>
-    final case object Key1 extends KeyEnum
-    final case object Key2 extends KeyEnum
-    final case object Key3 extends KeyEnum
+    case object Key1 extends KeyEnum
+    case object Key2 extends KeyEnum
+    case object Key3 extends KeyEnum
 
     val values = findValues
 
@@ -142,9 +142,9 @@ object BaseEnumeratumSpec {
 
   sealed abstract class KeyStringEnum(val value: String) extends StringEnumEntry with Product with Serializable
   object KeyStringEnum extends StringEnum[KeyStringEnum] with NeotypesStringEnum[KeyStringEnum] { self =>
-    final case object KeyA extends KeyStringEnum(value = "keyA")
-    final case object KeyB extends KeyStringEnum(value = "keyB")
-    final case object KeyC extends KeyStringEnum(value = "keyC")
+    case object KeyA extends KeyStringEnum(value = "keyA")
+    case object KeyB extends KeyStringEnum(value = "keyB")
+    case object KeyC extends KeyStringEnum(value = "keyC")
 
     val values = findValues
 
