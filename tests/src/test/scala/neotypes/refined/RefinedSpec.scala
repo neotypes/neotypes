@@ -1,7 +1,6 @@
 package neotypes.refined
 
-import eu.timepit.refined.api.Refined
-import eu.timepit.refined.auto._
+import eu.timepit.refined.api.{Refined, RefinedTypeOps}
 import eu.timepit.refined.numeric.Interval
 import neotypes.{refined => _, _}
 import neotypes.internal.syntax.async._
@@ -17,7 +16,7 @@ sealed trait BaseRefinedSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dr
   behavior of s"${driverName} with Refined types"
 
   it should "work with refined types" in executeAsFuture { driver =>
-    val level: Level = 5
+    val level: Level = Level.unsafeFrom(5)
 
     for {
       _ <- c"CREATE (: Level { value: ${level} })".execute.void(driver)
@@ -38,7 +37,7 @@ sealed trait BaseRefinedSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dr
 
 object BaseRefinedSpec {
   type Level = Int Refined Interval.Closed[1, 99]
-  object Level {
+  object Level extends RefinedTypeOps[Level, Int] {
     val resultMapper = refined[Level](ResultMapper.int)
   }
 }
