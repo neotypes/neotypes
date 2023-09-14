@@ -2,6 +2,7 @@ package neotypes
 
 import scala.concurrent.{ExecutionContext, Future}
 import scala.reflect.ClassTag
+import org.scalatest.Suites
 
 /** Testkit used to write specs abstracted from any concrete Stream type. */
 abstract class StreamTestkit[S[_], F[_]](val asyncTestkit: AsyncTestkit[F])(implicit ctS: ClassTag[S[Any]]) {
@@ -56,3 +57,18 @@ abstract class StreamDriverProvider[S[_], F[_]](testkit: StreamTestkit[S, F])
   protected final def executeAsFutureList[A](work: DriverType => S[A]): Future[List[A]] =
     executeAsFuture(work andThen streamToFList)
 }
+
+/** Group all the Stream specs into one big suite, which can be called for each Stream type. */
+abstract class StreamSuite[S[_], F[_]](testkit: StreamTestkit[S, F])
+    extends Suites(
+      new StreamGuaranteeSpec(testkit),
+      new StreamDriverSpec(testkit),
+      new StreamTransactionSpec(testkit),
+      new StreamDriverTransactSpec(testkit),
+      new StreamDriverConcurrentUsageSpec(testkit),
+      new StreamParameterSpec(testkit),
+      new StreamAlgorithmSpec(testkit),
+      new cats.data.StreamCatsDataSpec(testkit),
+      new enumeratum.StreamEnumeratumSpec(testkit),
+      new refined.StreamRefinedSpec(testkit)
+    )

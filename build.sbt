@@ -251,7 +251,6 @@ lazy val refined = (project in file("refined"))
   .settings(commonSettings)
   .settings(
     name := "neotypes-refined",
-    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     libraryDependencies ++= PROVIDED(
       "eu.timepit" %% "refined" % refinedVersion
     )
@@ -325,7 +324,6 @@ lazy val microsite = (project in file("microsite"))
   .enablePlugins(MicrositesPlugin, ScalaUnidocPlugin)
   .settings(commonSettings, noPublishSettings)
   .settings(
-    crossScalaVersions := crossScalaVersions.value.filterNot(Set(scala3)),
     Compile / scalacOptions -= "-Xfatal-warnings",
     libraryDependencies += "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion,
     micrositeName := "neotypes",

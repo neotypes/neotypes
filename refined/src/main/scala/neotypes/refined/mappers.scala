@@ -17,7 +17,7 @@ object mappers {
       refined.refine(t).left.map(msg => IncoercibleException(msg))
     }
 
-  private[mappers] final class RefinedPartiallyApplied[R <: Refined[_, _]](private val dummy: Boolean) extends AnyVal {
+  private[mappers] final class RefinedPartiallyApplied[R](private val dummy: Boolean) extends AnyVal {
     def apply[T](
       mapper: ResultMapper[T]
     )(implicit
@@ -27,7 +27,7 @@ object mappers {
       refinedImpl[T, refined.P](mapper, refined.asInstanceOf[RT[T, refined.P]])
   }
 
-  def refined[R <: Refined[_, _]]: RefinedPartiallyApplied[R] =
+  def refined[R]: RefinedPartiallyApplied[R] =
     new RefinedPartiallyApplied(dummy = true)
 
   implicit final def refinedParameterMapper[T, P](implicit
