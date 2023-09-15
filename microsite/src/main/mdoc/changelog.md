@@ -7,6 +7,25 @@ position: 100
 
 # Changelog
 
+## v1.0.0-M3 _(2023-09-15)_
+
+> **Scala 3** support!
+
+This thirds milestone brings mostly dependency updates,
+as well as **Scala 3** support! :tada:
+
+### Cross compile core module (Scala 3) ([#666](https://github.com/neotypes/neotypes/pull/666){:target="_blank"})
+
+### Cross compile generic module (Scala 3) ([#667](https://github.com/neotypes/neotypes/pull/667){:target="_blank"})
+
+### Cross compile extra modules (Scala 3) ([#673](https://github.com/neotypes/neotypes/pull/673){:target="_blank"})
+
+### Cross compile enumeratum module (Scala 3) ([#680](https://github.com/neotypes/neotypes/pull/680){:target="_blank"})
+
+### Cross compile refined module (Scala 3) ([#690](https://github.com/neotypes/neotypes/pull/690){:target="_blank"})
+
+Again, thanks a lot `@i10416` for all the effort!
+
 ## v1.0.0-M2 _(2023-08-26)_
 
 > We start the road for **Scala 3** support!
