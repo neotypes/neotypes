@@ -654,7 +654,7 @@ final class DeferredQueryBuilder private[neotypes] (private val parts: List[Defe
           (
             queryBuilder.mkString,
             accParams,
-            accParamLocations,
+            accParamLocations
           )
 
         case Query(query, paramLocations) :: xs =>
