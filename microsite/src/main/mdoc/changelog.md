@@ -7,6 +7,15 @@ position: 100
 
 # Changelog
 
+## v1.0.0 _(2024-02-10)_
+
+Finally, the final `v1.0.0` release :tada:
+
+This release is mostly idential to `v1.0.0-M3` but includes many dependency updates.<br>
+Please, read the changelong of the milestones for details on the changes introduced in this version.
+
+Again, thanks a lot to everyone involved in making this release possible! :D :rocket:
+
 ## v1.0.0-M3 _(2023-09-15)_
 
 > **Scala 3** support!
