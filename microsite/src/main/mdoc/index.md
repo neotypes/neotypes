@@ -26,8 +26,6 @@ position: 0
 
 ### Setup
 
-:warning: The library is under heavy development. Production use is at your own risk and is not recommended. :warning:
-
 {:.table}
 |Supports Scala 2.12 and 2.13||
 | ----------------------------------------- | :------------- |

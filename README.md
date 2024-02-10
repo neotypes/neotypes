@@ -19,8 +19,6 @@
 
 ### Setup
 
-:warning: The library is under heavy development. Production use is at your own risk and is not recommended. :warning:
-
 |Supports Scala 2.12 and 2.13||
 | ----------------------------------------- | :------------- |
 |`"io.github.neotypes" %% "neotypes-core" % version`|Core functionality. Supports `scala.concurrent.Future`.|
