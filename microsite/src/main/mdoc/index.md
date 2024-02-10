@@ -27,7 +27,7 @@ position: 0
 ### Setup
 
 {:.table}
-|Supports Scala 2.12 and 2.13||
+|Supports Scala 2.13 and 3.3||
 | ----------------------------------------- | :------------- |
 |`"io.github.neotypes" %% "neotypes-core" % version`|core functionality. Supports `scala.concurrent.Future`.|
 |`"io.github.neotypes" %% "neotypes-generic" % version`|auto & semiauto derivation of mappers for case classes.|

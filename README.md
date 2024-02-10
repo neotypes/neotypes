@@ -19,7 +19,7 @@
 
 ### Setup
 
-|Supports Scala 2.12 and 2.13||
+|Supports Scala 2.13 and 3.3||
 | ----------------------------------------- | :------------- |
 |`"io.github.neotypes" %% "neotypes-core" % version`|Core functionality. Supports `scala.concurrent.Future`.|
 |`"io.github.neotypes" %% "neotypes-generic" % version`|Automatic derivation of mappers for case classes.|

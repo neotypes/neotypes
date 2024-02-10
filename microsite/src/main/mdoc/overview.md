@@ -9,7 +9,7 @@ position: 10
 
 ## Requirements
 
-+ **Scala** `2.12` / `2.13`
++ **Scala** `2.13` / `3.3`
 + **Java** `17+`
 + **Neo4j** server `4+`
 + **Neo4j** driver `5+`
