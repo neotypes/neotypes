@@ -62,17 +62,22 @@ ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 lazy val commonSettings = Def.settings(
   // Ensure we publish an artifact linked to the appropriate Java std library.
   scalacOptions += "-release:17",
-  // Make all warnings verbose.
-  scalacOptions += "-Wconf:any:warning-verbose",
   scalacOptions ++= (
-    if (scalaVersion.value.startsWith("2."))
+    if (scalaVersion.value.startsWith("2.13."))
       Seq(
         // Run the compiler linter after macros have expanded.
         "-Ywarn-macros:after",
         // Implicit resolution debug flags.
         "-Vimplicits",
         "-Vtype-diffs",
-        "-Ytasty-reader"
+        "-Ytasty-reader",
+        // Make all warnings verbose.
+        "-Wconf:any:warning-verbose"
+      )
+    else if (scalaVersion.value.startsWith("3.3."))
+      Seq(
+        // Make all warnings verbose.
+        "-Wconf:any:verbose"
       )
     else
       Seq.empty
@@ -134,7 +139,7 @@ lazy val core = (project in file("core"))
         "org.neo4j.driver" % "neo4j-java-driver" % neo4jDriverVersion
       ),
     libraryDependencies ++= (
-      if (scalaVersion.value.startsWith("2."))
+      if (scalaVersion.value.startsWith("2.13."))
         COMPILE(
           scalaVersion("org.scala-lang" % "scala-reflect" % _).value
         )
@@ -148,7 +153,7 @@ lazy val generic = (project in file("generic"))
   .settings(
     name := "neotypes-generic",
     libraryDependencies += (
-      if (scalaVersion.value.startsWith("2."))
+      if (scalaVersion.value.startsWith("2.13."))
         "com.chuusai" %% "shapeless" % shapelessVersion
       else
         "org.typelevel" %% "shapeless3-deriving" % shapeless3Version
@@ -282,11 +287,12 @@ lazy val tests = (project in file("tests"))
   .settings(commonSettings, noPublishSettings)
   .settings(
     scalacOptions ++= (
-      if (scalaVersion.value.startsWith("3."))
+      if (scalaVersion.value.startsWith("3.3."))
         Seq(
           "-Yretain-trees"
         )
-      else Seq.empty
+      else
+        Seq.empty
     ),
     libraryDependencies ++=
       TEST(
@@ -297,7 +303,18 @@ lazy val tests = (project in file("tests"))
         "ch.qos.logback" % "logback-classic" % logbackVersion
       ),
     // Disable Wnonunit-statement warnings related to ScalaTest Assertion.
-    Test / scalacOptions += "-Wconf:cat=other-pure-statement&msg=org.scalatest.Assertion:s",
+    Test / scalacOptions ++= (
+      if (scalaVersion.value.startsWith("2.13."))
+        Seq(
+          "-Wconf:cat=other-pure-statement&msg=Assertion:s"
+        )
+      else if (scalaVersion.value.startsWith("3.3."))
+        Seq(
+          "-Wconf:name=UnusedNonUnitValue&msg=Assertion:s"
+        )
+      else
+        Seq.empty
+    ),
     // Fork tests and disable parallel execution to avoid issues with Docker.
     Test / fork := true,
     Test / parallelExecution := false,
