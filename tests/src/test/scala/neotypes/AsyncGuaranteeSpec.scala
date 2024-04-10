@@ -1,7 +1,7 @@
 package neotypes
 
 import neotypes.internal.syntax.async._
-import org.scalatest.compatible.Assertion
+import org.scalatest.Assertion
 
 import scala.concurrent.Future
 
