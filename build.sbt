@@ -2,7 +2,7 @@ import Dependencies._
 import xerial.sbt.Sonatype._
 import ReleaseTransformations._
 
-val scala213 = "2.13.13"
+val scala213 = "2.13.14"
 val scala3 = "3.3.3"
 val neo4jDriverVersion = "5.20.0"
 val shapelessVersion = "2.3.10"
