@@ -19,7 +19,7 @@ val akkaStreamVersion = "2.6.20"
 val fs2Version = "3.10.2"
 val zio2Version = "2.1.1"
 val zioInteropReactiveStreamsVersion = "2.0.2"
-val refinedVersion = "0.11.1"
+val refinedVersion = "0.11.2"
 val enumeratumVersion = "1.7.3"
 
 // Fix scmInfo in Github Actions.
