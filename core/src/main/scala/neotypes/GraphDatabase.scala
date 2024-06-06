@@ -38,14 +38,14 @@ object GraphDatabase {
     def apply[R[_]](uri: String, config: Config)(implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       apply(uri, AuthTokens.none(), config)
 
-    /** Creates a new Driver using the provided uri, authentication token manager & configuration.
+    /** Creates a new Driver using the provided uri, authentication token & configuration.
       *
       * Note: Fails if the given string is not a valid uri.
       */
     def apply[R[_]](uri: String, authToken: AuthToken, config: Config)(implicit F: Async.Aux[F, R]): R[AsyncDriver[F]] =
       create(NFactory.driver(URI.create(uri), authToken, config))
 
-    /** Creates a new Driver using the provided uri, authentication token & configuration.
+    /** Creates a new Driver using the provided uri, authentication token manager & configuration.
       *
       * Note: Fails if the given string is not a valid uri.
       */
