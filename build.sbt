@@ -1,6 +1,9 @@
-import Dependencies._
-import xerial.sbt.Sonatype._
-import ReleaseTransformations._
+import Dependencies.*
+import xerial.sbt.Sonatype.*
+
+import ReleaseTransformations.*
+
+import java.net.URI
 
 val scala213 = "2.13.14"
 val scala3 = "3.3.3"
@@ -84,7 +87,9 @@ lazy val commonSettings = Def.settings(
   publishMavenStyle := true,
   releaseCrossBuild := true,
   // License.
-  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
+  licenses := Seq(
+    "The MIT License (MIT)" -> URI.create("https://opensource.org/licenses/MIT").toURL
+  )
 )
 
 lazy val noPublishSettings = Seq(
