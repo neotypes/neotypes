@@ -7,6 +7,14 @@ position: 100
 
 # Changelog
 
+## v1.1.0 _(2024-06-07)_
+
+### Add support for AuthTokenManager when creating the Driver ([#763](https://github.com/neotypes/neotypes/pull/763){:target="_blank"})
+
+Allows creating a `Driver` using an `AuthTokenManager`
+
+Thanks @kbreidenbach !
+
 ## v1.0.0 _(2024-02-10)_
 
 Finally, the final `v1.0.0` release :tada:
