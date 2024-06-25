@@ -4,7 +4,7 @@ import neotypes.internal.syntax.async._
 import neotypes.mappers.ResultMapper
 import neotypes.model.exceptions.MissingRecordException
 import neotypes.syntax.all._
-import org.scalatest.compatible.Assertion
+import org.scalatest.Assertion
 
 import scala.concurrent.Future
 import scala.reflect.ClassTag
