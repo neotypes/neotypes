@@ -1,26 +1,29 @@
-import Dependencies._
-import xerial.sbt.Sonatype._
-import ReleaseTransformations._
+import Dependencies.*
+import xerial.sbt.Sonatype.*
 
-val scala213 = "2.13.13"
+import ReleaseTransformations.*
+
+import java.net.URI
+
+val scala213 = "2.13.14"
 val scala3 = "3.3.3"
-val neo4jDriverVersion = "5.19.0"
-val shapelessVersion = "2.3.10"
-val shapeless3Version = "3.4.1"
-val testcontainersNeo4jVersion = "1.19.7"
-val testcontainersScalaVersion = "0.41.3"
-val scalaTestVersion = "3.2.18"
-val logbackVersion = "1.5.3"
-val catsVersion = "2.10.0"
+val neo4jDriverVersion = "5.24.0"
+val shapelessVersion = "2.3.12"
+val shapeless3Version = "3.4.3"
+val testcontainersNeo4jVersion = "1.20.1"
+val testcontainersScalaVersion = "0.41.4"
+val scalaTestVersion = "3.2.19"
+val logbackVersion = "1.5.7"
+val catsVersion = "2.12.0"
 val catsEffect2Version = "2.5.5"
 val catsEffect3Version = "3.5.4"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
-val fs2Version = "3.10.2"
-val zio2Version = "2.0.21"
+val fs2Version = "3.11.0"
+val zio2Version = "2.1.9"
 val zioInteropReactiveStreamsVersion = "2.0.2"
-val refinedVersion = "0.11.1"
-val enumeratumVersion = "1.7.3"
+val refinedVersion = "0.11.2"
+val enumeratumVersion = "1.7.4"
 
 // Fix scmInfo in Github Actions.
 ThisBuild / scmInfo ~= {
@@ -89,7 +92,9 @@ lazy val commonSettings = Def.settings(
   publishMavenStyle := true,
   releaseCrossBuild := true,
   // License.
-  licenses := Seq("The MIT License (MIT)" -> new URL("https://opensource.org/licenses/MIT"))
+  licenses := Seq(
+    "The MIT License (MIT)" -> URI.create("https://opensource.org/licenses/MIT").toURL
+  )
 )
 
 lazy val noPublishSettings = Seq(
