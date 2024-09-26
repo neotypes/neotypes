@@ -7,7 +7,7 @@ import java.net.URI
 
 val scala213 = "2.13.15"
 val scala3 = "3.3.3"
-val neo4jDriverVersion = "5.24.0"
+val neo4jDriverVersion = "5.25.0"
 val shapelessVersion = "2.3.12"
 val shapeless3Version = "3.4.3"
 val testcontainersNeo4jVersion = "1.20.1"
