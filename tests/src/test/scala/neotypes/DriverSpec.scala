@@ -142,12 +142,29 @@ sealed trait BaseDriverSpec[F[_]] extends CleaningIntegrationSpec[F] { self: Dri
     }
   }
 
-  it should "support querying unnamed tuples of supported types" in executeAsFuture { driver =>
+  it should "support querying unnamed tuples of less than 5 supported types" in executeAsFuture { driver =>
     val expectedTuple = (25, "Luis")
     val mapper = tuple(int, string)
 
     for {
       tuple <- "RETURN 25, 'Luis'".query(mapper).single(driver)
+    } yield {
+      tuple shouldBe expectedTuple
+    }
+  }
+
+  it should "support querying unnamed tuples of 5 supported types" in executeAsFuture { driver =>
+    val expectedTuple = (
+      5,
+      true,
+      List[Int](0, 10),
+      3.5,
+      None.asInstanceOf[Option[Set[Long]]]
+    )
+    val mapper = tuple(int, boolean, list(int), double, option(set(long)))
+
+    for {
+      tuple <- "RETURN 5, true, [0, 10], 3.5, null".query(mapper).single(driver)
     } yield {
       tuple shouldBe expectedTuple
     }

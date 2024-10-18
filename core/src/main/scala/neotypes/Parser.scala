@@ -3,19 +3,18 @@ package neotypes
 import internal.syntax.either._
 import internal.utils.traverseAs
 import mappers.ResultMapper
-import model.exceptions.{ResultMapperException, IncoercibleException}
+import model.exceptions.{IncoercibleException, ResultMapperException}
 import model.types._
-
 import org.neo4j.driver.{Record => NeoRecord, Value => NeoValue}
 import org.neo4j.driver.types.{
+  TypeSystem,
   MapAccessor => NeoEntity,
   Node => NeoNode,
   Path => NeoPath,
-  Relationship => NeoRelationship,
-  TypeSystem
+  Relationship => NeoRelationship
 }
 
-import scala.collection.immutable.ArraySeq
+import scala.collection.immutable.{ArraySeq, SeqMap}
 import scala.jdk.CollectionConverters._
 import scala.util.Try
 
@@ -104,8 +103,8 @@ object Parser {
     entity: NeoEntity
   )(
     parseValue: NeoValue => Either[ResultMapperException, V]
-  ): Either[ResultMapperException, Map[String, V]] =
-    traverseAs(Map.mapFactory[String, V])(entity.keys.asScala) { key =>
+  ): Either[ResultMapperException, SeqMap[String, V]] =
+    traverseAs(SeqMap.mapFactory[String, V])(entity.keys.asScala) { key =>
       parseValue(entity.get(key)).map { value =>
         key -> value
       }
