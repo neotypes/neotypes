@@ -49,15 +49,15 @@ val program: Future[Unit] = for {
 Await.ready(program, 5.seconds)
 ```
 
-### Pekko Streams _(neotypes-akka-stream)_
+### Pekko Streams _(neotypes-pekko-stream)_
 
 ```scala mdoc:compile-only
 import org.apache.pekko.NotUsed
 import org.apache.pekko.actor.ActorSystem
 import org.apache.pekko.stream.scaladsl.{Sink, Source}
 import neotypes.{GraphDatabase, StreamDriver}
-import neotypes.akkastreams.AkkaStream
-import neotypes.akkastreams.implicits._ // Brings the implicit Stream[AkkaStream] instance into the scope.
+import neotypes.pekkostreams.PekkoStream
+import neotypes.pekkostreams.implicits._ // Brings the implicit Stream[PekkoStream] instance into the scope.
 import neotypes.mappers.ResultMapper // Allows to decode query results.
 import neotypes.syntax.all._ // Provides the query extension method.
 import org.neo4j.driver.AuthTokens
