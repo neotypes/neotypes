@@ -10,6 +10,7 @@ position: 50
 **neotypes** allows to stream large results by lazily consuming the result and putting elements into a stream.
 Currently, there are four supported implementations _(one for each effect type)_.
 [**Akka Streams**](https://doc.akka.io/docs/akka/current/stream/index.html) _(for `scala.concurrent.Future`)_,
+[**Pekko Streams**](https://pekko.apache.org/docs/pekko/current/stream/) _(for `scala.concurrent.Future`)_,
 [**FS2**](https://fs2.io/) _(for `cats.effect.Async[F]`)_,
 [**Monix Observables**](https://monix.io/docs/3x/reactive/observable.html) _(for `monix.eval.Task`)_ &
 [**ZIO ZStreams**](https://zio.dev/docs/datatypes/datatypes_stream) _(for `zio.Task`)_.
@@ -38,6 +39,38 @@ val driver =
   GraphDatabase.streamDriver[AkkaStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
 
 def query(driver: StreamDriver[AkkaStream, Future]): Source[String, NotUsed] =
+  "MATCH (p: Person) RETURN p.name".query(ResultMapper.string).stream(driver)
+
+val program: Future[Unit] = for {
+  _ <- query(driver).runWith(Sink.foreach(println))
+  _ <- driver.close
+} yield ()
+
+Await.ready(program, 5.seconds)
+```
+
+### Pekko Streams _(neotypes-pekko-stream)_
+
+```scala mdoc:compile-only
+import org.apache.pekko.NotUsed
+import org.apache.pekko.actor.ActorSystem
+import org.apache.pekko.stream.scaladsl.{Sink, Source}
+import neotypes.{GraphDatabase, StreamDriver}
+import neotypes.pekkostreams.PekkoStream
+import neotypes.pekkostreams.implicits._ // Brings the implicit Stream[PekkoStream] instance into the scope.
+import neotypes.mappers.ResultMapper // Allows to decode query results.
+import neotypes.syntax.all._ // Provides the query extension method.
+import org.neo4j.driver.AuthTokens
+import scala.concurrent.{Await, Future}
+import scala.concurrent.ExecutionContext.Implicits.global
+import scala.concurrent.duration._
+
+implicit val system = ActorSystem("QuickStart")
+
+val driver =
+  GraphDatabase.streamDriver[PekkoStream]("bolt://localhost:7687", AuthTokens.basic("neo4j", "****"))
+
+def query(driver: StreamDriver[PekkoStream, Future]): Source[String, NotUsed] =
   "MATCH (p: Person) RETURN p.name".query(ResultMapper.string).stream(driver)
 
 val program: Future[Unit] = for {
