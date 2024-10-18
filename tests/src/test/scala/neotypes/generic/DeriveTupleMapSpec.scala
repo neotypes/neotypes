@@ -4,6 +4,8 @@ import neotypes.BaseSynchronousSpec
 import neotypes.mappers.ResultMapper
 import neotypes.model.types._
 
+import scala.collection.immutable.SeqMap
+
 /** Base class for testing the derivation of a ResultMapper instance for tuples. */
 final class DeriveTupleMapSpec extends BaseSynchronousSpec {
 
@@ -13,7 +15,7 @@ final class DeriveTupleMapSpec extends BaseSynchronousSpec {
     val mapper = ResultMapper.tuple[Int, String, Boolean]
 
     val input = NeoMap(properties =
-      Map(
+      SeqMap(
         "int" -> Value.Integer(3),
         "str" -> Value.Str("Luis"),
         "bool" -> Value.Bool(true)
@@ -25,14 +27,15 @@ final class DeriveTupleMapSpec extends BaseSynchronousSpec {
   }
 
   it should "derive a tuple composed of more complex types" in {
-    val mapper = ResultMapper.tuple[Option[Int], Either[String, Boolean], List[Int], Map[String, String], Option[Set[Long]]]
+    val mapper =
+      ResultMapper.tuple[Option[Int], Either[String, Boolean], List[Int], Map[String, String], Option[Set[Long]]]
 
     val input = NeoMap(
-      properties = Map(
+      properties = SeqMap(
         "opt" -> Value.Integer(5),
         "either" -> Value.Bool(true),
         "list" -> Value.ListValue(List(Value.Integer(0), Value.Integer(10))),
-        "map" -> NeoMap(Map("foo" -> Value.Str("bar"), "baz" -> Value.Str("quax"))),
+        "map" -> NeoMap(SeqMap("foo" -> Value.Str("bar"), "baz" -> Value.Str("quax"))),
         "none" -> Value.NullValue
       )
     )
@@ -45,4 +48,3 @@ final class DeriveTupleMapSpec extends BaseSynchronousSpec {
     assertDoesNotCompile("import shapeless._; ResultMapper.tuple[Int :: String :: HNil]")
   }
 }
-
