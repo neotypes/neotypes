@@ -6,7 +6,7 @@ import ReleaseTransformations.*
 import java.net.URI
 
 val scala213 = "2.13.15"
-val scala3 = "3.3.3"
+val scala3 = "3.3.4"
 val neo4jDriverVersion = "5.25.0"
 val shapelessVersion = "2.3.12"
 val shapeless3Version = "3.4.3"
@@ -21,10 +21,10 @@ val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
 val pekkoStreamVersion = "1.1.2"
 val fs2Version = "3.11.0"
-val zio2Version = "2.1.9"
+val zio2Version = "2.1.11"
 val zioInteropReactiveStreamsVersion = "2.0.2"
 val refinedVersion = "0.11.2"
-val enumeratumVersion = "1.7.4"
+val enumeratumVersion = "1.7.5"
 
 // Fix scmInfo in Github Actions.
 ThisBuild / scmInfo ~= {
