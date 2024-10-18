@@ -5,6 +5,8 @@ import neotypes.generic.implicits.deriveCaseClassProductMap
 import neotypes.mappers.ResultMapper
 import neotypes.model.types._
 
+import scala.collection.immutable.SeqMap
+
 /** Base class for testing the derivation of a ResultMapper instance for case classes. */
 final class DeriveCaseClassProductMapSpec extends BaseSynchronousSpec {
   import DeriveCaseClassProductMapSpec._
@@ -15,7 +17,7 @@ final class DeriveCaseClassProductMapSpec extends BaseSynchronousSpec {
     val mapper = ResultMapper.productDerive[WrapperCaseClass]
 
     val input = NeoMap(properties =
-      Map(
+      SeqMap(
         "int" -> Value.Integer(1)
       )
     )
@@ -28,7 +30,7 @@ final class DeriveCaseClassProductMapSpec extends BaseSynchronousSpec {
     val mapper = ResultMapper.productDerive[SimpleCaseClass]
 
     val input = NeoMap(properties =
-      Map(
+      SeqMap(
         "int" -> Value.Integer(3),
         "str" -> Value.Str("Luis"),
         "bool" -> Value.Bool(true)
@@ -47,11 +49,11 @@ final class DeriveCaseClassProductMapSpec extends BaseSynchronousSpec {
     val mapper = ResultMapper.productDerive[ComplexCaseClass]
 
     val input = NeoMap(
-      properties = Map(
+      properties = SeqMap(
         "opt" -> Value.Integer(5),
         "either" -> Value.Bool(true),
         "list" -> Value.ListValue(List(Value.Integer(0), Value.Integer(10))),
-        "map" -> NeoMap(Map("foo" -> Value.Str("bar"), "baz" -> Value.Str("quax")))
+        "map" -> NeoMap(SeqMap("foo" -> Value.Str("bar"), "baz" -> Value.Str("quax")))
       )
     )
     val result = mapper.decode(input)
@@ -68,21 +70,21 @@ final class DeriveCaseClassProductMapSpec extends BaseSynchronousSpec {
     val mapper = ResultMapper.productDerive[NestedCaseClass]
 
     val input = NeoMap(
-      properties = Map(
-        "w" -> NeoMap(properties = Map("int" -> Value.Integer(1))),
+      properties = SeqMap(
+        "w" -> NeoMap(properties = SeqMap("int" -> Value.Integer(1))),
         "s" -> NeoMap(
-          properties = Map(
+          properties = SeqMap(
             "int" -> Value.Integer(3),
             "str" -> Value.Str("Luis"),
             "bool" -> Value.Bool(true)
           )
         ),
         "c" -> NeoMap(
-          properties = Map(
+          properties = SeqMap(
             "opt" -> Value.Integer(5),
             "either" -> Value.Bool(true),
             "list" -> Value.ListValue(List(Value.Integer(0), Value.Integer(10))),
-            "map" -> NeoMap(Map("foo" -> Value.Str("bar"), "baz" -> Value.Str("quax")))
+            "map" -> NeoMap(SeqMap("foo" -> Value.Str("bar"), "baz" -> Value.Str("quax")))
           )
         )
       )

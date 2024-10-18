@@ -19,20 +19,21 @@
 
 ### Setup
 
-|Supports Scala 2.13 and 3.3||
-| ----------------------------------------- | :------------- |
-|`"io.github.neotypes" %% "neotypes-core" % version`|Core functionality. Supports `scala.concurrent.Future`.|
-|`"io.github.neotypes" %% "neotypes-generic" % version`|Automatic derivation of mappers for case classes.|
-|`"io.github.neotypes" %% "neotypes-cats-effect" % version`|`Async` support for `cats.effect.Async[F]`|
-|`"io.github.neotypes" %% "neotypes-monix" % version`|`Async` support for `monix.eval.Task`|
-|`"io.github.neotypes" %% "neotypes-zio" % version`|`Async` support for `zio.Task`|
-|`"io.github.neotypes" %% "neotypes-akka-stream" % version`|`Stream` support for `akka.stream.scaladsl.Source`|
-|`"io.github.neotypes" %% "neotypes-fs2-stream" % version`|`Stream` support for `fs2.Stream`|
-|`"io.github.neotypes" %% "neotypes-monix-stream" % version`|`Stream` support for `monix.reactive.Observable`|
-|`"io.github.neotypes" %% "neotypes-zio-stream" % version`|`Stream` support for `zio.ZStream`|
-|`"io.github.neotypes" %% "neotypes-refined" % version`|Support for insert and retrieve refined values.|
-|`"io.github.neotypes" %% "neotypes-cats-data" % version`|Support for insert and retrieve `cats.data` values.|
-|`"io.github.neotypes" %% "neotypes-enumeratum" % version`|Support for insert and retrieve Enumeratum enums.|
+| Supports Scala 2.13 and 3.3                                 |                                                                |
+|-------------------------------------------------------------|:---------------------------------------------------------------|
+| `"io.github.neotypes" %% "neotypes-core" % version`         | Core functionality. Supports `scala.concurrent.Future`.        |
+| `"io.github.neotypes" %% "neotypes-generic" % version`      | Automatic derivation of mappers for case classes.              |
+| `"io.github.neotypes" %% "neotypes-cats-effect" % version`  | `Async` support for `cats.effect.Async[F]`                     |
+| `"io.github.neotypes" %% "neotypes-monix" % version`        | `Async` support for `monix.eval.Task`                          |
+| `"io.github.neotypes" %% "neotypes-zio" % version`          | `Async` support for `zio.Task`                                 |
+| `"io.github.neotypes" %% "neotypes-akka-stream" % version`  | `Stream` support for `akka.stream.scaladsl.Source`             |
+| `"io.github.neotypes" %% "neotypes-pekko-stream" % version` | `Stream` support for `org.apache.pekko.stream.scaladsl.Source` |
+| `"io.github.neotypes" %% "neotypes-fs2-stream" % version`   | `Stream` support for `fs2.Stream`                              |
+| `"io.github.neotypes" %% "neotypes-monix-stream" % version` | `Stream` support for `monix.reactive.Observable`               |
+| `"io.github.neotypes" %% "neotypes-zio-stream" % version`   | `Stream` support for `zio.ZStream`                             |
+| `"io.github.neotypes" %% "neotypes-refined" % version`      | Support for insert and retrieve refined values.                |
+| `"io.github.neotypes" %% "neotypes-cats-data" % version`    | Support for insert and retrieve `cats.data` values.            |
+| `"io.github.neotypes" %% "neotypes-enumeratum" % version`   | Support for insert and retrieve Enumeratum enums.              |
 
 ### Resources
 

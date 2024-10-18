@@ -35,6 +35,7 @@ position: 0
 |`"io.github.neotypes" %% "neotypes-monix" % version`|`monix.eval.Task` implementation.|
 |`"io.github.neotypes" %% "neotypes-zio" % version`|`zio.Task` implementation.|
 |`"io.github.neotypes" %% "neotypes-akka-stream" % version`|result streaming for Akka Streams.|
+|`"io.github.neotypes" %% "neotypes-pekko-stream" % version`|result streaming for Pekko Streams.|
 |`"io.github.neotypes" %% "neotypes-fs2-stream" % version`|result streaming for FS2.|
 |`"io.github.neotypes" %% "neotypes-monix-stream" % version`|result streaming for Monix Observables.|
 |`"io.github.neotypes" %% "neotypes-zio-stream" % version`|result streaming for ZIO ZStreams.|

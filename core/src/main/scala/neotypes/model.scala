@@ -2,7 +2,6 @@ package neotypes
 package model
 
 import mappers.{ParameterMapper, ResultMapper}
-
 import org.neo4j.driver.types.{IsoDuration => NeoDuration, Point => NeoPoint}
 
 import java.time.{
@@ -13,7 +12,7 @@ import java.time.{
   ZonedDateTime => JZDateTime
 }
 import java.util.{Map => JMap}
-import scala.collection.immutable.ArraySeq
+import scala.collection.immutable.{ArraySeq, SeqMap}
 import scala.jdk.CollectionConverters._
 import scala.util.control.NoStackTrace
 
@@ -81,7 +80,7 @@ object types {
   }
 
   /** Represents a Neo4j heterogeneous map (composite type) */
-  final case class NeoMap(properties: Map[String, NeoType]) extends NeoObject
+  final case class NeoMap(properties: SeqMap[String, NeoType]) extends NeoObject
 
   /** Parent type of all Neo4j structural types. */
   sealed trait Entity extends NeoObject {
