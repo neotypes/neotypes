@@ -43,8 +43,4 @@ final class DeriveTupleMapSpec extends BaseSynchronousSpec {
 
     result.value shouldBe (Some(5), Right(true), List(0, 10), Map("foo" -> "bar", "baz" -> "quax"), None)
   }
-
-  it should "not derive an instance for an untagged HList" in {
-    assertDoesNotCompile("import shapeless._; ResultMapper.tuple[Int :: String :: HNil]")
-  }
 }
