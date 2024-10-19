@@ -81,7 +81,9 @@ lazy val commonSettings = Def.settings(
     else if (scalaVersion.value.startsWith("3.3."))
       Seq(
         // Make all warnings verbose.
-        "-Wconf:any:verbose"
+        // Scala 3 doesn't support multiple -Wconf settings.
+        // Thus, this one is commented to enable the test ones.
+        // "-Wconf:any:verbose"
       )
     else
       Seq.empty
