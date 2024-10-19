@@ -7,11 +7,24 @@ position: 100
 
 # Changelog
 
+## v1.2.0 _(2024-10-20)_
+
+### Pekko support ([#807](https://github.com/neotypes/neotypes/pull/807){:target="_blank"})
+
+**neotypes** now can be used with **pekko**! :tada:<br>
+The `neotypes-pekko-stream` module behaves identical to the `neotypes-akka-stream` module.
+
+Thanks  @turb !
+
+### Fix ResultMapper on ordered tuple ([#808](https://github.com/neotypes/neotypes/pull/808){:target="_blank"})
+
+Improved the consistency of `ResultMappers` based on a `NeoMap`.
+
 ## v1.1.0 _(2024-06-07)_
 
 ### Add support for AuthTokenManager when creating the Driver ([#763](https://github.com/neotypes/neotypes/pull/763){:target="_blank"})
 
-Allows creating a `Driver` using an `AuthTokenManager`
+Allows creating a `Driver` using an `AuthTokenManager`.
 
 Thanks @kbreidenbach !
 
