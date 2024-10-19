@@ -5,6 +5,8 @@ import neotypes.generic.implicits.deriveSealedTraitCoproductInstances
 import neotypes.mappers.ResultMapper
 import neotypes.model.types._
 
+import scala.collection.immutable.SeqMap
+
 /** Base class for testing the derivation of a ResultMapper instance for sealed traits. */
 final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec {
   import DeriveSealedTraitCoproductInstancesSpec._
@@ -17,7 +19,7 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
     // First case.
     locally {
       val input = NeoMap(
-        properties = Map(
+        properties = SeqMap(
           "type" -> Value.Str("Foo"),
           "int" -> Value.Integer(3),
           "str" -> Value.Str("Luis")
@@ -34,7 +36,7 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
     // Second case.
     locally {
       val input = NeoMap(
-        properties = Map(
+        properties = SeqMap(
           "type" -> Value.Str("Bar"),
           "bool" -> Value.Bool(true)
         )
@@ -53,7 +55,7 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
     // First case.
     locally {
       val input = NeoMap(
-        properties = Map(
+        properties = SeqMap(
           "type" -> Value.Str("Baz")
         )
       )
@@ -65,7 +67,7 @@ final class DeriveSealedTraitCoproductInstancesSpec extends BaseSynchronousSpec 
     // Second case.
     locally {
       val input = NeoMap(
-        properties = Map(
+        properties = SeqMap(
           "type" -> Value.Str("Quax")
         )
       )

@@ -5,25 +5,26 @@ import ReleaseTransformations.*
 
 import java.net.URI
 
-val scala213 = "2.13.14"
-val scala3 = "3.3.3"
-val neo4jDriverVersion = "5.24.0"
+val scala213 = "2.13.15"
+val scala3 = "3.3.4"
+val neo4jDriverVersion = "5.26.0"
 val shapelessVersion = "2.3.12"
 val shapeless3Version = "3.4.3"
-val testcontainersNeo4jVersion = "1.20.1"
+val testcontainersNeo4jVersion = "1.20.2"
 val testcontainersScalaVersion = "0.41.4"
 val scalaTestVersion = "3.2.19"
-val logbackVersion = "1.5.7"
+val logbackVersion = "1.5.11"
 val catsVersion = "2.12.0"
 val catsEffect2Version = "2.5.5"
 val catsEffect3Version = "3.5.4"
 val monixVersion = "3.4.1"
 val akkaStreamVersion = "2.6.20"
+val pekkoStreamVersion = "1.1.2"
 val fs2Version = "3.11.0"
-val zio2Version = "2.1.9"
+val zio2Version = "2.1.11"
 val zioInteropReactiveStreamsVersion = "2.0.2"
 val refinedVersion = "0.11.2"
-val enumeratumVersion = "1.7.4"
+val enumeratumVersion = "1.7.5"
 
 // Fix scmInfo in Github Actions.
 ThisBuild / scmInfo ~= {
@@ -109,6 +110,7 @@ lazy val root = (project in file("."))
     monix,
     zio,
     akkaStream,
+    pekkoStream,
     fs2Stream,
     monixStream,
     zioStream,
@@ -208,6 +210,16 @@ lazy val akkaStream = (project in file("akka-stream"))
     )
   )
 
+lazy val pekkoStream = (project in file("pekko-stream"))
+  .dependsOn(core)
+  .settings(commonSettings)
+  .settings(
+    name := "neotypes-pekko-stream",
+    libraryDependencies ++= PROVIDED(
+      "org.apache.pekko" %% "pekko-stream" % pekkoStreamVersion
+    )
+  )
+
 lazy val fs2Stream = (project in file("fs2-stream"))
   .dependsOn(core)
   .settings(commonSettings)
@@ -283,6 +295,7 @@ lazy val tests = (project in file("tests"))
     catsEffect % "compile->compile;provided->provided",
     zio % "compile->compile;provided->provided",
     akkaStream % "compile->compile;provided->provided",
+    pekkoStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
@@ -337,6 +350,7 @@ lazy val microsite = (project in file("microsite"))
     catsEffect % "compile->compile;provided->provided",
     zio % "compile->compile;provided->provided",
     akkaStream % "compile->compile;provided->provided",
+    pekkoStream % "compile->compile;provided->provided",
     fs2Stream % "compile->compile;provided->provided",
     zioStream % "compile->compile;provided->provided",
     catsData % "compile->compile;provided->provided",
