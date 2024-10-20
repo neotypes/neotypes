@@ -1,4 +1,4 @@
-![Logo](site/src/main/resources/microsite/img/neotypes.png)
+![Logo](microsite/src/main/resources/microsite/img/neotypes.png)
 
 > neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed.
 
