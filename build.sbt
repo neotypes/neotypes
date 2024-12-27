@@ -23,7 +23,7 @@ val pekkoStreamVersion = "1.1.2"
 val fs2Version = "3.11.0"
 val zio2Version = "2.1.14"
 val zioInteropReactiveStreamsVersion = "2.0.2"
-val refinedVersion = "0.11.2"
+val refinedVersion = "0.11.3"
 val enumeratumVersion = "1.7.5"
 
 // Fix scmInfo in Github Actions.
