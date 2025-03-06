@@ -22,7 +22,7 @@ runs:
       uses: coursier/setup-action@v1
       with:
         jvm: ${{ inputs.jdk }}
-        apps: sbtn
+        apps: sbtn sbt
 
     - name: Restore cache
       uses: coursier/cache-action@v6
