@@ -5,16 +5,16 @@ import ReleaseTransformations.*
 
 import java.net.URI
 
-val scala213 = "2.13.15"
+val scala213 = "2.13.16"
 val scala3 = "3.3.4"
-val neo4jDriverVersion = "5.27.0"
+val neo4jDriverVersion = "5.28.2"
 val shapelessVersion = "2.3.12"
-val shapeless3Version = "3.4.3"
+val shapeless3Version = "3.5.0"
 val testcontainersNeo4jVersion = "1.20.4"
-val testcontainersScalaVersion = "0.41.4"
+val testcontainersScalaVersion = "0.41.8"
 val scalaTestVersion = "3.2.19"
 val logbackVersion = "1.5.16"
-val catsVersion = "2.12.0"
+val catsVersion = "2.13.0"
 val catsEffect2Version = "2.5.5"
 val catsEffect3Version = "3.5.7"
 val monixVersion = "3.4.1"
