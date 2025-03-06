@@ -5,7 +5,7 @@ import ReleaseTransformations.*
 
 import java.net.URI
 
-val scala213 = "2.13.15"
+val scala213 = "2.13.16"
 val scala3 = "3.3.4"
 val neo4jDriverVersion = "5.27.0"
 val shapelessVersion = "2.3.12"
