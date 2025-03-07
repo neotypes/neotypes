@@ -9,7 +9,7 @@ position: 0
 
 > neotype - a type specimen that is selected subsequent to the description of a species to replace a preexisting type that has been lost or destroyed.
 
-[![Build status](https://github.com/neotypes/neotypes/workflows/CI/badge.svg?branch=main)](https://github.com/neotypes/neotypes/actions)
+[![Build status](https://github.com/neotypes/neotypes/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/neotypes/neotypes/actions/workflows/ci.yml)
 [![Scaladex](https://index.scala-lang.org/neotypes/neotypes/neotypes-core/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/neotypes/neotypes/neotypes-core)
 [![Gitter chat](https://badges.gitter.im/neotypes-neotypes/Lobby.svg)](https://gitter.im/neotypes-neotypes/Lobby)
 [![Scala Steward](https://img.shields.io/badge/Scala_Steward-helping-blue.svg?style=flat&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAA4AAAAQCAMAAAARSr4IAAAAVFBMVEUAAACHjojlOy5NWlrKzcYRKjGFjIbp293YycuLa3pYY2LSqql4f3pCUFTgSjNodYRmcXUsPD/NTTbjRS+2jomhgnzNc223cGvZS0HaSD0XLjbaSjElhIr+AAAAAXRSTlMAQObYZgAAAHlJREFUCNdNyosOwyAIhWHAQS1Vt7a77/3fcxxdmv0xwmckutAR1nkm4ggbyEcg/wWmlGLDAA3oL50xi6fk5ffZ3E2E3QfZDCcCN2YtbEWZt+Drc6u6rlqv7Uk0LdKqqr5rk2UCRXOk0vmQKGfc94nOJyQjouF9H/wCc9gECEYfONoAAAAASUVORK5CYII=)](https://scala-steward.org)
