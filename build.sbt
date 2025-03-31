@@ -24,7 +24,7 @@ val fs2Version = "3.12.0"
 val zio2Version = "2.1.16"
 val zioInteropReactiveStreamsVersion = "2.0.2"
 val refinedVersion = "0.11.3"
-val enumeratumVersion = "1.7.5"
+val enumeratumVersion = "1.7.6"
 
 // Fix scmInfo in Github Actions.
 ThisBuild / scmInfo ~= {
