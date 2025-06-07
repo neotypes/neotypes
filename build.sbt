@@ -1,5 +1,4 @@
 import Dependencies.*
-import xerial.sbt.Sonatype.*
 
 import ReleaseTransformations.*
 
@@ -60,7 +59,6 @@ ThisBuild / scalaVersion := scala213
 ThisBuild / crossScalaVersions := Seq(scala213, scala3)
 ThisBuild / organization := "io.github.neotypes"
 ThisBuild / versionScheme := Some("semver-spec")
-ThisBuild / sonatypeCredentialHost := "s01.oss.sonatype.org"
 
 // Common settings.
 lazy val commonSettings = Def.settings(
@@ -87,10 +85,11 @@ lazy val commonSettings = Def.settings(
       Seq.empty
   ),
   // Publishing.
-  publishTo := sonatypePublishToBundle.value,
-  sonatypeProfileName := "neotypes",
-  sonatypeProjectHosting := Some(GitHubHosting("neotypes", "neotypes", "dimafeng@gmail.com")),
-  publishMavenStyle := true,
+  publishTo := {
+    val centralSnapshots = "https://central.sonatype.com/repository/maven-snapshots/"
+    if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
+    else localStaging.value
+  },
   releaseCrossBuild := true,
   // License.
   licenses := Seq(
@@ -125,11 +124,12 @@ lazy val root = (project in file("."))
       checkSnapshotDependencies,
       inquireVersions,
       runClean,
+      releaseStepTaskAggregated(Test / compile),
       setReleaseVersion,
       commitReleaseVersion,
       tagRelease,
       releaseStepCommandAndRemaining("+publishSigned"),
-      releaseStepCommand("sonatypeBundleRelease"),
+      releaseStepCommandAndRemaining("sonaRelease"),
       setNextVersion,
       commitNextVersion,
       pushChanges
