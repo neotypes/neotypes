@@ -57,8 +57,30 @@ ThisBuild / scmInfo ~= {
 // Global settings.
 ThisBuild / scalaVersion := scala213
 ThisBuild / crossScalaVersions := Seq(scala213, scala3)
-ThisBuild / organization := "io.github.neotypes"
+
 ThisBuild / versionScheme := Some("semver-spec")
+
+ThisBuild / organization := "io.github.neotypes"
+ThisBuild / organizationName := "neotypes"
+ThisBuild / homepage := Some(url("https://neotypes.github.io/neotypes/"))
+ThisBuild / apiURL := Some(url("https://neotypes.github.io/neotypes/api/neotypes/index.html"))
+ThisBuild / startYear := Some(2018)
+ThisBuild / licenses += "The MIT License (MIT)" -> URI.create("https://opensource.org/licenses/MIT").toURL
+
+ThisBuild / developers := List(
+  Developer(
+    "BalmungSan",
+    "Luis Miguel Mejía Suárez",
+    "luismiguelmejiasuarez@gmail.com",
+    url("https://github.com/BalmungSan")
+  ),
+  Developer(
+    "dimafeng",
+    "Dmitry Fedosov",
+    "dimafeng@gmail.com",
+    url("https://github.com/dimafeng")
+  )
+)
 
 // Common settings.
 lazy val commonSettings = Def.settings(
@@ -90,11 +112,7 @@ lazy val commonSettings = Def.settings(
     if (isSnapshot.value) Some("central-snapshots" at centralSnapshots)
     else localStaging.value
   },
-  releaseCrossBuild := true,
-  // License.
-  licenses := Seq(
-    "The MIT License (MIT)" -> URI.create("https://opensource.org/licenses/MIT").toURL
-  )
+  releaseCrossBuild := true
 )
 
 lazy val noPublishSettings = Seq(
