@@ -21,7 +21,7 @@ val query = c"CREATE (a: Test { name: ${name} })"
 query.execute
 ```
 
-All parameters will be converted to**Neo4j** supported types _(please see [Supported types](types))_.<br>
+All parameters will be converted to **Neo4j** supported types _(please see [Supported types](types))_.<br>
 The `c` interpolator creates a `DeferredQueryBuilder` which is an immutable representation of a **Cyypher** query.
 You can concatenate `DeferredQueryBuilder`s with other `DeferredQueryBuilder`s or `String`s, to build complex queries.
 
