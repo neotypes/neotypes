@@ -16,8 +16,8 @@ object SealedTraitDerivedCoproductInstances:
         .elemLabels
         .zipWithIndex
         .map[(String, ResultMapper[C])] { (caseName, idx) =>
-          caseName -> inst.inject(idx) {
-            [t <: C] => (rm: ResultMapper[t]) => rm.widen[C]
+          caseName -> inst.inject(idx) { [t <: C] => (rm: ResultMapper[t]) =>
+            rm.widen[C]
           }
         }
         .toList

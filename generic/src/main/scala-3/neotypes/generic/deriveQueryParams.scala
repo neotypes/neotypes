@@ -19,8 +19,8 @@ object CaseClassDerivedQueryParams:
         .view
         .zipWithIndex
         .map { case (fieldName, idx) =>
-          fieldName -> inst.project(a)(idx) {
-            [t] => (pm: ParameterMapper[t], field: t) => pm.toQueryParam(field)
+          fieldName -> inst.project(a)(idx) { [t] => (pm: ParameterMapper[t], field: t) =>
+            pm.toQueryParam(field)
           }
         }
         .toList
