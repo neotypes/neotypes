@@ -1,16 +1,14 @@
 queue_rules:
-  - name: default
+  - name: "merge scala-steward's PRs"
     queue_conditions:
-      - base=main
-      - author=scala-steward
+      - "base = main"
+      - "author = scala-steward"
     merge_conditions:
-      - status-success=CI (ubuntu-latest, temurin:1.17)
-      - status-success=CI (ubuntu-latest, graalvm-java21:21.0.2)
+      - "status-success = CI (ubuntu-latest, temurin:1.17)"
+      - "status-success = CI (ubuntu-latest, graalvm-java21:21.0.2)"
+      - "#approved-reviews-by >= 1"
+      - "#changes-requested-reviews-by = 0"
+      - "#review-threads-unresolved = 0"
     update_method: merge
     merge_method: squash
-
-pull_request_rules:
-  - name: merge scala-steward's PRs
-    conditions: []
-    actions:
-      queue:
+    autoqueue: true
