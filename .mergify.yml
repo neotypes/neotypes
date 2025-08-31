@@ -1,5 +1,5 @@
 queue_rules:
-  - name: default
+  - name: merge scala-steward's PRs
     queue_conditions:
       - base=main
       - author=scala-steward
@@ -9,8 +9,3 @@ queue_rules:
     update_method: merge
     merge_method: squash
     autoqueue: true
-pull_request_rules:
-  - name: merge scala-steward's PRs
-    conditions: []
-    actions:
-      queue:
