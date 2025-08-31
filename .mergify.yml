@@ -8,7 +8,7 @@ queue_rules:
       - status-success=CI (ubuntu-latest, graalvm-java21:21.0.2)
     update_method: merge
     merge_method: squash
-
+    autoqueue: true
 pull_request_rules:
   - name: merge scala-steward's PRs
     conditions: []
