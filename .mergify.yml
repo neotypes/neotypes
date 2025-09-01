@@ -1,5 +1,5 @@
 queue_rules:
-  - name: "merge scala-steward's PRs"
+  - name: default
     queue_conditions:
       - "base = main"
       - "author = scala-steward"
