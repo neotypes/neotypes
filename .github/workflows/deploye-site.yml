@@ -31,7 +31,7 @@ jobs:
         uses: ./.github/actions/setup/
         with:
           jdk: temurin:1.17
-          ruby: 2.7
+          ruby: 3.4
           cache-version: v1
 
       - name: Build the microsite

@@ -24,7 +24,7 @@ jobs:
         uses: ./.github/actions/setup/
         with:
           jdk: ${{ matrix.jdk }}
-          ruby: 2.7
+          ruby: 3.4
           cache-version: v1
 
       - name: Compile
